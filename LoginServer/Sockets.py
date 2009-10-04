@@ -27,7 +27,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import socket, select, sys
+import socket, select, sys, copy
 from threading import Thread
 from Helpers import  Callbacks
 
@@ -113,12 +113,15 @@ class ClientSocket(Thread):
 		self.size = 1024
 		self.buffer = ""
 		self.parent = parent
+		#self.callbacks = copy.deepcopy(self.parent.callbacks)
+		CB = dict(self.parent.callbacks.items())
+		self.callbacks = Callbacks(CB)
 
 	def disconnect(self):
 		if self.running:
 			self.running = False
 			self.client.close()
-		self.parent.callbacks('onDisconnected', self)
+		self.callbacks('onDisconnected', self)
 		
 	def receive(self, bytes):
 		tmp=self.buffer[:bytes]
@@ -127,12 +130,12 @@ class ClientSocket(Thread):
 
 	def run(self):
 		self.running = True
-		self.parent.callbacks('onConnected', self)
+		self.callbacks('onConnected', self)
 		while self.running:
 			data = self.client.recv(self.size)
 			if data:
 				self.buffer += data
-				self.parent.callbacks('onReceive', self, len(data))
+				self.callbacks('onReceive', self, len(data))
 			else:
 				break
 		self.disconnect()

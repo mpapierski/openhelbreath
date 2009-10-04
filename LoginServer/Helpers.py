@@ -58,7 +58,10 @@ class Callbacks(object):
 		
 	def __call__(self, vname, *arg):
 		"""
-			Calling 
+			Calling callback chain
+		"""
 		assert vname in self.__cb, 'Method %s not found !' % vname
 		for i in self.__cb[vname]:
 			i(*arg)
+	def items(self):
+		return self.__cb.items()
