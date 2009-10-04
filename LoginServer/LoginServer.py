@@ -32,9 +32,13 @@ import socket, os, sys, select, struct, time, re, random
 from Enum import Enum
 from threading import Thread, Semaphore, Event
 from NetMessages import Packets
-from GlobalDef import DEF
+from GlobalDef import DEF, Account, Version
 from Helpers import Callbacks
 from Sockets import ServerSocket
+from Database import DatabaseDriver
+
+nozeros = lambda x: x[0:x.find('\x00')] if x.find('\x00')>-1 else x
+fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
 
 class CGameServer(object):
 	def __init__(self, id, sock):
@@ -46,6 +50,7 @@ class CGameServer(object):
 		self.Data = {}
 		self.Config = {}
 		self.IsRegistered = False
+		self.Database = None
 		
 class CLoginServer(object):
 	def __init__(self):
@@ -59,16 +64,20 @@ class CLoginServer(object):
 		self.GameServer = {}
 		self.ListenToAllAddresses = True
 		self.PermittedAddress = []
+		self.MaxTotalUsers = 1000
+		self.WorldServerName = "WS1"
 		
 	def DoInitialSetup(self):
 		"""
 			Loading main configuration, and initializing Database Driver
 			(For now, its MySQL)
 		"""
-		if not self.ReadProgramConfigFile("LoginServer/LServer.cfg"):
+		if not self.ReadProgramConfigFile("LServer.cfg"):
 			return False
-		print "(!) Connecting to mySql database..."
-		print "-Connection to mySQL database was sucessfully established!"
+		self.Database = DatabaseDriver()
+		if not self.Database.Initialize():
+			print "(!) DatabaseDriver initialization fails!"
+			return False
 		return True
 		
 	def GateServer_OnConnect(self, sender):
@@ -169,18 +178,32 @@ class CLoginServer(object):
 		if not self.bReadAllConfig():
 			return False
 		print "(!) Done!"
+		
 		GateServerCB = {'onConnected': self.GateServer_OnConnect,
 						'onDisconnected': self.GateServer_OnDisconnected,
 						'onListen': self.GateServer_OnListen,
 						'onReceive': self.GateServer_OnReceive,
 						'onClose': self.GateServer_OnClose}
-		self.GateServerSocket = ServerSocket((self.ListenAddress, self.GateServerPort), GateServerCB)
+
+		MainSocketCB = {'onConnected': self.MainSocket_OnConnect,
+						'onDisconnected': self.MainSocket_OnDisconnected,
+						'onListen': self.MainSocket_OnListen,
+						'onReceive': self.MainSocket_OnReceive,
+						'onClose': self.MainSocket_OnClose}
+
 		if self.ListenToAllAddresses:
 			print "(!) permitted-address line not found on config., server will be listening to all IPs!"
+						
+		self.GateServerSocket = ServerSocket((self.ListenAddress, self.GateServerPort), GateServerCB)
 		self.GateServerSocket.start()
+		print "-Gate server successfully started!"
+
+		self.MainSocket = ServerSocket((self.ListenAddress, self.ListenPort), MainSocketCB)
+		self.MainSocket.start()
 		print "-Login server sucessfully started!"
-		return True
 		
+		return True
+			
 	def bReadAllConfig(self):
 		"""
 			Reading HG cfgs in order
@@ -191,7 +214,7 @@ class CLoginServer(object):
 				"AdminSettings.cfg", "Settings.cfg"]
 		self.Config = {}
 		for n in Files:
-			if not self.ReadConfig("LoginServer/Config/%s" % n):
+			if not self.ReadConfig("Config/%s" % n):
 				return False
 		return True
 		
@@ -230,8 +253,16 @@ class CLoginServer(object):
 				if token[0] == "permitted-address":
 					self.PermittedAddress += [token[1]]
 					print "(*) IP [%s] added to permitted addresses list!" % (token[1])
-					if self.ListenToAllAddress:
-						self.ListenToAllAddress = False
+					if self.ListenToAllAddresses:
+						self.ListenToAllAddresses = False
+						
+				if token[0] == "max-total-users":
+					self.MaxTotalUsers = token[1]
+					print "(*) Max total users allowed on server : %d" % self.MaxTotalUsers
+					
+				if token[0] == "world-server-name":
+					self.WorldServerName = token[1]
+					print "(*) World Server Name : %s" % self.WorldServerName
 		finally:
 			fin.close()
 		return True
@@ -279,13 +310,13 @@ class CLoginServer(object):
 			TODO: Detect more security vuln
 			Returns: Tuple ( OK/Fail, GS_ID/-1, CGameServer instance/None)
 		"""
+		global nozeros
 		Read = {}
 		Request = struct.unpack('h', data[:2])[0]
 		if Request != Packets.DEF_LOGRESMSGTYPE_CONFIRM:
 			print "Unknown Register Game Server Packet ID"
 			return (False, -1, None)
 		data = data[2:]
-		nozeros = lambda x: x[0:x.find('\x00')] if x.find('\x00')>-1 else x
 		Read['ServerName'] = nozeros(data[:10])
 		Read['ServerIP'] = nozeros(data[10:26])
 		Read['ServerPort'] = struct.unpack('h', data[26:28])[0]
@@ -379,3 +410,145 @@ class CLoginServer(object):
 		(MsgType, TotalPlayers) = struct.unpack('hh', data[:4])
 		if MsgType == Packets.DEF_MSGTYPE_CONFIRM:
 			GS.AliveResponseTime = time.time()
+			
+	def MainSocket_OnConnect(self, sender):
+		print "(*) MainSocket-> Client accepted [%s]" % sender.address
+		
+	def MainSocket_OnDisconnected(self, sender):
+		print "(*) MainSocket -> Client disconnected"
+		
+	def MainSocket_OnListen(self, sender):
+		print "(*) MainSocket -> Server open"
+		
+	def MainSocket_OnReceive(self, sender, size):
+		print "(*) MainSocket -> Received %d bytes" % size
+		if size < 4:
+			return
+
+		buffer = sender.receive(size)
+		cKey = ord(buffer[0])
+		dwSize = struct.unpack('h', buffer[1:3])[0] - 3
+		Decode = lambda buffer, dwSize, cKey: "".join(map(lambda n: (lambda asdf: chr(asdf & 255))((ord(buffer[n]) ^ (cKey ^ (dwSize - n))) - (n ^ cKey)), range(len(buffer))))
+		buffer = list(buffer[3:])
+
+		if cKey > 0:
+			buffer = Decode(buffer, dwSize, cKey)
+			
+		MsgID = struct.unpack('L', buffer[:4])[0]
+		buffer = buffer[4:]
+		
+		if MsgID == Packets.MSGID_REQUEST_LOGIN:
+			self.ProcessClientLogin(sender, buffer)
+		elif MsgID == Packets.MSGID_REQUEST_CHANGEPASSWORD:
+			self.ChangePassword(sender, buffer)
+		else:
+			if MsgID in Packets:
+				print "Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
+			else:
+				print "Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
+			
+	def MainSocket_OnClose(self, sender):
+		pass
+		
+	def SendMsgToClient(self, Sock, data, cKey = -1):
+		"""
+			Sending data to Client
+		"""
+		dwSize = len(data)+3
+		buffer = data[:]
+		if cKey == -1:
+			cKey = random.randint(0, 255)
+		if cKey > 0:
+			buffer = map(ord, buffer)#list(data)
+			for i in range(len(buffer)):#range(dwSize):
+				buffer[i] = buffer[i] + (i ^ cKey)
+				buffer[i] = buffer[i] ^ (cKey ^ (len(buffer) - i))
+			buffer = "".join(map(lambda x: chr(x & 255) , buffer))
+		buffer = chr(cKey) + struct.pack('h', len(buffer)+3) + buffer
+		Sock.client.send(buffer)
+		
+	def ReadAccountData(self, buffer):
+		Read = {}
+		Read['MsgType'] = buffer[:2] #null ?
+		Read['AccountName'] = nozeros(buffer[2:12])
+		Read['AccountPassword'] = nozeros(buffer[12:22])
+		Read['WS'] = nozeros(buffer[22:])
+		return Read
+		
+	def ProcessClientLogin(self, sender, buffer):
+		"""
+			Processing Client Login
+			Improvements from Arye's server:
+			+ BlockDate is now used properly
+			+ Check if client is trying to log on correct WS.
+		"""
+		global nozeros
+		Read = self.ReadAccountData(buffer)
+		if Read['WS'] != self.WorldServerName:
+			print "(!) Player tries to enter unknown World Server : %s" % Read['WS']
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGWORLDSERVER)
+			self.SendMsgToClient(sender, SendData)
+			return
+			
+		OK = self.Database.CheckAccountLogin(Read['AccountName'], Read['AccountPassword'])
+		if OK[0] == Account.OK:
+			print "(!) Login OK: %s" % Read['AccountName']
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM)
+			SendData += struct.pack('2h', Version.UPPER, Version.LOWER)
+			#SendData += struct.pack('i', 2012) + ("\x00" * 5)
+			SendData += "\x00" * 7
+			SendData += struct.pack('h', 0)
+			self.SendMsgToClient(sender, SendData)
+			
+		elif OK[0] == Account.WRONGPASS:
+			print "(!) Wrong password: Account[ %s ] - Correct Password[ %s ] - Password received[ %s ]" % (Read['AccountName'], OK[2], OK[1])
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
+			self.SendMsgToClient(sender, SendData)
+			
+		elif OK[0] == Account.NOTEXISTS:
+			print "(!) Account does not exists: %s" % Read['AccountName']
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT)
+			self.SendMsgToClient(sender, SendData)
+			
+		elif OK[0] == Account.BLOCKED:
+			print "(!) Account %s blocked until %d-%d-%d and tries to login!" % (Read['AccountName'], OK[1], OK[2], OK[3])
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_REJECT)
+			SendData += struct.pack('3i', *OK[1:])
+			SendData += "\x01" #AccountStatus ?! WTF ?!
+			self.SendMsgToClient(sender, SendData)
+			
+	def ChangePassword(self, sender, buffer):
+		global nozeros
+		Read = {}
+		Read['Login'] = nozeros(buffer[2:12])
+		Read['Password'] = nozeros(buffer[12:22])
+		Read['NewPass1'] = nozeros(buffer[22:32])
+		Read['NewPass2'] = nozeros(buffer[32:42])
+		OK = self.Database.CheckAccountLogin(Read['Login'], Read['Password'])
+		
+		if Read['NewPass1'] != Read['NewPass2'] or len(Read['NewPass1']) < 8 or len(Read['NewPass2']) < 8:
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password confirmation)" % (Read['Login'], Read['Password'], Read['NewPass1'])
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
+			self.SendMsgToClient(sender, SendData)
+			return
+			
+		if OK[0] == Account.WRONGPASS:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password mismatch)" % (Read['Login'], Read['Password'], Read['NewPass1'])
+			return
+			
+		if OK[0] != Account.OK:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (%s)" % (Read['Login'], Read['Password'], Read['NewPass1'], Account.reverse_lookup_without_mask(OK[0]))
+			return
+			
+		if self.Database.ChangePassword(Read['Login'], Read['Password'], Read['NewPass1']):
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGESUCCESS)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Password changed on account %s (%s -> %s) SUCCESS!" % (Read['Login'], Read['Password'], Read['NewPass1'])
+		else:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (Database failed)" % (Read['Login'], Read['Password'], Read['NewPass1'])

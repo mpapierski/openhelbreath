@@ -29,4 +29,19 @@
 """
 from Enum import Enum
 
-DEF = Enum({'MAXGAMESERVERS': 100, 'MAXSOCKETSPERSERVER': 4})
+DEF = Enum({ 
+'MAXGAMESERVERS'      : 100,
+'MAXSOCKETSPERSERVER' : 4
+})
+
+Account = Enum({
+'NOTEXISTS' : 0,
+'WRONGPASS' : 1,
+'OK'        : 2,
+'BLOCKED'   : 3
+})
+
+Version = Enum({
+'UPPER' : 3,
+'LOWER' : 82
+})

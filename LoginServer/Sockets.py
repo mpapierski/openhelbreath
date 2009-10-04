@@ -89,7 +89,7 @@ class ServerSocket(Thread):
 		
 	def run(self):
 		self.open_socket()
-		input = [self.server,sys.stdin]
+                input = [self.server]
 		self.running = True
 		while self.running:
 			inputready, outputready, exceptready = select.select(input, [], [])
@@ -98,9 +98,6 @@ class ServerSocket(Thread):
 					c = ClientSocket(self.server.accept(), self)
 					c.start()
 					self.threads += [c]
-				elif s == sys.stdin: 
-					junk = sys.stdin.readline() 
-					self.running = False
 		self.server.close()
 		for c in self.threads:
 			c.join()
