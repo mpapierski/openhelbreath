@@ -69,7 +69,7 @@ class DatabaseDriver(object):
 		if not self.Ready:
 			raise Exception('Database driver not ready!')
 		self.Access.acquire()
-		QueryConsult = "UPDATE `account_database` SET `password` = '%s' WHERE BINARY `name` = '%s' AND BINARY `password` = '%s' LIMIT 1" % (NewPassword, LoginName, Password)
+		QueryConsult = "UPDATE `account_database` SET `password` = '%s' WHERE BINARY `name` = '%s' AND BINARY `password` = '%s' LIMIT 1" % (self.db.escape_string(NewPassword), self.db.escape_string(LoginName), self.db.escape_string(Password))
 		self.db.query(QueryConsult)
 		return self.db.affected_rows() > 0
 		
