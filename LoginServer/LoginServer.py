@@ -441,6 +441,13 @@ class CLoginServer(object):
 			self.ProcessClientLogin(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_CHANGEPASSWORD:
 			self.ChangePassword(sender, buffer)
+		elif MsgID == Packets.MSGID_REQUEST_CREATENEWCHARACTER:
+			self.CreateNewCharacter(sender, buffer)
+		elif MsgID == Packets.MSGID_REQUEST_DELETECHARACTER:
+			self.DeleteCharacter(sender, buffer)
+		elif MsgID == Packets.MSGID_REQUEST_ENTERGAME:
+			SendData = struct.pack('Lhh', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
+			self.SendMsgToClient(sender, SendData)
 		else:
 			if MsgID in Packets:
 				print "Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
@@ -483,6 +490,7 @@ class CLoginServer(object):
 			+ Check if client is trying to log on correct WS.
 		"""
 		global nozeros
+		global fillzeros
 		Read = self.ReadAccountData(buffer)
 		if Read['WS'] != self.WorldServerName:
 			print "(!) Player tries to enter unknown World Server : %s" % Read['WS']
@@ -495,9 +503,12 @@ class CLoginServer(object):
 			print "(!) Login OK: %s" % Read['AccountName']
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM)
 			SendData += struct.pack('2h', Version.UPPER, Version.LOWER)
-			#SendData += struct.pack('i', 2012) + ("\x00" * 5)
-			SendData += "\x00" * 7
-			SendData += struct.pack('h', 0)
+			SendData += "\x00" # Account Status
+			SendData += "\x00" * 12
+			ChLst = self.GetCharList(Read['AccountName'], Read['AccountPassword'])
+			print repr(ChLst)
+			print "Len: %d" % len(ChLst)
+			SendData += ChLst
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.WRONGPASS:
@@ -552,3 +563,102 @@ class CLoginServer(object):
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
 			print "(!) Password changed on account %s (%s -> %s) FAIL! (Database failed)" % (Read['Login'], Read['Password'], Read['NewPass1'])
+	
+	def CreateNewCharacter(self, sender, buffer):
+		global nozeros
+		global fillzeros
+		Read = {}
+		Read['MsgType'] = nozeros(buffer[:2])
+		Read['PlayerName'] = nozeros(buffer[2:12])
+		Read['AccountName'] = nozeros(buffer[12:22])
+		Read['AccountPassword'] = nozeros(buffer[22:32])
+		Read['WS'] = nozeros(buffer[32:62])
+		Values = ['Gender', 'SkinCol', 'HairStyle', 'HairCol', 'UnderCol', 'Str', 'Vit', 'Dex', 'Int', 'Mag', 'Agi']
+		i = 62
+		for key in Values:
+			Read[key] = ord(buffer[i])
+			i += 1
+
+		OK = self.Database.CheckAccountLogin(Read['AccountName'], Read['AccountPassword'])
+		if OK[0] != Account.OK or Read['PlayerName'] == "" or Read['WS'] != self.WorldServerName:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			print "Wrong account data"
+			return
+		if self.Database.CharacterExists(Read['PlayerName']):
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGCHARACTER)
+			self.SendMsgToClient(sender, SendData)
+			print "Character already exists"
+			return
+			
+		CharList = self.Database.GetAccountCharacterList(Read['AccountName'], Read['AccountPassword'])
+		Stat = [Read.__getitem__(x) for x in ['Str','Vit','Dex','Int','Mag','Agi']]
+
+		if filter(lambda x: x not in [10,11,12,13,14], Stat) < 6: #test if requested Stats are not in valid values
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			print "Stat values not in [10, 11, 12, 13, 14]"
+			return
+		
+		if reduce(lambda a,b: a+b, Stat) != 70: #if stats count does not compare 70
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			print "Stat values does not count!"
+			return
+			
+		if len(CharList) > 4: #more than 4 chars?
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			print "Account tries make to more than 4 characters"
+			return
+		
+		if not self.Database.CreateNewCharacter(Read): #if failed then se
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			print "Create new character failed at CreateNewCharacter!"
+		else: #all ok
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERCREATED)
+			SendData += fillzeros(Read['PlayerName'], 10)
+			SendData += self.GetCharList(Read['AccountName'], Read['AccountPassword'])
+			self.SendMsgToClient(sender, SendData)
+			print "Create new character success!"
+
+	def GetCharList(self, account_name, account_password):
+		global fillzeros
+		CharList = self.Database.GetAccountCharacterList(account_name, account_password)
+		Buffer = chr(len(CharList))
+		for CharT in CharList:
+			if len(CharT) < 1:
+				continue
+			Char = CharT[0]
+			Tmp = ""
+			Tmp += fillzeros(Char[2], 10) #char_name                           # 10
+			Tmp += "\x01" #bp = 0x01 ? SEX?
+			Tmp += struct.pack('4h', *Char[21:25]) #Appr1, Appr2, Appr3, Appr4 # 8
+			Tmp += struct.pack('h', Char[15]) #gender                          # 2
+			Tmp += struct.pack('h', Char[16]) #Skin                            # 2
+			Tmp += struct.pack('i', Char[6]) #Lvl                              # 4
+			Tmp += struct.pack('i', Char[14]) #exp                             # 4
+			Tmp += struct.pack('6h', *Char[7:13]) #Stats [6]                   # 12
+			Tmp += "\x00" * 12 #logout date                                    # 10
+			Tmp += fillzeros(Char[26], 10)                                     # 10
+			Buffer += Tmp
+		return Buffer
+		
+	def DeleteCharacter(self, sender, buffer):
+		global nozeros
+		Read = {}
+		Read['MsgType'] = buffer[:2]
+		Read['CharName'] = nozeros(buffer[2:12])
+		Read['AccountName'] = nozeros(buffer[12:22])
+		Read['AccountPassword'] = nozeros(buffer[22:32])
+		Read['WS'] = nozeros(buffer[32:62])
+		if Read['WS'] != self.WorldServerName or not self.Database.DeleteCharacter(Read['AccountName'], Read['AccountPassword'], Read['CharName']):
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
+			self.SendMsgToClient(sender, SendData)
+			return
+		
+		SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_CHARACTERDELETED)
+		SendData += "\x00" #AccountStatus
+		SendData += self.GetCharList(Read['AccountName'], Read['AccountPassword'])
+		self.SendMsgToClient(sender, SendData)
