@@ -60,9 +60,11 @@ class CLoginServer(object):
 		self.MainSocket = None
 		self.GateServerSocket = None
 		self.ListenAddress = ""
+		self.ListenPort = 2748
 		self.GateServerPort = 0
 		self.GameServer = {}
 		self.ListenToAllAddresses = True
+		self.ListenPortDefault = True
 		self.PermittedAddress = []
 		self.MaxTotalUsers = 1000
 		self.WorldServerName = "WS1"
@@ -177,7 +179,7 @@ class CLoginServer(object):
 		"""
 		if not self.bReadAllConfig():
 			return False
-		print "(!) Done!"
+		print "(*) Done!"
 		
 		GateServerCB = {'onConnected': self.GateServer_OnConnect,
 						'onDisconnected': self.GateServer_OnDisconnected,
@@ -192,15 +194,18 @@ class CLoginServer(object):
 						'onClose': self.MainSocket_OnClose}
 
 		if self.ListenToAllAddresses:
-			print "(!) permitted-address line not found on config., server will be listening to all IPs!"
-						
+			print "(!) permitted-address line not found in LServer.cfg. Server will be listening to all IPs!"
+
+		if self.ListenPortDefault:
+			print "(*) login-server-port line not found in LServer.cfg. Server will use port %d" % self.ListenPort
+
 		self.GateServerSocket = ServerSocket((self.ListenAddress, self.GateServerPort), GateServerCB)
 		self.GateServerSocket.start()
-		print "-Gate server successfully started!"
+		print "(*) Gate server successfully started!"
 
 		self.MainSocket = ServerSocket((self.ListenAddress, self.ListenPort), MainSocketCB)
 		self.MainSocket.start()
-		print "-Login server sucessfully started!"
+		print "(*) Login server sucessfully started!"
 		
 		return True
 			
@@ -245,6 +250,8 @@ class CLoginServer(object):
 				if token[0] == "login-server-port":
 					self.ListenPort = token[1]
 					print "(*) Login server port : %d" % (self.ListenPort)
+					if self.ListenPortDefault:
+						self.ListenPortDefault = False
 					
 				if token[0] == "gate-server-port":
 					self.GateServerPort = token[1]
@@ -276,7 +283,7 @@ class CLoginServer(object):
 			return False
 		key = FileName.split('/')[-1].split(".")[0]
 		fin = open(FileName,'r')
-		print "(!) Reading configuration file [%s] -> {'%s'}..." % (FileName, key)
+		print "(*) Reading configuration file [%s] -> {'%s'}..." % (FileName, key)
 		try:
 			self.Config[key] = fin.read()
 		finally:
@@ -291,7 +298,7 @@ class CLoginServer(object):
 		PacketID = Packets.DEF_MSGTYPE_REJECT if ok == False else Packets.DEF_MSGTYPE_CONFIRM
 		SendData = struct.pack('L2h', Packets.MSGID_RESPONSE_REGISTERGAMESERVER, PacketID, GSID)
 		self.SendMsgToGS(GS, SendData)
-		print "(!) Game Server registered at ID[%u]-[%u]." % (GSID, GS.Data['InternalID'])
+		print "(*) Game Server registered at ID[%u]-[%u]." % (GSID, GS.Data['InternalID'])
 		
 	def FindNewGSID(self):
 		"""
@@ -329,7 +336,7 @@ class CLoginServer(object):
 		print Read
 		GS = CGameServer(NGSID, sender)
 		GS.Data = Read
-		print "(!) Maps registered:"
+		print "(*) Maps registered:"
 		data = data[32:]
 		while len(data)>0:
 			map_name = nozeros(data[:11])
@@ -386,15 +393,15 @@ class CLoginServer(object):
 			Here we are adding socket to Game Server
 		"""
 		GSID = ord(data[0])
-		print "(!) Trying to register socket on GS[%d]." % GSID
+		print "(*) Trying to register socket on GS[%d]." % GSID
 		if not GSID in self.GameServer:
 			print "(!) GSID is not registered!"
 			return False
 		self.GameServer[GSID].GameServerSocket += [sender]
-		print "(!) Registered Socket(%d) GSID(%d) ServerName(%s)" % (len(self.GameServer[GSID].GameServerSocket), GSID, self.GameServer[GSID].Data['ServerName'])
+		print "(*) Registered Socket(%d) GSID(%d) ServerName(%s)" % (len(self.GameServer[GSID].GameServerSocket), GSID, self.GameServer[GSID].Data['ServerName'])
 		if len(self.GameServer[GSID].GameServerSocket) == DEF.MAXSOCKETSPERSERVER:
 			self.GameServer[GSID].IsRegistered = True
-			print "(!) Gameserver(%s) registered!" % (self.GameServer[GSID].Data['ServerName'])
+			print "(*) Gameserver(%s) registered!" % (self.GameServer[GSID].Data['ServerName'])
 			print
 			
 	def GameServerAliveHandler(self, GS, data):
@@ -500,7 +507,7 @@ class CLoginServer(object):
 			
 		OK = self.Database.CheckAccountLogin(Read['AccountName'], Read['AccountPassword'])
 		if OK[0] == Account.OK:
-			print "(!) Login OK: %s" % Read['AccountName']
+			print "(*) Login OK: %s" % Read['AccountName']
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM)
 			SendData += struct.pack('2h', Version.UPPER, Version.LOWER)
 			SendData += "\x00" # Account Status
@@ -558,7 +565,7 @@ class CLoginServer(object):
 		if self.Database.ChangePassword(Read['Login'], Read['Password'], Read['NewPass1']):
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGESUCCESS)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Password changed on account %s (%s -> %s) SUCCESS!" % (Read['Login'], Read['Password'], Read['NewPass1'])
+			print "(*) Password changed on account %s (%s -> %s) SUCCESS!" % (Read['Login'], Read['Password'], Read['NewPass1'])
 		else:
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)

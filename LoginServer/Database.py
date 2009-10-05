@@ -19,7 +19,7 @@ class DatabaseDriver(object):
 			print "(!) MySQL Driver already initialized!"
 			return False
 		global MySQL_Auth
-		print "(!) Connecting to mySql database..."
+		print "(*) Connecting to MySQL database..."
 		try:
 			self.db = MySQLdb.connect(**MySQL_Auth)
 		except _mysql_exceptions.OperationalError as (E_No, E_Str):
@@ -34,7 +34,7 @@ class DatabaseDriver(object):
 			print "(!) Database tables are corrupted!"
 			return False
 
-		print "-Connection to mySQL database was sucessfully established!"
+		print "(*) Connection to MySQL database was sucessfully established!"
 
 		return True
 
