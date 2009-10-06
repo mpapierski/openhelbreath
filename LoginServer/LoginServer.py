@@ -36,6 +36,7 @@ from GlobalDef import DEF, Account, Version
 from Helpers import Callbacks
 from Sockets import ServerSocket
 from Database import DatabaseDriver
+from collections import namedtuple
 
 nozeros = lambda x: x[0:x.find('\x00')] if x.find('\x00')>-1 else x
 fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
@@ -452,6 +453,8 @@ class CLoginServer(object):
 			self.CreateNewCharacter(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_DELETECHARACTER:
 			self.DeleteCharacter(sender, buffer)
+		elif MsgID == Packets.MSGID_REQUEST_CREATENEWACCOUNT:
+			self.CreateNewAccount(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_ENTERGAME:
 			SendData = struct.pack('Lhh', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
 			self.SendMsgToClient(sender, SendData)
@@ -666,3 +669,30 @@ class CLoginServer(object):
 		SendData += "\x00" #AccountStatus
 		SendData += self.GetCharList(Read['AccountName'], Read['AccountPassword'])
 		self.SendMsgToClient(sender, SendData)
+		
+	def CreateNewAccount(self, sender, buffer):
+		global nozeros
+		try:
+			format = '<h10s10s50s10s10si2h17s28s45s20s50s'
+			if len(buffer) != struct.calcsize(format):
+				raise Exception
+			s = map(lambda x: nozeros(x) if type(x) != int else x, struct.unpack('<h10s10s50s10s10si2h17s28s45s20s50s', buffer))
+			Packet = namedtuple('Packet', 'MsgType AccountName AccountPassword Mail Gender AccountAge Unk1 Unk2 Unk3 AccountCountry AccountSSN AccountQuiz AccountAnswer CmdLine')._make(s)
+		except:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
+			self.SendMsgToClient(sender, SendData)
+			return
+		
+		OK = self.Database.CreateNewAccount(Packet.AccountName, Packet.AccountPassword, Packet.Mail, Packet.AccountQuiz, Packet.AccountAnswer, sender.address)
+		if OK == Account.OK:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Create account fails [ %s/%s ]. Account already exists" % (Packet.AccountName, Packet.Mail)
+		elif OK == Account.FAIL:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Create account fails [ %s ]. Unknown error occured!" % Packet.AccountName
+		elif OK == Account.EXISTS:
+			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Create account fails [ %s ]. Account already exists" % Packet.AccountName

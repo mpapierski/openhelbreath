@@ -256,3 +256,19 @@ class DatabaseDriver(object):
 			return False
 			
 		return True
+	def CreateNewAccount(self, account_name, account_password, mail, quiz, answer, address):
+		if not self.Ready:
+			raise Exception('Database driver not ready!')
+		QueryConsult = "SELECT AccountID FROM `account_database` WHERE BINARY `name` = '%s'"
+		if not self.ExecuteSQL(QueryConsult, account_name):
+			return Account.FAIL
+		r = self.db.store_result()
+		if r.num_rows() > 0:
+			return Account.FAIL
+		QueryConsult = "INSERT INTO `account_database` (`name`, `password`, `Email`, `Quiz`, `Answer`, `SignUpIpAddress`, `SignUpDate`, `SignUpFromClient`)" + \
+							"VALUES ('%s', '%s', '%s', '%s', '%s', '%s', NOW(), 1)"
+		if not self.ExecuteSQL(QueryConsult, account_name, account_password, mail, quiz, answer, address):
+			return Account.FAIL
+			
+		return Account.OK
+		

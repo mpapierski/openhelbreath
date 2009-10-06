@@ -43,7 +43,9 @@ Account = Enum({
 'NOTEXISTS' : 0,
 'WRONGPASS' : 1,
 'OK'        : 2,
-'BLOCKED'   : 3
+'BLOCKED'   : 3,
+'EXISTS'    : 4,
+'FAIL'      : 5
 })
 
 Version = Enum({
