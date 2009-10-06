@@ -513,8 +513,6 @@ class CLoginServer(object):
 			SendData += "\x00" # Account Status
 			SendData += "\x00" * 12
 			ChLst = self.GetCharList(Read['AccountName'], Read['AccountPassword'])
-			print repr(ChLst)
-			print "Len: %d" % len(ChLst)
 			SendData += ChLst
 			self.SendMsgToClient(sender, SendData)
 			
@@ -634,10 +632,9 @@ class CLoginServer(object):
 		global fillzeros
 		CharList = self.Database.GetAccountCharacterList(account_name, account_password)
 		Buffer = chr(len(CharList))
-		for CharT in CharList:
-			if len(CharT) < 1:
+		for Char in CharList:
+			if len(Char) < 1:
 				continue
-			Char = CharT[0]
 			Tmp = ""
 			Tmp += fillzeros(Char[2], 10) #char_name                           # 10
 			Tmp += "\x01" #bp = 0x01 ? SEX?
