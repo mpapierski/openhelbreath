@@ -25,7 +25,7 @@ USE `playerdb`;
 DROP TABLE IF EXISTS `account_database`;
 CREATE TABLE IF NOT EXISTS `account_database` (
   `name` varchar(10) NOT NULL DEFAULT '',
-  `password` varchar(10) NOT NULL DEFAULT '',
+  `password` varchar(40) NOT NULL DEFAULT '',
   `AccountID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `LoginIpAddress` varchar(20) NOT NULL DEFAULT '',
   `IsGMAccount` smallint(1) NOT NULL DEFAULT '0',
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `account_database` (
   `BlockDate` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
   `RealName` varchar(30) NOT NULL DEFAULT '',
   `Gender` char(1) NOT NULL DEFAULT '',
-  `Email` varchar(50) NOT NULL DEFAULT '',
+  `Email` varchar(320) NOT NULL DEFAULT '',
   `CharRecord` varchar(100) NOT NULL DEFAULT '',
   `Quiz` varchar(45) NOT NULL DEFAULT '',
   `Answer` varchar(20) NOT NULL DEFAULT '',
