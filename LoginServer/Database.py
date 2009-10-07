@@ -169,46 +169,46 @@ class DatabaseDriver(object):
 				return []
 			rows = []	
 			while True:
-				row = r.fetch_row()
-				if row == ():
+				#row = r.fetch_row()
+				row = self.fetch_array(r)
+				if row == {}:
 					break
-				rows += [row[0]]
+				rows += [row]
 		except:
 			return []
 			
 		return rows
 		
-	def CreateNewCharacter(self, Read):
+	def CreateNewCharacter(self, Packet):
 		if not self.Ready:
 			raise Exception('Database driver not ready!')
 
 		QueryConsult = "INSERT INTO `char_database` (`account_name`, `char_name`, `Strength` , `Vitality` , `Dexterity` , `Intelligence` , `Magic` , `Agility` , `Appr1`, `Gender` , `Skin` , `HairStyle` , `HairColor` , `Underwear` , `HP` , `MP` , `SP`, `CreateDate`)" + \
 							"VALUES ( '%s', '%s' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d', '%d' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d', NOW())"
 		if not self.ExecuteSQL(QueryConsult,
-							Read['AccountName'],
-							Read['PlayerName'],
-							Read['Str'],
-							Read['Vit'],
-							Read['Dex'],
-							Read['Int'],
-							Read['Mag'],
-							Read['Agi'],
-							((Read['HairStyle'] << 8) | (Read['HairCol'] << 4) | (Read['UnderCol'])), #Appr1
-							Read['Gender'],
-							Read['SkinCol'],
-							Read['HairStyle'],
-							Read['HairCol'],
-							Read['UnderCol'],
-							(Read['Vit']*3)+(Read['Str']/2)+2,
-							(Read['Mag']*2)+(Read['Int']/2)+2,
-							(Read['Str']*2)+ 2):
+							Packet.AccountName,
+							Packet.PlayerName,
+							Packet.Str,
+							Packet.Vit,
+							Packet.Dex,
+							Packet.Int,
+							Packet.Mag,
+							Packet.Agi,
+							((Packet.HairStyle << 8) | (Packet.HairCol << 4) | (Packet.UnderCol)), #Appr1
+							Packet.Gender,
+							Packet.SkinCol,
+							Packet.HairStyle,
+							Packet.HairCol,
+							Packet.UnderCol,
+							(Packet.Vit * 3) + (Packet.Str / 2) + 2,
+							(Packet.Mag * 2) + (Packet.Int / 2) + 2,
+							(Packet.Str * 2) + 2):
 			return False #False means no query was executed so no worry about empty skills or no items
 		if self.db.affected_rows() > 0:
 			try:
 				Char_ID = self.db.insert_id()
 				for s in range(DEF.MAXSKILLS):
 					if s in [4, 5, 7]:
-						#`SkillID`, `SkillMastery` , `SkillSSN`
 						SkillMastery = 20
 					elif s == 3:
 						SkillMastery = 3
@@ -219,8 +219,8 @@ class DatabaseDriver(object):
 					if not self.ExecuteSQL(QueryConsult, Char_ID, s, SkillMastery, 0):
 						raise Exception('This is only for sure. Propably will not ever appear.')
 			except:
-				print "(MySQL) Exception in CreateCharacter! Deleting char %s..." % Read['PlayerName']
-				self.DeleteCharacter(Read['AccountName'], Read['AccountPassword'], Read['PlayerName'])
+				print "(MySQL) Exception in CreateCharacter! Deleting char %s..." % Packet.PlayerName
+				self.DeleteCharacter(Packet.AccountName, Packet.AccountPassword, Packet.PlayerName)
 				return False
 		return True
 		
@@ -233,7 +233,6 @@ class DatabaseDriver(object):
 				return False
 
 			r = self.db.store_result()
-
 			if r.num_rows() == 0:
 				return False
 			
@@ -254,7 +253,7 @@ class DatabaseDriver(object):
 					return False
 		except:
 			return False
-			
+
 		return True
 	def CreateNewAccount(self, account_name, account_password, mail, quiz, answer, address):
 		if not self.Ready:

@@ -40,6 +40,7 @@ from collections import namedtuple
 
 nozeros = lambda x: x[0:x.find('\x00')] if x.find('\x00')>-1 else x
 fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
+packet_format = lambda x: nozeros(x) if type(x) != int else x
 
 class CGameServer(object):
 	def __init__(self, id, sock):
@@ -136,21 +137,32 @@ class CLoginServer(object):
 		"""
 			Triggered when any data is available on Sock's buffer
 		"""
-		#print "(*) GateServer -> Received %d bytes" % size
-		if size < 4:
-			return
 		buffer = sender.receive(size)
-		cKey = ord(buffer[0])
-		dwSize = struct.unpack('h', buffer[1:3])[0]
-		buffer = buffer[3:]
-		if cKey > 0:
-			for i in range(dwSize):
-				buffer[i] = chr( ord(buffer[i]) ^ (cKey ^ (dwSize - i)))
-				buffer[i] = chr(ord(buffer[i]) - (i ^ cKey))
-		
-		MsgID = struct.unpack('L', buffer[:4])[0]
+		try:
+			format = '<Bh'
+			header_size = struct.calcsize(format)
+			if len(buffer) < header_size:
+				raise Exception
+			s = struct.unpack(format, buffer[:header_size])
+			Header = namedtuple('Header', 'cKey dwSize')._make(s)
+			buffer = buffer[header_size:]
+		except:
+			print "Except"
+			sender.disconnect()
+			return
+			
+		if Header.dwSize != size or size < 4 or Header.dwSize < 4:
+			print "(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address
+			sender.disconnect()
+			return
+
+		if Header.cKey > 0:
+			Decode = lambda buffer, dwSize, cKey: "".join(map(lambda n: (lambda asdf: chr(asdf & 255))((ord(buffer[n]) ^ (cKey ^ (dwSize - n))) - (n ^ cKey)), range(len(buffer))))
+			buffer = Decode(buffer, Header.dwSize-3, Header.cKey)
+				
+		MsgID = struct.unpack('<L', buffer[:4])[0]
 		buffer = buffer[4:]
-		
+				
 		if MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVER:
 			self.RegisterGameServer(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVERSOCKET:
@@ -333,6 +345,11 @@ class CLoginServer(object):
 		if Read['NumberOfMaps'] == 0:
 			return (False, -1, None)
 		Read['InternalID'] = struct.unpack('h', data[30:32])[0] #ord(data[30])
+		
+		if sender.address not in self.PermittedAddress and not self.ListenToAllAddresses:
+			print "(!) %s is not in permitted address list and tries to register Game Server!"
+			return (False, -1, None)
+		
 		NGSID = self.FindNewGSID()
 		print Read
 		GS = CGameServer(NGSID, sender)
@@ -430,19 +447,30 @@ class CLoginServer(object):
 		
 	def MainSocket_OnReceive(self, sender, size):
 		print "(*) MainSocket -> Received %d bytes" % size
-		if size < 4:
+		buffer = sender.receive(size)
+		try:
+			format = '<Bh'
+			header_size = struct.calcsize(format)
+			if len(buffer) < header_size:
+				raise Exception
+			s = struct.unpack(format, buffer[:header_size])
+			Header = namedtuple('Header', 'cKey dwSize')._make(s)
+			buffer = buffer[header_size:]
+		except:
+			print "Except"
+			sender.disconnect()
+			return
+			
+		if Header.dwSize != size or size < 4 or Header.dwSize < 4:
+			print "(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address
+			sender.disconnect()
 			return
 
-		buffer = sender.receive(size)
-		cKey = ord(buffer[0])
-		dwSize = struct.unpack('h', buffer[1:3])[0] - 3
-		Decode = lambda buffer, dwSize, cKey: "".join(map(lambda n: (lambda asdf: chr(asdf & 255))((ord(buffer[n]) ^ (cKey ^ (dwSize - n))) - (n ^ cKey)), range(len(buffer))))
-		buffer = list(buffer[3:])
-
-		if cKey > 0:
-			buffer = Decode(buffer, dwSize, cKey)
-			
-		MsgID = struct.unpack('L', buffer[:4])[0]
+		if Header.cKey > 0:
+			Decode = lambda buffer, dwSize, cKey: "".join(map(lambda n: (lambda asdf: chr(asdf & 255))((ord(buffer[n]) ^ (cKey ^ (dwSize - n))) - (n ^ cKey)), range(len(buffer))))
+			buffer = Decode(buffer, Header.dwSize-3, Header.cKey)
+				
+		MsgID = struct.unpack('<L', buffer[:4])[0]
 		buffer = buffer[4:]
 		
 		if MsgID == Packets.MSGID_REQUEST_LOGIN:
@@ -454,7 +482,7 @@ class CLoginServer(object):
 		elif MsgID == Packets.MSGID_REQUEST_DELETECHARACTER:
 			self.DeleteCharacter(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_CREATENEWACCOUNT:
-			self.CreateNewAccount(sender, buffer)
+			Packet.self.CreateNewAccount(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_ENTERGAME:
 			SendData = struct.pack('Lhh', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
 			self.SendMsgToClient(sender, SendData)
@@ -463,6 +491,7 @@ class CLoginServer(object):
 				print "Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
 			else:
 				print "Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
+			#sender.disconnect()
 			
 	def MainSocket_OnClose(self, sender):
 		pass
@@ -484,14 +513,6 @@ class CLoginServer(object):
 		buffer = chr(cKey) + struct.pack('h', len(buffer)+3) + buffer
 		Sock.client.send(buffer)
 		
-	def ReadAccountData(self, buffer):
-		Read = {}
-		Read['MsgType'] = buffer[:2] #null ?
-		Read['AccountName'] = nozeros(buffer[2:12])
-		Read['AccountPassword'] = nozeros(buffer[12:22])
-		Read['WS'] = nozeros(buffer[22:])
-		return Read
-		
 	def ProcessClientLogin(self, sender, buffer):
 		"""
 			Processing Client Login
@@ -499,184 +520,201 @@ class CLoginServer(object):
 			+ BlockDate is now used properly
 			+ Check if client is trying to log on correct WS.
 		"""
-		global nozeros
-		global fillzeros
-		Read = self.ReadAccountData(buffer)
-		if Read['WS'] != self.WorldServerName:
-			print "(!) Player tries to enter unknown World Server : %s" % Read['WS']
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGWORLDSERVER)
+		try:
+			format = '<h10s10s30s'
+			if len(buffer) != struct.calcsize(format):
+				raise Exception
+			s = map(packet_format, struct.unpack(format, buffer))
+			Packet = namedtuple('Packet', 'MsgType AccountName AccountPassword WS')._make(s)
+		except:
+			SendData = struct.pack('<Lh3iB', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_REJECT, 0, 0, 0, 1)
 			self.SendMsgToClient(sender, SendData)
 			return
 			
-		OK = self.Database.CheckAccountLogin(Read['AccountName'], Read['AccountPassword'])
+		if Packet.WS != self.WorldServerName:
+			print "(!) Player tries to enter unknown World Server : %s" % Packet.WS
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGWORLDSERVER)
+			self.SendMsgToClient(sender, SendData)
+			return
+			
+		OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
 		if OK[0] == Account.OK:
-			print "(*) Login OK: %s" % Read['AccountName']
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM)
-			SendData += struct.pack('2h', Version.UPPER, Version.LOWER)
-			SendData += "\x00" # Account Status
-			SendData += "\x00" * 12
-			ChLst = self.GetCharList(Read['AccountName'], Read['AccountPassword'])
+			print "(*) Login OK: %s" % Packet.AccountName
+			SendData = struct.pack('<L3hB12s', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM,
+												Version.UPPER, Version.LOWER,
+												0, #account status
+												'') #dates, converted to 12 * \0x00
+			ChLst = self.GetCharList(Packet.AccountName, Packet.AccountPassword)
 			SendData += ChLst
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.WRONGPASS:
-			print "(!) Wrong password: Account[ %s ] - Correct Password[ %s ] - Password received[ %s ]" % (Read['AccountName'], OK[2], OK[1])
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
+			print "(!) Wrong password: Account[ %s ] - Correct Password[ %s ] - Password received[ %s ]" % (Packet.AccountName, OK[2], OK[1])
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.NOTEXISTS:
-			print "(!) Account does not exists: %s" % Read['AccountName']
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT)
+			print "(!) Account does not exists: %s" % Packet.AccountName
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT)
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.BLOCKED:
 			print "(!) Account %s blocked until %d-%d-%d and tries to login!" % (Read['AccountName'], OK[1], OK[2], OK[3])
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_REJECT)
-			SendData += struct.pack('3i', *OK[1:])
-			SendData += "\x01" #AccountStatus ?! WTF ?!
+			SendData = struct.pack('<Lh3i', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_REJECT, 
+												OK[1], OK[2], OK[3], #Y-m-d
+												0) #Account Status
 			self.SendMsgToClient(sender, SendData)
 			
 	def ChangePassword(self, sender, buffer):
-		global nozeros
-		Read = {}
-		Read['Login'] = nozeros(buffer[2:12])
-		Read['Password'] = nozeros(buffer[12:22])
-		Read['NewPass1'] = nozeros(buffer[22:32])
-		Read['NewPass2'] = nozeros(buffer[32:42])
-		OK = self.Database.CheckAccountLogin(Read['Login'], Read['Password'])
+		global packet_format
+		try:
+			format = '<h10s10s10s10s'
+			if len(buffer) != struct.calcsize(format):
+				raise Exception
+			s = map(packet_format, struct.unpack(format, buffer))
+			Packet = namedtuple('Packet', 'MsgType Login Password NewPass1 NewPass2')._make(s)
+		except:
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			return
+
+		OK = self.Database.CheckAccountLogin(Packet.Login, Packet.Password)
 		
-		if Read['NewPass1'] != Read['NewPass2'] or len(Read['NewPass1']) < 8 or len(Read['NewPass2']) < 8:
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password confirmation)" % (Read['Login'], Read['Password'], Read['NewPass1'])
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
+		if Packet.NewPass1 != Packet.NewPass2 or len(Packet.NewPass1) < 8 or len(Packet.NewPass2) < 8:
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password confirmation)" % (Packet.Login, Packet.Password, Packet.NewPass1)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
 			return
 			
 		if OK[0] == Account.WRONGPASS:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password mismatch)" % (Read['Login'], Read['Password'], Read['NewPass1'])
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password mismatch)" % (Packet.Login, Packet.Password, Packet.NewPass1)
 			return
 			
 		if OK[0] != Account.OK:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (%s)" % (Read['Login'], Read['Password'], Read['NewPass1'], Account.reverse_lookup_without_mask(OK[0]))
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (%s)" % (Packet.Login, Packet.Password, Packet.NewPass1, Account.reverse_lookup_without_mask(OK[0]))
 			return
 			
-		if self.Database.ChangePassword(Read['Login'], Read['Password'], Read['NewPass1']):
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGESUCCESS)
+		if self.Database.ChangePassword(Packet.Login, Packet.Password, Packet.NewPass1):
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGESUCCESS)
 			self.SendMsgToClient(sender, SendData)
-			print "(*) Password changed on account %s (%s -> %s) SUCCESS!" % (Read['Login'], Read['Password'], Read['NewPass1'])
+			print "(*) Password changed on account %s (%s -> %s) SUCCESS!" % (Packet.Login, Packet.Password, Packet.NewPass1)
 		else:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (Database failed)" % (Read['Login'], Read['Password'], Read['NewPass1'])
+			print "(!) Password changed on account %s (%s -> %s) FAIL! (Database failed)" % (Packet.Login, Packet.Password, Packet.NewPass1)
 	
 	def CreateNewCharacter(self, sender, buffer):
-		global nozeros
-		global fillzeros
-		Read = {}
-		Read['MsgType'] = nozeros(buffer[:2])
-		Read['PlayerName'] = nozeros(buffer[2:12])
-		Read['AccountName'] = nozeros(buffer[12:22])
-		Read['AccountPassword'] = nozeros(buffer[22:32])
-		Read['WS'] = nozeros(buffer[32:62])
-		Values = ['Gender', 'SkinCol', 'HairStyle', 'HairCol', 'UnderCol', 'Str', 'Vit', 'Dex', 'Int', 'Mag', 'Agi']
-		i = 62
-		for key in Values:
-			Read[key] = ord(buffer[i])
-			i += 1
-
-		OK = self.Database.CheckAccountLogin(Read['AccountName'], Read['AccountPassword'])
-		if OK[0] != Account.OK or Read['PlayerName'] == "" or Read['WS'] != self.WorldServerName:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+		global packet_format
+		try:
+			format = '<h10s10s10s30s11B'
+			if len(buffer) != struct.calcsize(format):
+				raise Exception
+			s = map(packet_format, struct.unpack(format, buffer))
+			Packet = namedtuple('Packet', 'MsgType PlayerName AccountName AccountPassword WS Gender SkinCol HairStyle HairCol UnderCol Str Vit Dex Int Mag Agi')._make(s)
+		except:
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "Wrong account data"
-			return
-		if self.Database.CharacterExists(Read['PlayerName']):
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGCHARACTER)
-			self.SendMsgToClient(sender, SendData)
-			print "Character already exists"
 			return
 			
-		CharList = self.Database.GetAccountCharacterList(Read['AccountName'], Read['AccountPassword'])
-		Stat = [Read.__getitem__(x) for x in ['Str','Vit','Dex','Int','Mag','Agi']]
-
-		if filter(lambda x: x not in [10,11,12,13,14], Stat) < 6: #test if requested Stats are not in valid values
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+		OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
+		if OK[0] != Account.OK or Packet.PlayerName == "" or Packet.WS != self.WorldServerName:
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "Stat values not in [10, 11, 12, 13, 14]"
+			print "(!) Create new character -> Wrong account data on creating new character!"
+			return
+			
+		if self.Database.CharacterExists(Packet.PlayerName):
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGCHARACTER)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Create new character -> Character %s already exists." % Packet.PlayerName
+			return
+			
+		CharList = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
+		Stat = [getattr(Packet, x) for x in ['Str','Vit','Dex','Int','Mag','Agi']]
+		print Stat
+		if filter(lambda x: x not in [10,11,12,13,14], Stat) < 6: #test if requested Stats are not in valid values
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			print "(!) Create new character -> Stat values not in [10, 11, 12, 13, 14]"
 			return
 		
 		if reduce(lambda a,b: a+b, Stat) != 70: #if stats count does not compare 70
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "Stat values does not count!"
+			print "(!) Create new character -> Stat values %d/70!" % (reduce(lambda a,b: a+b, Stat))
 			return
 			
 		if len(CharList) > 4: #more than 4 chars?
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "Account tries make to more than 4 characters"
+			print "(!) Create new character -> Account tries make to more than 4 characters"
 			return
 		
-		if not self.Database.CreateNewCharacter(Read): #if failed then se
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+		if not self.Database.CreateNewCharacter(Packet):
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "Create new character failed at CreateNewCharacter!"
-		else: #all ok
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERCREATED)
-			SendData += fillzeros(Read['PlayerName'], 10)
-			SendData += self.GetCharList(Read['AccountName'], Read['AccountPassword'])
+			print "(!) Create new character -> Create new character failed at CreateNewCharacter!"
+		else:
+			SendData = struct.pack('<Lh10s',Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERCREATED,
+											Packet.PlayerName)
+			SendData += self.GetCharList(Packet.AccountName, Packet.AccountPassword)
 			self.SendMsgToClient(sender, SendData)
-			print "Create new character success!"
+			print "(!) Create new character -> Create new character success on account %s [CharName: %s ]!" % (Packet.AccountName, Packet.PlayerName)
 
 	def GetCharList(self, account_name, account_password):
 		global fillzeros
 		CharList = self.Database.GetAccountCharacterList(account_name, account_password)
-		Buffer = chr(len(CharList))
+		Buffer = chr(len(CharList))		
 		for Char in CharList:
-			if len(Char) < 1:
-				continue
-			Tmp = ""
-			Tmp += fillzeros(Char[2], 10) #char_name                           # 10
-			Tmp += "\x01" #bp = 0x01 ? SEX?
-			Tmp += struct.pack('4h', *Char[21:25]) #Appr1, Appr2, Appr3, Appr4 # 8
-			Tmp += struct.pack('h', Char[15]) #gender                          # 2
-			Tmp += struct.pack('h', Char[16]) #Skin                            # 2
-			Tmp += struct.pack('i', Char[6]) #Lvl                              # 4
-			Tmp += struct.pack('i', Char[14]) #exp                             # 4
-			Tmp += struct.pack('6h', *Char[7:13]) #Stats [6]                   # 12
-			Tmp += "\x00" * 12 #logout date                                    # 10
-			Tmp += fillzeros(Char[26], 10)                                     # 10
+			Tmp = struct.pack('<10sB6h2i6h12s10s',
+							Char['char_name'],
+							1, #wtf?
+							Char['Appr1'], Char['Appr2'], Char['Appr3'], Char['Appr4'],
+							Char['Gender'],
+							Char['Skin'],
+							Char['Level'],
+							Char['Exp'],
+							Char['Strength'], Char['Vitality'], Char['Dexterity'], Char['Intelligence'], Char['Magic'], Char['Agility'],
+							"", #will be converted to 12 * \0x00 -> Logout date
+							Char['MapLoc'])
 			Buffer += Tmp
 		return Buffer
 		
 	def DeleteCharacter(self, sender, buffer):
-		global nozeros
-		Read = {}
-		Read['MsgType'] = buffer[:2]
-		Read['CharName'] = nozeros(buffer[2:12])
-		Read['AccountName'] = nozeros(buffer[12:22])
-		Read['AccountPassword'] = nozeros(buffer[22:32])
-		Read['WS'] = nozeros(buffer[32:62])
-		if Read['WS'] != self.WorldServerName or not self.Database.DeleteCharacter(Read['AccountName'], Read['AccountPassword'], Read['CharName']):
+		global packet_format
+		try:
+			format = '<h10s10s10s30s'
+			if len(buffer) != struct.calcsize(format):
+				raise Exception
+			s = map(packet_format, struct.unpack(format, buffer))
+			Packet = namedtuple('Packet', 'MsgType CharName AccountName AccountPassword WS')._make(s)
+		except:
+			print "Exception"
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
 			self.SendMsgToClient(sender, SendData)
 			return
-		
-		SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_CHARACTERDELETED)
-		SendData += "\x00" #AccountStatus
-		SendData += self.GetCharList(Read['AccountName'], Read['AccountPassword'])
+			
+		if Packet.WS != self.WorldServerName or not self.Database.DeleteCharacter(Packet.AccountName, Packet.AccountPassword, Packet.CharName):
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
+			self.SendMsgToClient(sender, SendData)
+			return
+
+		SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_CHARACTERDELETED, 1)
+		SendData += self.GetCharList(Packet.AccountName, Packet.AccountPassword)
 		self.SendMsgToClient(sender, SendData)
 		
 	def CreateNewAccount(self, sender, buffer):
 		global nozeros
+		global packet_decoder
 		try:
 			format = '<h10s10s50s10s10si2h17s28s45s20s50s'
 			if len(buffer) != struct.calcsize(format):
 				raise Exception
-			s = map(lambda x: nozeros(x) if type(x) != int else x, struct.unpack('<h10s10s50s10s10si2h17s28s45s20s50s', buffer))
+			s = map(packet_decoder, struct.unpack(format, buffer))
 			Packet = namedtuple('Packet', 'MsgType AccountName AccountPassword Mail Gender AccountAge Unk1 Unk2 Unk3 AccountCountry AccountSSN AccountQuiz AccountAnswer CmdLine')._make(s)
 		except:
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
