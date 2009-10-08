@@ -70,6 +70,7 @@ class CLoginServer(object):
 		self.PermittedAddress = []
 		self.MaxTotalUsers = 1000
 		self.WorldServerName = "WS1"
+		self.Clients = []
 		
 	def DoInitialSetup(self):
 		"""
@@ -482,10 +483,9 @@ class CLoginServer(object):
 		elif MsgID == Packets.MSGID_REQUEST_DELETECHARACTER:
 			self.DeleteCharacter(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_CREATENEWACCOUNT:
-			Packet.self.CreateNewAccount(sender, buffer)
+			self.CreateNewAccount(sender, buffer)
 		elif MsgID == Packets.MSGID_REQUEST_ENTERGAME:
-			SendData = struct.pack('Lhh', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
-			self.SendMsgToClient(sender, SendData)
+			self.ProcessClientRequestEnterGame(sender, buffer)
 		else:
 			if MsgID in Packets:
 				print "Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
@@ -709,28 +709,93 @@ class CLoginServer(object):
 		
 	def CreateNewAccount(self, sender, buffer):
 		global nozeros
-		global packet_decoder
+		global packet_format
 		try:
 			format = '<h10s10s50s10s10si2h17s28s45s20s50s'
 			if len(buffer) != struct.calcsize(format):
 				raise Exception
-			s = map(packet_decoder, struct.unpack(format, buffer))
+			s = map(packet_format, struct.unpack(format, buffer))
 			Packet = namedtuple('Packet', 'MsgType AccountName AccountPassword Mail Gender AccountAge Unk1 Unk2 Unk3 AccountCountry AccountSSN AccountQuiz AccountAnswer CmdLine')._make(s)
 		except:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
 			self.SendMsgToClient(sender, SendData)
 			return
 		
 		OK = self.Database.CreateNewAccount(Packet.AccountName, Packet.AccountPassword, Packet.Mail, Packet.AccountQuiz, Packet.AccountAnswer, sender.address)
 		if OK == Account.OK:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED)
 			self.SendMsgToClient(sender, SendData)
 			print "(!) Create account fails [ %s/%s ]. Account already exists" % (Packet.AccountName, Packet.Mail)
 		elif OK == Account.FAIL:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
 			self.SendMsgToClient(sender, SendData)
 			print "(!) Create account fails [ %s ]. Unknown error occured!" % Packet.AccountName
 		elif OK == Account.EXISTS:
-			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT)
 			self.SendMsgToClient(sender, SendData)
 			print "(!) Create account fails [ %s ]. Account already exists" % Packet.AccountName
+
+	def ProcessClientRequestEnterGame(self, sender, buffer):
+		try:
+			global packet_format
+			format = '<h10s10s10s10si30s120s'
+			if len(buffer) != struct.calcsize(format):
+				print "%d/%d" % (len(buffer), struct.calcsize(format))
+				raise Exception
+			s = map(packet_format, struct.unpack(format, buffer))
+			Packet = namedtuple('Packet', 'MsgType PlayerName MapName AccountName AccountPassword Level WS CmdLine')._make(s)
+			print Packet
+		except:
+			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
+			self.SendMsgToClient(sender, SendData)
+			return
+		
+		if Packet.WS != self.WorldServerName:
+			print "(!) Player tries to enter game with unknown World Server : %s" % Packet.WS
+			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
+			self.SendMsgToClient(sender, SendData)
+			return
+			
+		OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
+		if OK[0] != Account.OK:
+			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
+			self.SendMsgToClient(sender, SendData)
+			return
+		
+		Ch = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
+		Found = False
+		for C in Ch:
+			print C['char_name']
+			if C['char_name'] == Packet.PlayerName:
+				Found = True
+		if Found:
+			GS = self.IsMapAvailable(Packet.MapName)
+			if GS == False:
+				print "(!) Player %s is stuck at %s !" % (Packet.PlayerName, Packet.MapName)
+				SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
+				self.SendMsgToClient(sender, SendData)
+			else:
+				if Packet.MsgType == Packets.DEF_ENTERGAMEMSGTYPE_NEW:
+					self.Clients += [{
+										'AccountName': Packet.AccountName,
+										'AccountPassword': Packet.AccountPassword,
+										'CharName': Packet.PlayerName,
+										'Level': Packet.Level,
+										'ClientIP': sender.address,
+										'ID': GS['GSID']}]
+						
+					SendData = struct.pack('<Lh16sh20s', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_CONFIRM, 
+															GS['IP'], GS['Port'],
+															"") #ServerName?
+					print "Client enter game : %s" % Packet.PlayerName
+					self.SendMsgToClient(sender, SendData)
+					
+		else:
+			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
+			self.SendMsgToClient(sender, SendData)
+			
+	def IsMapAvailable(self, MapName):
+		for GS in self.GameServer.values():
+			if MapName in GS.MapName:
+				return {'IP':GS.Data['ServerIP'], 'Port': GS.Data['ServerPort'], 'GSID': GS.GSID}
+		return False
