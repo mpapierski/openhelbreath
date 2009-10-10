@@ -174,11 +174,15 @@ class CLoginServer(object):
 				self.GameServerAliveHandler(GS, buffer)
 			else:
 				print "MSGID_GAMESERVERALIVE ON UNREGISTERED SOCKET. PLEASE RESTART! HACK?"
+		elif MsgID == Packets.MSGID_REQUEST_PLAYERDATA:
+			GS = self.SockToGS(sender)
+			if GS != None:
+				self.ProcessRequestPlayerData(sender, buffer, GS)
 		else:
 			if MsgID in Packets:
-				print "Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
+				print "(!) Gate Server -> Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
 			else:
-				print "Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
+				print "(!) Gate Server -> Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
 				
 	def GateServer_OnClose(self, sender, size):
 		"""
@@ -799,3 +803,141 @@ class CLoginServer(object):
 			if MapName in GS.MapName:
 				return {'IP':GS.Data['ServerIP'], 'Port': GS.Data['ServerPort'], 'GSID': GS.GSID}
 		return False
+		
+	def IsAccountInUse(self, AccountName):
+		for C in self.Clients:
+			if C['AccountName'] == AccountName:
+				return True
+		return False
+
+	def ProcessRequestPlayerData(self, sender, buffer, GS):
+		print "Process request player data..."
+		try:
+			global packet_format
+			format = '<h10s10s10s15sB'
+			if len(buffer) != struct.calcsize(format):
+				print "(!) RequestPlayerData size mismatch!"
+				raise Exception				
+			s = map(packet_format, struct.unpack(format, buffer))
+			Packet = namedtuple('Packet', 'MsgType CharName AccountName AccountPassword Address AccountStatus')._make(s)
+		except:
+			SendData = SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_REJECT, "")
+			self.SendMsgToGS(GS, SendData)
+			return
+		Found = False
+		for C in self.Clients:
+			if C['CharName'] == Packet.CharName and C['AccountName'] == Packet.AccountName and C['AccountPassword'] == Packet.AccountPassword:
+				if C['ClientIP'] != "127.0.0.1" and C['ClientIP'] != Packet.ClientIP:
+					print "IP SIE NIE ZGADZA"
+				else:
+					print C
+					print "Character is valid!"
+					Found = True
+					break
+				
+		if not Found:
+			print "(!) HG server is requesting not logged player! HACK!"
+			SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
+			self.SendMsgToGS(GS, SendData)
+		else:
+			print "GetCharacterInfo"
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_CONFIRM)
+			SendData += self.GetCharacterInfo(Packet.AccountName, Packet.AccountPassword, Packet.CharName)
+			print "SendMsgToGS"
+			self.SendMsgToGS(GS, SendData)
+	def GetCharacterInfo(self, AccountName, AccountPassword, CharName):
+		OK = self.Database.GetCharacter(AccountName, AccountPassword, CharName)
+		if OK == False:
+			"OK == False"
+			return
+		print "GetCharacterInfo..."
+		Ch = OK['Content']
+		Data = struct.pack('10s', CharName)
+		
+		Data = "\0x00" * 2
+		#Data = "\0x00" #Guild Exists?
+		Data += struct.pack('10s', Ch['MapLoc'])
+		Data += struct.pack('hh', Ch['LocX'], Ch['LocY'])
+		Data += struct.pack('B', Ch['Gender'])
+		Data += struct.pack('B', Ch['Skin'])
+		Data += struct.pack('B', Ch['HairStyle'])
+		Data += struct.pack('B', Ch['HairColor'])
+		Data += struct.pack('B', Ch['Underwear'])
+		Data += struct.pack('B', Ch['Gender'])
+		Data += struct.pack('20s', Ch['GuildName'])
+		Data += struct.pack('B', max(Ch['GuildRank'],0))
+		Data += struct.pack('I', Ch['HP'])
+		Data += struct.pack('I', Ch['Level'])
+		
+		Data += struct.pack('6B', Ch['Strength'], #1
+											Ch['Vitality'], #1
+											Ch['Dexterity'], #1
+											Ch['Intelligence'], #1
+											Ch['Magic'], #1
+											Ch['Agility']) #1
+		Data += struct.pack('B', Ch['Luck'])
+		Data += struct.pack('I', Ch['Exp'])
+		Data += struct.pack(Ch['MagicMastery'])
+		Data += "\0x00" * (182-len(Data)) #align ?
+		Data += struct.pack('10s', Ch['Nation'])
+		Data += struct.pack('IIII', Ch['MP'], Ch['SP'], Ch['EK'], Ch['PK'])
+		Data += struct.pack('I', Ch['RewardGold'])
+		Data += struct.pack('B', Ch['Hunger'])
+		Data += struct.pack('B', Ch['AdminLevel'])
+		Data += struct.pack('I', Ch['LeftShutupTime'])
+		Data += struct.pack('I', Ch['LeftPopTime'])
+		Data += struct.pack('I', Ch['Popularity'])
+		Data += struct.pack('I', Ch['GuildID'])
+		Data += struct.pack('B', max(Ch['DownSkillID'],0))
+		Data += struct.pack('I', Ch['CharID'])
+		Data += struct.pack('III', Ch['ID1'], Ch['ID2'], Ch['ID3'])
+		
+		
+		
+		Data += str(Ch['BlockDate']) if Ch['BlockDate'] != None else ""
+		Data += "\0x00" * 50
+		Data = Data[:368]
+		
+		Data += struct.pack('hhhhI', Ch['QuestNum'], Ch['QuestCount'], Ch['QuestRewType'], Ch['QuestRewAmmount'], Ch['Contribution'])
+		Data += struct.pack('IB', Ch['QuestID'], Ch['QuestCompleted'])
+		Data += struct.pack('II', Ch['LeftForceRecallTime'], Ch['LeftFirmStaminarTime'])
+		Data += struct.pack('Ih', Ch['EventID'], Ch['LeftSAC'])
+		Data += struct.pack('BIB', Ch['FightNum'], Ch['FightDate'], Ch['FightTicket'])
+		Data += struct.pack('III', Ch['LeftSpecTime'], Ch['LeftSpecTime'], Ch['WarCon'])
+		Data += struct.pack('10sI', Ch['LockMapName'], Ch['LockMapTime'])
+		Data += struct.pack('BII', Ch['CruJob'], Ch['CruConstructPoint'], Ch['CruID'])
+		Data += struct.pack('III', Ch['LeftDeadPenaltyTime'], Ch['PartyID'], Ch['GizonItemUpgradeLeft'])
+		#Data += 
+		for i in range(DEF.MAXSKILLS):
+			Data += struct.pack('BBI', i, 0, 0)
+		Data += "\0x00"
+		Data += "\0x00"
+		if Ch['Profile'] == 0:
+			Ch['Profile'] = "_" * 10
+		Data += struct.pack('10s', Ch['Profile'])
+		test = open("CHARDATA.dat", "w")
+		try:
+			test.write(Data)
+		finally:
+			test.close()
+			
+		#DEF_LOGRESMSGTYPE_CONFIRM	
+		#self.SendMsgToGS(
+		print "DONE"
+		return Data
+		#self.SendClientDEF_LOGRESMSGTYPE_CONFIRM
+									
+		#SendData += "".join(map(lambda x: chr(ord(x)-48), OK['Character']['MagicMastery']))
+		
+		
+		#SendData += struct.pack('10s', OK['Character']['Loca
+		#ZeroMemory(m_pClientList[iClientH]->m_cLocation, sizeof(m_pClientList[iClientH]->m_cLocation));
+		#SafeCopy(m_pClientList[iClientH]->m_cLocation, pData+181, 10);
+		#if (memcmp(m_pClientList[iClientH]->m_cLocation+3,"hunter",6) == 0) m_pClientList[iClientH]->m_bIsPlayerCivil = TRUE;
+        #m_pClientList[iClientH]->m_iMP = dwGetOffsetValue(pData, 191);
+		#m_pClientList[iClientH]->m_iSP = dwGetOffsetValue(pData, 195);
+		#m_pClientList[iClientH]->m_iLU_Pool = bGetOffsetValue(pData, 199);
+		#m_pClientList[iClientH]->m_iEnemyKillCount = dwGetOffsetValue(pData, 200);
+		#m_pClientList[iClientH]->m_iPKCount = (int)dwGetOffsetValue(pData, 204);
+		#m_pClientList[iClientH]->m_iRewardGold = dwGetOffsetValue(pData, 208);
+		

@@ -271,3 +271,28 @@ class DatabaseDriver(object):
 			
 		return Account.OK
 		
+	def GetCharacter(self, account_name, account_password, char_name):
+		QueryConsult = "SELECT chr.* FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
+		if not self.ExecuteSQL(QueryConsult, account_name, account_password, char_name):
+			return False
+		r = self.db.store_result()
+		if r.num_rows() == 0:
+			return False
+			
+		Character = {}
+		Character['Content'] = self.fetch_array(r)
+	
+		QueryConsult = "SELECT `SkillID`, `SkillMastery`, `SkillSSN` FROM `skill` WHERE `CharID` = '%d' LIMIT %d"
+		if not self.ExecuteSQL(QueryConsult, Character['Content']['CharID'], DEF.MAXSKILLS):
+			return False
+		r = self.db.store_result()
+		if r.num_rows() == 0:
+			return False
+		Character['Skill'] = []
+		while True:
+			row = r.fetch_row()
+			if row == ():
+				break
+			Character['Skill'] += [dict(zip(['SkillID', 'SkillMastery', 'SkillSSN'], row[0]))]
+
+		return Character
