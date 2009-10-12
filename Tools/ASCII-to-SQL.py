@@ -27,24 +27,19 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import sys
-import traceback
-import os
-import MySQLdb
-import _mysql_exceptions
-import time
-import array
-import re
+import sys, traceback, os
+import MySQLdb, _mysql_exceptions
+import time, array, re
 import hashlib
 
 # Config
-cAccountDir	= "C:\\Users\H2\\Desktop\\sHelbreath\\Tools\\Account\\Account"
-cCharacterDir	= "C:\\Users\\H2\\Desktop\\sHelbreath\\Tools\\Account\\Character"
-MySQL_Auth = {'host' : '192.168.1.50', 'port': 3306, 'user': 'test', 'passwd': 'test', 'db': 'playerdb'}
-sSQLFileName = 'ASCII-Import-%s.sql' % time.strftime("%m-%d-%Y-%H%M%S")
+cAccountDir	= "C:\\Account\\Account"        # Current ASCII Account directory
+cCharacterDir	= "C:\\Account\\Character"      # Current ASCII Character directory
+MySQL_Auth = {'host' : 'localhost', 'port': 3307, 'user': 'root', 'passwd': '', 'db': 'playerdb'}
 
 # Variables
-sVersion = "0.80"
+sVersion = "1.00"
+sSQLFileName = 'ASCII-Import-%s.sql' % time.strftime("%m-%d-%Y-%H%M%S")
 iTotalChar = iTotalCharAdd = iTotalCharFail = iCountSQLCharErr = iCountDupeCharAcct = iCountDupeCharName = iCountInvalidChar = iCountOrphan = 0
 iTotalAcct = iTotalAcctAdd = iTotalAcctFail = iCountDupeAcct = iCountInvalidAcct = iCountSQLAcctErr = 0
 iTotalItem = iTotalItemFail = iTotalItemSuccess = iTotalItemSQLErr = iTotalItemCorrupt = 0
@@ -53,7 +48,7 @@ aAdmin = []
 # Start Python Script
 def PutSQL(cQuery):
 	'''
-	desc
+	Place Query String into .sql file
 	'''
 	
 	sqlFile = open(sSQLFileName, 'a')
@@ -63,7 +58,7 @@ def PutSQL(cQuery):
 
 def PutLog(cMsg, bDisplay = True):
 	'''
-	desc
+	Place string into .txt log file 
 	'''
 	if bDisplay:
 		print cMsg
@@ -74,7 +69,7 @@ def PutLog(cMsg, bDisplay = True):
 
 def Terminate(cString):
 	'''
-	desc
+	Close out the Application
 	'''
 	PutLog("(!) Termination: %s" % cString)
 	PutLog("")
@@ -82,13 +77,11 @@ def Terminate(cString):
 
 def ConvertComplete(cString):
 	'''
-	desc
+	Show statistics on successful completion of script
 	'''
 	PutLog("")
 	PutLog("Finished : %s" % cString)
 	PutLog("")
-	# Show Stats
-	# Create a thorough log file
 	PutLog("----------")
 	PutLog("Statistics")
 	PutLog("----------")
@@ -106,28 +99,28 @@ def ConvertComplete(cString):
 		PutLog("      %d Duplicate character name" % iCountDupeCharName)
 		PutLog("      %d Account owner exists already" % iCountDupeCharAcct)
 		PutLog("      %d Character SQL error" % (iCountSQLAcctErr))
-        	PutLog("      %d Corrupt character file" % iCountInvalidChar)
+		PutLog("      %d Corrupt character file" % iCountInvalidChar)
 		PutLog("      %d Orphaned characters" % iCountOrphan)
-        if (iTotalItem > 0):
-        	PutLog("")
-        	PutLog("Character/Bank Item ")
-        	PutLog("  %d/%d Items Added"% (iTotalItemSuccess, iTotalItem))
-        	if not (iTotalItemSuccess == iTotalItem):
-                        PutLog("      %d Item SQL error" % iTotalItemSQLErr)
-                        PutLog("      %d Corrupt item line" % iTotalItemCorrupt)
+	if (iTotalItem > 0):
+		PutLog("")
+		PutLog("Character/Bank Item ")
+		PutLog("  %d/%d Items Added"% (iTotalItemSuccess, iTotalItem))
+		if not (iTotalItemSuccess == iTotalItem):
+			PutLog("      %d Item SQL error" % iTotalItemSQLErr)
+			PutLog("      %d Corrupt item line" % iTotalItemCorrupt)
 	if len(aAdmin) > 0:
 		PutLog("")
-		PutLog("Admin (Account:Character)")
-                PutLog(aAdmin)
-
+		PutLog("Admin List (Account:Character)")
+		PutLog(aAdmin)
 	PutLog("")
-	PutLog("Review log file for more detailed statistics")
-	PutLog("Check Sql file for import dump")
+	PutLog("(*) For more detailed information check ConvertLog.txt")
+	PutLog("(*) SQL dump saved to %s" % (sSQLFileName))
+	PutLog("")
 	raw_input("Press ENTER to QUIT")
-
+	
 def iFileCount(dir_name, subdir, *args):
 	'''
-	desc
+	Get count of specefic files in a directory
 	'''
 	fileCount = 0
 	for file in os.listdir(dir_name):
@@ -138,24 +131,13 @@ def iFileCount(dir_name, subdir, *args):
 			else:
 				if os.path.splitext(dirfile)[1][1:] in args:
 					fileCount += 1
-		# recursively access file names in subdirectories
 		elif os.path.isdir(dirfile) and subdir:
 			fileCount += iFileCount(dirfile, subdir, *args)
 	return fileCount
 
 def dirEntries(dir_name, subdir, *args):
 	'''
-	Return a list of file names found in directory 'dir_name'
-	If 'subdir' is True, recursively access subdirectories under 'dir_name'.
-	Additional arguments, if any, are file extensions to match filenames. Matched
-		file names are added to the list.
-	If there are no additional arguments, all files found in the directory are
-		added to the list.
-	Example usage: fileList = dir_list(r'H:\TEMP', False, 'txt', 'py')
-		Only files with 'txt' and 'py' extensions will be added to the list.
-	Example usage: fileList = dir_list(r'H:\TEMP', True)
-		All files and all the files in subdirectories under H:\TEMP will be added
-		to the list.
+	Get name of specific files in a directory
 	'''
 	fileList = []
 	for file in os.listdir(dir_name):
@@ -166,15 +148,17 @@ def dirEntries(dir_name, subdir, *args):
 			else:
 				if os.path.splitext(dirfile)[1][1:] in args:
 					fileList.append(dirfile)
-		# recursively access file names in subdirectories
 		elif os.path.isdir(dirfile) and subdir:
 			fileList += dirEntries(dirfile, subdir, *args)
 	return fileList
 
 def bDoesUserContinue():
+	'''
+	Prompt user to input Y/N to continue
+	'''
 	while 1:
 		sInput = raw_input("Are you sure you want to continue? (Y/N):")
-		print
+	
 		if (sInput == "Y") or (sInput == "y"):
 			return True
 		if (sInput == "N") or (sInput == "n"):
@@ -191,7 +175,7 @@ def main():
 	PutLog("This program comes with ABSOLUTELY NO WARRANTY.")
 	PutLog("This is free software, and you are welcome to redistribute it under certain conditions.")
 	PutLog("")
-	# Check if user Account/Character directories are valid
+
 	if (cAccountDir == ""):
 		Terminate("(!) Error: Location of Account files unspecified!")
 		return False;
@@ -215,7 +199,6 @@ def main():
 		ConvertComplete("No character or account files to convert")
 		return True
 	
-	# Check if SQL connection is available
 	PutLog("(*) Connecting to MySQL database...")
 	try:
 		db = MySQLdb.connect(**MySQL_Auth)
@@ -228,7 +211,6 @@ def main():
 
 	PutLog("(*) Connection to MySQL database was successfully established!")
 
-	# Check if current SQL tables are valid and usable
 	db.query("SHOW TABLES FROM playerdb LIKE 'account_database';")
 	r = db.store_result()
 	if not r.fetch_row():
@@ -260,7 +242,6 @@ def main():
 		PutLog("Characters with both an SQL DB and ASCII file account will not be added.")
 		PutLog("The ASCII *.txt files will not be deleted and must be removed manually.")
 		PutLog("")
-		# - Add existing accounts to an array
 		while True:
 			row = r.fetch_row()
 			if row == ():
@@ -295,26 +276,6 @@ def main():
 
 				if len(token)<2:
 					continue
-
-				"""
-				-----------------------------------------------------------------------------------------
-				SQL Field	ASCII field			Formatting Changes/Notes
-				-----------------------------------------------------------------------------------------
-				name		account-name			
-				password 	account-password		encrypted to sha1
-				CreateDate	Time(2003/5/10/11/15)  		Changed to time of conversion 
-				Quiz		account-Quiz			
-				Answer		account-Answer			
-				RealName	account-RealName		
-				Gender		account-Gender			Male->M;Female->F
-				Email		account-Email			fix length
-				ValidDate	account-valid-date/time		field unused in ASCII servers (removed)
-				LoginIpAddress	IP(213.119.173.239)		removed until user logs in
-				-----------------------------------------------------------------------------------------
-				ASCII fields dropped Old:
-				account-change-password, account-Age, account-Birth-Year, account-Birth-Month, 
-				account-Birth-Day, account-SSN, account-created-by, account-change-password 
-				"""
 
 				if token[0] == "account-name":
 					sName = token[1]
@@ -361,9 +322,9 @@ def main():
 				try:
 					PutLog("(*) Account '%s' added" % sName, False)
 					db.query(sQuery)
-					PutSQL(sQuery)					
+					PutSQL(sQuery)
 					aNew_acct.append(sName)
-					iTotalAcctAdd += 1					
+					iTotalAcctAdd += 1
 				except:
 					PutLog("(!) MySQL account import error '%s'" % (sName))
 					PutLog("%s: MySQL account import error Name(%s) and Query:\n%s" % (each, sName, sQuery), False)
@@ -383,6 +344,8 @@ def main():
 	for each in aFileName:
 		bThisCharAdded = False
 		bThisCharAdmin = False
+		aPositionX = []
+		aPositionY = []
 		if not os.path.exists(each) and not os.path.isfile(each):
 			PutLog("(!) Invalid character file '%s' - file not found" % (each), False)
 			iTotalCharFail += 1
@@ -398,6 +361,9 @@ def main():
 		sLockMapName = sLockMapTime = sCruJob = sCruID = sCruConstructPoint = ""
 		inventory = []
 		bank = []
+		sEquipStatus = ""
+		aFightzone = []
+		aPenaltyBlock = []
 		try:
 			for line in fin:
 				if reg.match(line) == None:
@@ -407,89 +373,7 @@ def main():
 
 				if len(token)<2:
 					continue
-				"""
-				---------------------------------------------------------------------------------
-				SQL Field	ASCII field			Formatting Changes/Notes
-				---------------------------------------------------------------------------------
-				LastSaveDate	file-saved-date			2005 1 23 22 19 -> 0000-00-00 00:00:00 (removed)
-				account_name	account-name
-				char_name	character-name
-				Profile		character-profile 		
-				Nation		character-location
-				GuildName	character-guild-name
-				GuildID		character-guild-GUID
-				GuildRank	character-guild-rank
-				MapLoc		character-loc-map
-				LocX		character-loc-x
-				LocY		character-loc-y
-				HP		character-HP
-				MP		character-MP
-				SP		character-SP
-				Level		character-LEVEL
-				Popularity	character-RATING
-				Strength	character-STR
-				Vitality	character-VIT
-				Dexterity	character-DEX
-				Intelligence	character-INT
-				Magic		character-MAG
-				Agility		character-CHARISMA
-				Luck		character-LUCK
-				Exp		character-EXP
-				ID1		character-IDnum1
-				ID2		character-IDnum2
-				ID3		character-IDnum3
-				Gender		sex-status
-				Skin		skin-status
-				HairStyle	hairstyle-status
-				HairColor	haircolor-status
-				Underwear	underwear-status
-				Hunger		hunger-status
-				EK		character-EK-Count
-				PK		character-PK-Count
-				RewardGold	character-reward-gold
-				DownSkillID	character-downskillindex
-				LeftShutupTime	timeleft-shutup
-				ApprColor	appr-color
-				Appr1		appr1
-				Appr2		appr2
-				Appr3		appr3
-				Appr4		appr4
-				PartyID		party-id
-				MagicMastery	magic-mastery
-				LeftPopTime	timeleft-rating
-				LeftForceRecallTime	timeleft-force-recall
-				LeftFirmStaminarTime	timeleft-firm-staminar
-				LeftDeadPenaltyTime	dead-penalty-time	
-				GizonItemUpgradeLeft	gizon-item-upgade-left
-				LeftSAC		super-attack-left
-				LeftSpecTime	special-ability-time 
-				AdminLevel	admin-user-level                        make adjustment to account
-				BlockDate	penalty-block-date 			0 0 0 -> 0000-00-00 00:00:00
-				QuestNum	character-quest-number 
-				QuestID		character-quest-ID     
-				QuestCount	current-quest-count
-				QuestRewType	quest-reward-type      
-				QuestRewAmmount	quest-reward-amount
-				Questcompleted	character-quest-completed 
-				Contribution	character-contribution	
-				WarCon		character-war-contribution
-				EventID		special-event-id 
-				FightNum	reserved-fightzone-id 			changed from 0 0 0 -> 3 fields
-				FightDate		above
-				FightTicket		above	
-				LockMapName	locked-map-name	
-				LockMapTime	locked-map-time
-				CruJob			crusade-job 
-				CruID			crusade-GUID 
-				CruConstructPoint	construct-point
-				---------------------------------------------------------------------------------
-				New:		CharID, CreateDate
-				OLD:		character-LU_Pool
-				error: 		Somehow Charisma got changed to Agility
-				Rating changed to Popular
-				QuestRewAmmount	 - typo
-				---------------------------------------------------------------------------------
-				"""
+
 				if token[0] == "account-name":
 					sAccount_name = token[1]
 				if token[0] == "character-name":
@@ -595,10 +479,13 @@ def main():
 				if token[0] == "admin-user-level":
 					sAdminLevel = token[1]
 					if (sAdminLevel > 0):
-                                                bThisCharAdmin = True
+						bThisCharAdmin = True
 				if token[0] == "penalty-block-date":
-                                        # TODO: convert to compatible
-					sBlockDate = token[1]
+					aTemp = token[1].split(" ")
+					for value in aTemp:
+						if not value == "":
+							aPenaltyBlock.append(value)
+					sBlockDate = "%s-%02d-%02d 00:00:00" % (aPenaltyBlock[0], int(aPenaltyBlock[1]), int(aPenaltyBlock[2]))
 				if token[0] == "character-quest-number":
 					sQuestNum = token[1]
 				if token[0] == "character-quest-ID":
@@ -618,10 +505,13 @@ def main():
 				if token[0] == "special-event-id":
 					sEventID = token[1]
 				if token[0] == "reserved-fightzone-id":
-                                        #TODO: multiple here FightNum, FightDate, and FightTicket
-					sFightNum = token[1]
-					sFightDate = token[1]
-					sFightTicket = token[1]
+					aTemp = token[1].split(" ")
+					for value in aTemp:
+						if not value == "":
+							aFightzone.append(value)
+					sFightNum = aFightzone[0]
+					sFightDate = aFightzone[1]
+					sFightTicket = aFightzone[2]
 				if token[0] == "locked-map-name":
 					sLockMapName = token[1]
 				if token[0] == "locked-map-time":
@@ -636,7 +526,18 @@ def main():
 					inventory.append(token[1])
 				if token[0] == "bank-item":
 					bank.append(token[1])
-					
+				if token[0] == "item-equip-status":
+					sEquipStatus = token[1]
+				if token[0] == "item-position-x":
+					aTemp = token[1].split(" ")
+					for value in aTemp:
+						if not value == "":
+							aPositionX.append(value)
+				if token[0] == "item-position-y":
+					aTemp = token[1].split(" ")
+					for value in aTemp:
+						if not value == "":
+							aPositionY.append(value)
 		finally:
 			fin.close()
 
@@ -652,13 +553,12 @@ def main():
 			row = r.fetch_row()
 			if row[0][0] == 0:
 				sQuery = "INSERT INTO `playerdb`.`char_database` (`CharID`, `account_name`, `char_name`, `ID1`, `ID2`, `ID3`, `Level`, `Strength`, `Vitality`, `Dexterity`, `Intelligence`, `Magic`, `Agility`, `Luck`, `Exp`, `Gender`, `Skin`, `HairStyle`, `HairColor`, `Underwear`, `ApprColor`, `Appr1`, `Appr2`, `Appr3`, `Appr4`, `Nation`, `MapLoc`, `LocX`, `LocY`, `Profile`, `AdminLevel`, `Contribution`, `LeftSpecTime`, `LockMapName`, `LockMapTime`, `CreateDate`, `LastSaveDate`, `BlockDate`, `GuildName`, `GuildID`, `GuildRank`, `FightNum`, `FightDate`, `FightTicket`, `QuestNum`, `QuestID`, `QuestCount`, `QuestRewType`, `QuestRewAmmount`, `Questcompleted`, `EventID`, `WarCon`, `CruJob`, `CruID`, `CruConstructPoint`, `Popularity`, `HP`, `MP`, `SP`, `EK`, `PK`, `RewardGold`, `DownSkillID`, `Hunger`, `LeftSAC`, `LeftShutupTime`, `LeftPopTime`, `LeftForceRecallTime`, `LeftFirmStaminarTime`, `LeftDeadPenaltyTime`, `MagicMastery`, `PartyID`, `GizonItemUpgradeLeft`)" + \
-								 "VALUES (NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', NOW(), NOW(), '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % (sAccount_name, sChar_name, sID1, sID2, sID3, sLevel, sStr, sVit, sDex, sInt, sMag, sAgi, sLuck, sExp, sGender, sSkin, sHairStyle, sHairColor, sUnderwear, sApprColor, sAppr1, sAppr2, sAppr3, sAppr4, sNation, sMapLoc, sLocX, sLocY, sProfile, sAdminLevel, sContribution, sLeftSpecTime, sLockMapName, sLockMapTime, sBlockDate, sGuildName, sGuildID, sGuildRank, sFightNum, sFightDate, sFightTicket, sQuestNum, sQuestID,sQuestCount, sQuestRewType, sQuestRewAmmount, sQuestcompleted, sEventID, sWarCon, sCruJob, sCruID, sCruConstructPoint, sPopularity,sHP, sMP, sSP, sEK, sPK, sRewardGold, sDownSkillID, sHunger, sLeftSAC, sLeftShutupTime, sLeftPopTime, sLeftForceRecallTime, sLeftFirmStaminarTime, sLeftDeadPenaltyTime, sMagicMastery, sPartyID, sGizonItemUpgradeLeft)			
+								 "VALUES (NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', NOW(), NOW(), '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % (sAccount_name, sChar_name, sID1, sID2, sID3, sLevel, sStr, sVit, sDex, sInt, sMag, sAgi, sLuck, sExp, sGender, sSkin, sHairStyle, sHairColor, sUnderwear, sApprColor, sAppr1, sAppr2, sAppr3, sAppr4, sNation, sMapLoc, sLocX, sLocY, sProfile, sAdminLevel, sContribution, sLeftSpecTime, sLockMapName, sLockMapTime, sBlockDate, sGuildName, sGuildID, sGuildRank, sFightNum, sFightDate, sFightTicket, sQuestNum, sQuestID,sQuestCount, sQuestRewType, sQuestRewAmmount, sQuestcompleted, sEventID, sWarCon, sCruJob, sCruID, sCruConstructPoint, sPopularity,sHP, sMP, sSP, sEK, sPK, sRewardGold, sDownSkillID, sHunger, sLeftSAC, sLeftShutupTime, sLeftPopTime, sLeftForceRecallTime, sLeftFirmStaminarTime, sLeftDeadPenaltyTime, sMagicMastery, sPartyID, sGizonItemUpgradeLeft)
 				try:
 					i = aExisting_acct.index(sAccount_name)
 				except ValueError:
 					i = -1
 				if i == -1:
-                                        #check if this character file owner has been added
 					try:
 						x = aNew_acct.index(sAccount_name)
 					except ValueError:
@@ -694,17 +594,17 @@ def main():
 				iTotalCharFail += 1
 				
 		if bThisCharAdmin and bThisCharAdded:
-                        sQuery = "UPDATE `playerdb`.`account_database` SET `IsGMAccount` = '1' WHERE BINARY `account_database`.`name` = '%s' LIMIT 1 ;" % (sAccount_name)
-                        db.query(sQuery)
-                        aAdmin.append("%s:%s" % (sAccount_name, sChar_name))
+			sQuery = "UPDATE `playerdb`.`account_database` SET `IsGMAccount` = '1' WHERE BINARY `account_database`.`name` = '%s' LIMIT 1 ;" % (sAccount_name)
+			db.query(sQuery)
+			aAdmin.append("%s:%s" % (sAccount_name, sChar_name))
 
-                #TODO: add item cords and if equiped
 		if bThisCharAdded:
-                        sQuery = "SELECT CharID FROM char_database WHERE BINARY account_name='%s' AND BINARY char_name='%s' LIMIT 1;" % (sAccount_name, sChar_name)
-                        db.query(sQuery)
-                        r = db.store_result()
-                        row = r.fetch_row()
-                        iCharID = row[0][0]
+			sQuery = "SELECT CharID FROM char_database WHERE BINARY account_name='%s' AND BINARY char_name='%s' LIMIT 1;" % (sAccount_name, sChar_name)
+			db.query(sQuery)
+			r = db.store_result()
+			row = r.fetch_row()
+			iCharID = row[0][0]
+			iItemCount = 0
 			for item in inventory:
 				aCleanItem = []
 				item = item.split(" ")
@@ -714,27 +614,23 @@ def main():
 
 				if not len(aCleanItem) == 12:
 					PutLog("(!) Corrupt item entry '%s' - Character(%s)" % (item, sChar_name))
-                                        iTotalItemCorrupt += 1
-                                        iTotalItemFail += 1
+					iTotalItemCorrupt += 1
+					iTotalItemFail += 1
 
-                                        
-				#0		1	2		3	4	5	6	7	8	9	10		11
-				#ItemName	Count	ItemType	ID1	ID2	ID3	Color	Effect1	Effect2	Effect3	LifeSpan	Attribute
-				#Gold		1468	2		17504	5621	12	0	0	0	0	0		0
 				sQuery = "INSERT INTO `playerdb`.`item` (`CharID`, `ItemName`, `ItemID`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`, `ItemEquip`, `ItemPosX`, `ItemPosY`) " + \
-						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '0', '40', '30');" % (iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11])
+						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % (iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11], sEquipStatus[iItemCount], aPositionX[iItemCount], aPositionY[iItemCount])
 				try:
 					db.query(sQuery)
 					PutSQL(sQuery)
-                                        iTotalItemSuccess += 1					
-                                except:
+					iTotalItemSuccess += 1
+				except:
 					PutLog("(!) MySQL item import error '%s':%s" % (sChar_name, item))
 					PutLog("%s: MySQL item import error Char(%s) Item(%s) and Query:\n%s" % (each, sChar_name, item, sQuery), False)                                        
-                                        iTotalItemSQLErr += 1
-                                        iTotalItemFail += 1
-
+					iTotalItemSQLErr += 1
+					iTotalItemFail += 1
 				iTotalItem += 1
-				
+				iItemCount += 1
+
 			for item in bank:
 				aCleanItem = []
 				item = item.split(" ")
@@ -744,36 +640,23 @@ def main():
 
 				if not len(aCleanItem) == 12:
 					PutLog("(!) Corrupt bank item entry '%s' - Character(%s)" % (item, sChar_name))
-                                        iTotalItemCorrupt += 1
-                                        iTotalItemFail += 1
+					iTotalItemCorrupt += 1
+					iTotalItemFail += 1
 
-                                        
-				#0		1	2		3	4	5	6	7	8	9	10		11
-				#ItemName	Count	ItemType	ID1	ID2	ID3	Color	Effect1	Effect2	Effect3	LifeSpan	Attribute
-				#Gold		1468	2		17504	5621	12	0	0	0	0	0		0
-				sQuery = "INSERT INTO `playerdb`.`bank_item` (`CharID`, `ItemName`, `ItemID`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`, `ItemEquip`, `ItemPosX`, `ItemPosY`) " + \
-						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '0', '40', '30');" % (iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11])
+				sQuery = "INSERT INTO `playerdb`.`bank_item` (`CharID`, `ItemName`, `ItemID`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`) " + \
+						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % (iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11])
 				try:
 					db.query(sQuery)
 					PutSQL(sQuery)
-                                        iTotalItemSuccess += 1					
-                                except:
+					iTotalItemSuccess += 1
+				except:
 					PutLog("(!) MySQL bank item import error '%s':%s" % (sChar_name, item))
 					PutLog("%s: MySQL bank item import error Char(%s) Item(%s) and Query:\n%s" % (each, sChar_name, item, sQuery), False)                                        
-                                        iTotalItemSQLErr += 1
-                                        iTotalItemFail += 1
-
+					iTotalItemSQLErr += 1
+					iTotalItemFail += 1
 				iTotalItem += 1
-                                
 	PutLog("(*) ...Done!")
 
 	ConvertComplete("Success!")
 
-try:
-	main()
-except:
-	PutLog("")
-	PutLog("Unexpected error (version: %s)" % sVersion)
-	PutLog(sys.exc_info())
-	PutLog(traceback.print_exc())
-	raw_input("Press ENTER to QUIT")
+main()
