@@ -383,6 +383,7 @@ BOOL CMisc::bIsValidSSN(char *pStr)
 
 BOOL CMisc::bIsValidEmail(char *pStr)
 {
+	int i;
 	int len = strlen( pStr );
 	if( len < 7 ) return FALSE;
 	char cEmail[52];

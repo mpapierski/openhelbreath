@@ -165,13 +165,17 @@ bool CxImage::RotateLeft(CxImage* iDst)
 	if (AlphaIsValid()) imgDest.AlphaCreate();
 #endif
 
+#if CXIMAGE_SUPPORT_SELECTION
+	if (SelectionIsValid()) imgDest.SelectionCreate();
+#endif
+
 	long x,x2,y,dlineup;
 	
 	// Speedy rotate for BW images <Robert Abram>
 	if (head.biBitCount == 1) {
 	
 		BYTE *sbits, *dbits, *dbitsmax, bitpos, *nrow,*srcdisp;
-		div_t div_r;
+		ldiv_t div_r;
 
 		BYTE *bsrc = GetBits(), *bdest = imgDest.GetBits();
 		dbitsmax = bdest + imgDest.head.biSizeImage - 1;
@@ -180,9 +184,9 @@ bool CxImage::RotateLeft(CxImage* iDst)
 		imgDest.Clear(0);
 		for (y = 0; y < head.biHeight; y++) {
 			// Figure out the Column we are going to be copying to
-			div_r = div(y + dlineup, 8);
+			div_r = ldiv(y + dlineup, (long)8);
 			// set bit pos of src column byte				
-			bitpos = 1 << div_r.rem;
+			bitpos = (BYTE)(1 << div_r.rem);
 			srcdisp = bsrc + y * info.dwEffWidth;
 			for (x = 0; x < (long)info.dwEffWidth; x++) {
 				// Get Source Bits
@@ -208,6 +212,21 @@ bool CxImage::RotateLeft(CxImage* iDst)
 			}//for x
 		}
 #endif //CXIMAGE_SUPPORT_ALPHA
+
+#if CXIMAGE_SUPPORT_SELECTION
+		if (SelectionIsValid()) {
+			imgDest.info.rSelectionBox.left = newWidth-info.rSelectionBox.top;
+			imgDest.info.rSelectionBox.right = newWidth-info.rSelectionBox.bottom;
+			imgDest.info.rSelectionBox.bottom = info.rSelectionBox.left;
+			imgDest.info.rSelectionBox.top = info.rSelectionBox.right;
+			for (x = 0; x < newWidth; x++){
+				x2=newWidth-x-1;
+				for (y = 0; y < newHeight; y++){
+					imgDest.SelectionSet(x,y,BlindSelectionGet(y, x2));
+				}//for y
+			}//for x
+		}
+#endif //CXIMAGE_SUPPORT_SELECTION
 
 	} else {
 	//anything other than BW:
@@ -249,7 +268,7 @@ bool CxImage::RotateLeft(CxImage* iDst)
 					}//for x
 				}//if (version selection)
 #if CXIMAGE_SUPPORT_ALPHA
-				if (pAlpha) {
+				if (AlphaIsValid()) {
 					for (x = xs; x < min(newWidth, xs+RBLOCK); x++){
 						x2=newWidth-x-1;
 						for (y = ys; y < min(newHeight, ys+RBLOCK); y++){
@@ -258,6 +277,21 @@ bool CxImage::RotateLeft(CxImage* iDst)
 					}//for x
 				}//if (alpha channel)
 #endif //CXIMAGE_SUPPORT_ALPHA
+
+#if CXIMAGE_SUPPORT_SELECTION
+				if (SelectionIsValid()) {
+					imgDest.info.rSelectionBox.left = newWidth-info.rSelectionBox.top;
+					imgDest.info.rSelectionBox.right = newWidth-info.rSelectionBox.bottom;
+					imgDest.info.rSelectionBox.bottom = info.rSelectionBox.left;
+					imgDest.info.rSelectionBox.top = info.rSelectionBox.right;
+					for (x = xs; x < min(newWidth, xs+RBLOCK); x++){
+						x2=newWidth-x-1;
+						for (y = ys; y < min(newHeight, ys+RBLOCK); y++){
+							imgDest.SelectionSet(x,y,BlindSelectionGet(y, x2));
+						}//for y
+					}//for x
+				}//if (selection)
+#endif //CXIMAGE_SUPPORT_SELECTION
 			}//for ys
 		}//for xs
 	}//if
@@ -267,6 +301,7 @@ bool CxImage::RotateLeft(CxImage* iDst)
 	else Transfer(imgDest);
 	return true;
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 bool CxImage::RotateRight(CxImage* iDst)
@@ -285,12 +320,16 @@ bool CxImage::RotateRight(CxImage* iDst)
 	if (AlphaIsValid()) imgDest.AlphaCreate();
 #endif
 
+#if CXIMAGE_SUPPORT_SELECTION
+	if (SelectionIsValid()) imgDest.SelectionCreate();
+#endif
+
 	long x,y,y2;
 	// Speedy rotate for BW images <Robert Abram>
 	if (head.biBitCount == 1) {
 	
 		BYTE *sbits, *dbits, *dbitsmax, bitpos, *nrow,*srcdisp;
-		div_t div_r;
+		ldiv_t div_r;
 
 		BYTE *bsrc = GetBits(), *bdest = imgDest.GetBits();
 		dbitsmax = bdest + imgDest.head.biSizeImage - 1;
@@ -298,9 +337,9 @@ bool CxImage::RotateRight(CxImage* iDst)
 		imgDest.Clear(0);
 		for (y = 0; y < head.biHeight; y++) {
 			// Figure out the Column we are going to be copying to
-			div_r = div(y, 8);
+			div_r = ldiv(y, (long)8);
 			// set bit pos of src column byte				
-			bitpos = 128 >> div_r.rem;
+			bitpos = (BYTE)(128 >> div_r.rem);
 			srcdisp = bsrc + y * info.dwEffWidth;
 			for (x = 0; x < (long)info.dwEffWidth; x++) {
 				// Get Source Bits
@@ -317,15 +356,30 @@ bool CxImage::RotateRight(CxImage* iDst)
 		}
 
 #if CXIMAGE_SUPPORT_ALPHA
-	  if (AlphaIsValid()){
-		  for (y = 0; y < newHeight; y++){
-			  y2=newHeight-y-1;
-			  for (x = 0; x < newWidth; x++){
-				  imgDest.AlphaSet(x,y,BlindAlphaGet(y2, x));
-			  }
-		  }
-	  }
+		if (AlphaIsValid()){
+			for (y = 0; y < newHeight; y++){
+				y2=newHeight-y-1;
+				for (x = 0; x < newWidth; x++){
+					imgDest.AlphaSet(x,y,BlindAlphaGet(y2, x));
+				}
+			}
+		}
 #endif //CXIMAGE_SUPPORT_ALPHA
+
+#if CXIMAGE_SUPPORT_SELECTION
+		if (SelectionIsValid()){
+			imgDest.info.rSelectionBox.left = info.rSelectionBox.bottom;
+			imgDest.info.rSelectionBox.right = info.rSelectionBox.top;
+			imgDest.info.rSelectionBox.bottom = newHeight-info.rSelectionBox.right;
+			imgDest.info.rSelectionBox.top = newHeight-info.rSelectionBox.left;
+			for (y = 0; y < newHeight; y++){
+				y2=newHeight-y-1;
+				for (x = 0; x < newWidth; x++){
+					imgDest.SelectionSet(x,y,BlindSelectionGet(y2, x));
+				}
+			}
+		}
+#endif //CXIMAGE_SUPPORT_SELECTION
 
 	} else {
 		//anything else but BW
@@ -360,7 +414,7 @@ bool CxImage::RotateRight(CxImage* iDst)
 					}//for y
 				}//if
 #if CXIMAGE_SUPPORT_ALPHA
-				if (pAlpha){
+				if (AlphaIsValid()){
 					for (y = ys; y < min(newHeight, ys+RBLOCK); y++){
 						y2=newHeight-y-1;
 						for (x = xs; x < min(newWidth, xs+RBLOCK); x++){
@@ -369,6 +423,21 @@ bool CxImage::RotateRight(CxImage* iDst)
 					}//for y
 				}//if (has alpha)
 #endif //CXIMAGE_SUPPORT_ALPHA
+
+#if CXIMAGE_SUPPORT_SELECTION
+				if (SelectionIsValid()){
+					imgDest.info.rSelectionBox.left = info.rSelectionBox.bottom;
+					imgDest.info.rSelectionBox.right = info.rSelectionBox.top;
+					imgDest.info.rSelectionBox.bottom = newHeight-info.rSelectionBox.right;
+					imgDest.info.rSelectionBox.top = newHeight-info.rSelectionBox.left;
+					for (y = ys; y < min(newHeight, ys+RBLOCK); y++){
+						y2=newHeight-y-1;
+						for (x = xs; x < min(newWidth, xs+RBLOCK); x++){
+							imgDest.SelectionSet(x,y,BlindSelectionGet(y2, x));
+						}//for x
+					}//for y
+				}//if (has alpha)
+#endif //CXIMAGE_SUPPORT_SELECTION
 			}//for ys
 		}//for xs
 	}//if
@@ -378,7 +447,6 @@ bool CxImage::RotateRight(CxImage* iDst)
 	else Transfer(imgDest);
 	return true;
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 bool CxImage::Negative()
 {
