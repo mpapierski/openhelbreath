@@ -38,17 +38,18 @@ cCharacterDir	= "C:\\Account\\Character"      # Current ASCII Character director
 MySQL_Auth = {'host' : 'localhost', 'port': 3307, 'user': 'root', 'passwd': '', 'db': 'playerdb'}
 
 # Variables
-sVersion = "1.00"
+sVersion = "1.10"
 sSQLFileName = 'ASCII-Import-%s.sql' % time.strftime("%m-%d-%Y-%H%M%S")
 iTotalChar = iTotalCharAdd = iTotalCharFail = iCountSQLCharErr = iCountDupeCharAcct = iCountDupeCharName = iCountInvalidChar = iCountOrphan = 0
 iTotalAcct = iTotalAcctAdd = iTotalAcctFail = iCountDupeAcct = iCountInvalidAcct = iCountSQLAcctErr = 0
 iTotalItem = iTotalItemFail = iTotalItemSuccess = iTotalItemSQLErr = iTotalItemCorrupt = 0
 aAdmin = []
+db = None
 
 # Start Python Script
 def PutSQL(cQuery):
 	'''
-	Place Query String into .sql file
+		Place Query String into .sql file
 	'''
 	
 	sqlFile = open(sSQLFileName, 'a')
@@ -58,7 +59,7 @@ def PutSQL(cQuery):
 
 def PutLog(cMsg, bDisplay = True):
 	'''
-	Place string into .txt log file 
+		Place string into .txt log file 
 	'''
 	if bDisplay:
 		print cMsg
@@ -69,7 +70,7 @@ def PutLog(cMsg, bDisplay = True):
 
 def Terminate(cString):
 	'''
-	Close out the Application
+		Close out the Application
 	'''
 	PutLog("(!) Termination: %s" % cString)
 	PutLog("")
@@ -77,7 +78,7 @@ def Terminate(cString):
 
 def ConvertComplete(cString):
 	'''
-	Show statistics on successful completion of script
+		Show statistics on successful completion of script
 	'''
 	PutLog("")
 	PutLog("Finished : %s" % cString)
@@ -120,7 +121,7 @@ def ConvertComplete(cString):
 	
 def iFileCount(dir_name, subdir, *args):
 	'''
-	Get count of specefic files in a directory
+		Get count of specefic files in a directory
 	'''
 	fileCount = 0
 	for file in os.listdir(dir_name):
@@ -137,7 +138,7 @@ def iFileCount(dir_name, subdir, *args):
 
 def dirEntries(dir_name, subdir, *args):
 	'''
-	Get name of specific files in a directory
+		Get name of specific files in a directory
 	'''
 	fileList = []
 	for file in os.listdir(dir_name):
@@ -154,7 +155,7 @@ def dirEntries(dir_name, subdir, *args):
 
 def bDoesUserContinue():
 	'''
-	Prompt user to input Y/N to continue
+		Prompt user to input Y/N to continue
 	'''
 	while 1:
 		sInput = raw_input("Are you sure you want to continue? (Y/N):")
@@ -164,11 +165,21 @@ def bDoesUserContinue():
 		if (sInput == "N") or (sInput == "n"):
 			return False
 
+def __querybuilder(Query, *Args):
+	"""
+		Mapping every string Arg to escape_string. Private method.
+		Returns: valid query string
+	"""
+	global db
+	Values = tuple(map(lambda x: db.escape_string(x) if type(x) == str else x, Args))
+	return Query % Values if len(Args)>0 else Query
+
 def main():
 	global iTotalAcct, iTotalAcctFail, iTotalAcctAdd, iCountSQLAcctErr, iCountDupeAcct, iCountInvalidAcct
 	global iTotalChar, iTotalCharFail, iTotalCharAdd, iCountSQLCharErr, iCountDupeCharName, iCountDupeCharAcct, iCountInvalidChar, iCountOrphan
 	global iTotalItem, iTotalItemFail, iTotalItemSuccess, iTotalItemSQLErr, iTotalItemCorrupt
 	global aAdmin
+	global db
 
 	PutLog("OpenHelbreath ASCII-to-SQL Convertion Tool (Version: %s)" % sVersion)
 	PutLog("Copyright (C) 2009 by Hypnotoad")
@@ -312,8 +323,8 @@ def main():
 			iCountInvalidAcct += 1
 		else:
 			sQuery = "INSERT INTO `playerdb`.`account_database` (`name` ,`password` ,`AccountID` ,`LoginIpAddress` ,`IsGMAccount` ,`SignUpDate` ,`LoginDate`,`LogoutDate` ,`BlockDate` ,`RealName` ,`Gender` ,`Email`,`Quiz` ,`Answer`)"+ \
-					"VALUES ('%s', '%s', NULL , '', '0', NOW(), '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00', '%s', '%s', '%s', '%s', '%s');" % (sName, sPassword, sRealName, sGender, sEmail, sQuiz, sAnswer)
-			
+					"VALUES ('%s', '%s', NULL , '', '0', NOW(), '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00', '%s', '%s', '%s', '%s', '%s');"
+			sQuery = __querybuilder(sQuery, sName, sPassword, sRealName, sGender, sEmail, sQuiz, sAnswer)
 			try:
 				i = aExisting_acct.index(sName)
 			except ValueError:
@@ -547,13 +558,15 @@ def main():
 			iTotalCharFail += 1
 			iCountInvalidChar += 1
 		else:
-			sQuery = "SELECT COUNT(*) FROM char_database WHERE BINARY char_name='%s';" % (sChar_name)
+			sQuery = "SELECT COUNT(*) FROM char_database WHERE BINARY char_name='%s';"
+                        sQuery = __querybuilder(sQuery, sChar_name)
 			db.query(sQuery)
 			r = db.store_result()
 			row = r.fetch_row()
 			if row[0][0] == 0:
 				sQuery = "INSERT INTO `playerdb`.`char_database` (`CharID`, `account_name`, `char_name`, `ID1`, `ID2`, `ID3`, `Level`, `Strength`, `Vitality`, `Dexterity`, `Intelligence`, `Magic`, `Agility`, `Luck`, `Exp`, `Gender`, `Skin`, `HairStyle`, `HairColor`, `Underwear`, `ApprColor`, `Appr1`, `Appr2`, `Appr3`, `Appr4`, `Nation`, `MapLoc`, `LocX`, `LocY`, `Profile`, `AdminLevel`, `Contribution`, `LeftSpecTime`, `LockMapName`, `LockMapTime`, `CreateDate`, `LastSaveDate`, `BlockDate`, `GuildName`, `GuildID`, `GuildRank`, `FightNum`, `FightDate`, `FightTicket`, `QuestNum`, `QuestID`, `QuestCount`, `QuestRewType`, `QuestRewAmmount`, `Questcompleted`, `EventID`, `WarCon`, `CruJob`, `CruID`, `CruConstructPoint`, `Popularity`, `HP`, `MP`, `SP`, `EK`, `PK`, `RewardGold`, `DownSkillID`, `Hunger`, `LeftSAC`, `LeftShutupTime`, `LeftPopTime`, `LeftForceRecallTime`, `LeftFirmStaminarTime`, `LeftDeadPenaltyTime`, `MagicMastery`, `PartyID`, `GizonItemUpgradeLeft`)" + \
-								 "VALUES (NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', NOW(), NOW(), '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % (sAccount_name, sChar_name, sID1, sID2, sID3, sLevel, sStr, sVit, sDex, sInt, sMag, sAgi, sLuck, sExp, sGender, sSkin, sHairStyle, sHairColor, sUnderwear, sApprColor, sAppr1, sAppr2, sAppr3, sAppr4, sNation, sMapLoc, sLocX, sLocY, sProfile, sAdminLevel, sContribution, sLeftSpecTime, sLockMapName, sLockMapTime, sBlockDate, sGuildName, sGuildID, sGuildRank, sFightNum, sFightDate, sFightTicket, sQuestNum, sQuestID,sQuestCount, sQuestRewType, sQuestRewAmmount, sQuestcompleted, sEventID, sWarCon, sCruJob, sCruID, sCruConstructPoint, sPopularity,sHP, sMP, sSP, sEK, sPK, sRewardGold, sDownSkillID, sHunger, sLeftSAC, sLeftShutupTime, sLeftPopTime, sLeftForceRecallTime, sLeftFirmStaminarTime, sLeftDeadPenaltyTime, sMagicMastery, sPartyID, sGizonItemUpgradeLeft)
+								 "VALUES (NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', NOW(), NOW(), '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');"
+				sQuery = __querybuilder(sQuery, sAccount_name, sChar_name, sID1, sID2, sID3, sLevel, sStr, sVit, sDex, sInt, sMag, sAgi, sLuck, sExp, sGender, sSkin, sHairStyle, sHairColor, sUnderwear, sApprColor, sAppr1, sAppr2, sAppr3, sAppr4, sNation, sMapLoc, sLocX, sLocY, sProfile, sAdminLevel, sContribution, sLeftSpecTime, sLockMapName, sLockMapTime, sBlockDate, sGuildName, sGuildID, sGuildRank, sFightNum, sFightDate, sFightTicket, sQuestNum, sQuestID,sQuestCount, sQuestRewType, sQuestRewAmmount, sQuestcompleted, sEventID, sWarCon, sCruJob, sCruID, sCruConstructPoint, sPopularity,sHP, sMP, sSP, sEK, sPK, sRewardGold, sDownSkillID, sHunger, sLeftSAC, sLeftShutupTime, sLeftPopTime, sLeftForceRecallTime, sLeftFirmStaminarTime, sLeftDeadPenaltyTime, sMagicMastery, sPartyID, sGizonItemUpgradeLeft)
 				try:
 					i = aExisting_acct.index(sAccount_name)
 				except ValueError:
@@ -594,12 +607,14 @@ def main():
 				iTotalCharFail += 1
 				
 		if bThisCharAdmin and bThisCharAdded:
-			sQuery = "UPDATE `playerdb`.`account_database` SET `IsGMAccount` = '1' WHERE BINARY `account_database`.`name` = '%s' LIMIT 1 ;" % (sAccount_name)
+			sQuery = "UPDATE `playerdb`.`account_database` SET `IsGMAccount` = '1' WHERE BINARY `account_database`.`name` = '%s' LIMIT 1 ;"
+			sQuery = __querybuilder(sQuery, sAccount_name)
 			db.query(sQuery)
 			aAdmin.append("%s:%s" % (sAccount_name, sChar_name))
 
 		if bThisCharAdded:
-			sQuery = "SELECT CharID FROM char_database WHERE BINARY account_name='%s' AND BINARY char_name='%s' LIMIT 1;" % (sAccount_name, sChar_name)
+			sQuery = "SELECT CharID FROM char_database WHERE BINARY account_name='%s' AND BINARY char_name='%s' LIMIT 1;"
+			sQuery = __querybuilder(sQuery, sAccount_name, sChar_name)
 			db.query(sQuery)
 			r = db.store_result()
 			row = r.fetch_row()
@@ -618,7 +633,8 @@ def main():
 					iTotalItemFail += 1
 
 				sQuery = "INSERT INTO `playerdb`.`item` (`CharID`, `ItemName`, `ItemID`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`, `ItemEquip`, `ItemPosX`, `ItemPosY`) " + \
-						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % (iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11], sEquipStatus[iItemCount], aPositionX[iItemCount], aPositionY[iItemCount])
+						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');"
+				sQuery = __querybuilder(sQuery, iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11], sEquipStatus[iItemCount], aPositionX[iItemCount], aPositionY[iItemCount])
 				try:
 					db.query(sQuery)
 					PutSQL(sQuery)
@@ -644,7 +660,8 @@ def main():
 					iTotalItemFail += 1
 
 				sQuery = "INSERT INTO `playerdb`.`bank_item` (`CharID`, `ItemName`, `ItemID`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`) " + \
-						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');" % (iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11])
+						"VALUES ('%s', '%s', NULL, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');"
+				sQuery = __querybuilder(sQuery, iCharID, aCleanItem[0], aCleanItem[1], aCleanItem[2], aCleanItem[3], aCleanItem[4], aCleanItem[5], aCleanItem[6], aCleanItem[7], aCleanItem[8], aCleanItem[9], aCleanItem[10], aCleanItem[11])
 				try:
 					db.query(sQuery)
 					PutSQL(sQuery)

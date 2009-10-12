@@ -729,7 +729,7 @@ class CLoginServer(object):
 		if OK == Account.OK:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create account fails [ %s/%s ]. Account already exists" % (Packet.AccountName, Packet.Mail)
+			print "(*) Create account success [ %s/%s ]." % (Packet.AccountName, Packet.Mail)
 		elif OK == Account.FAIL:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
 			self.SendMsgToClient(sender, SendData)

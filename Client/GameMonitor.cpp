@@ -14,6 +14,7 @@ CGameMonitor::CGameMonitor()
 
 	for (i = 0 ; i < DEF_MAXBADWORD; i++)
 		m_pWordList[i] = NULL;
+	m_bBadWordLoaded = FALSE;
 }
 
 CGameMonitor::~CGameMonitor()
@@ -56,18 +57,24 @@ int CGameMonitor::iReadBadWordFileList(char *pFn)
 	}	
 	delete pStrTok;
 	delete[] pContents;
+	m_bBadWordLoaded = TRUE;
 	return iIndex;
 }
 
 BOOL CGameMonitor::bCheckBadWord(char *pWord)
-{int i;
+{
+ int i;
  char cBuffer[500];
+
+	if (m_bBadWordLoaded == FALSE) return FALSE;
 	ZeroMemory(cBuffer, sizeof(cBuffer));
 	strcpy(cBuffer, pWord);
 	i = 0;
 	while ((m_pWordList[i] != NULL) && (strlen(m_pWordList[i]->m_pMsg) != 0)) 
-	{	if (memcmp(cBuffer, m_pWordList[i]->m_pMsg, strlen(m_pWordList[i]->m_pMsg)) == 0) 
-		{	return TRUE;
+	{
+		if (memcmp(cBuffer, m_pWordList[i]->m_pMsg, strlen(m_pWordList[i]->m_pMsg)) == 0) 
+		{
+			return TRUE;
 		}
 		i++;
 	}

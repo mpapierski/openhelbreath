@@ -29,7 +29,7 @@ public:
 	virtual ~CGameMonitor();
 
 	class CMsg * m_pWordList[DEF_MAXBADWORD];
-	
+	BOOL m_bBadWordLoaded;
 };
 
 #endif // !defined(AFX_GAMEMONITOR_H__FF3C1F40_F134_11D3_9DC2_00A0CC5B45EE__INCLUDED_)
