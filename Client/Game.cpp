@@ -5,7 +5,7 @@
 
 #include "Game.h"
 #include "lan_eng.h"
-
+#include "SHA1.h"
 
 extern char G_cSpriteAlphaDegree;
 
@@ -1075,6 +1075,8 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
  DWORD * dwp, dwTime;
  short * sp;
  int   * ip, iRet, i, * fightzonenum ;
+ CSHA1 sha1;
+ char szReport[1024];
 
 	if ((m_pGSock == NULL) && (m_pLSock == NULL)) return FALSE;
 	dwTime = timeGetTime();
@@ -1205,22 +1207,37 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, cTxt, 10);
 		cp += 10;
 
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
 		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
-		memcpy(cTxt, m_cAccountPassword, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cNewPassword, strlen(m_cNewPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
 		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
-		memcpy(cTxt, m_cNewPassword, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cNewPassConfirm, strlen(m_cNewPassConfirm));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
 		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
-		memcpy(cTxt, m_cNewPassConfirm, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
-		iRet = m_pLSock->iSendMsg(cMsg, 46, cKey);
+		iRet = m_pLSock->iSendMsg(cMsg, 136, cKey);
 		break;
 
 	case MSGID_REQUEST_CREATENEWACCOUNT:
@@ -1237,10 +1254,15 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, cTxt, 10);
 		cp += 10;
 
-		ZeroMemory(cTxt, sizeof(cTxt));
-		memcpy(cTxt, m_cAccountPassword, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
+		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
 		memcpy(cp, m_cEmailAddr, 50);
 		cp += 50;
@@ -1276,7 +1298,7 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 
 		memcpy(cp, G_cCmdLineTokenA_Lowercase, 50);
 
-		iRet = m_pLSock->iSendMsg(cMsg, 214	+50, cKey);
+		iRet = m_pLSock->iSendMsg(cMsg, 244	+50, cKey);
 		break;
 
 	case MSGID_GETMINIMUMLOADGATEWAY:
@@ -1286,19 +1308,28 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		*dwp = dwMsgID;
 		wp  = (WORD *)(cMsg + DEF_INDEX2_MSGTYPE);
 		*wp = NULL;
+
 		cp = (char *)(cMsg + DEF_INDEX2_MSGTYPE + 2);
+
 		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
 		memcpy(cTxt, m_cAccountName, 10);
 		memcpy(cp, cTxt, 10);
 		cp += 10;
+
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
 		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
-		memcpy(cTxt, m_cAccountPassword, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
+
 		memcpy(cp, m_cWorldServerName, 30);
 		cp += 30;
-		iRet = m_pLSock->iSendMsg(cMsg, 56, cKey);
 
+		iRet = m_pLSock->iSendMsg(cMsg, 86, cKey);
 		break;
 
 	case MSGID_REQUEST_CREATENEWCHARACTER:
@@ -1316,8 +1347,15 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, m_cAccountName, 10);
 		cp += 10;
 
-		memcpy(cp, m_cAccountPassword, 10);
-		cp += 10;
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
+		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
 		memcpy(cp, m_cWorldServerName, 30);
 		cp += 30;
@@ -1355,7 +1393,7 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		*cp = m_ccChr;
 		cp++;
 
-		iRet = m_pLSock->iSendMsg(cMsg, 77, cKey);
+		iRet = m_pLSock->iSendMsg(cMsg, 107, cKey);
 		break;
 
 	case MSGID_REQUEST_ENTERGAME:
@@ -1382,10 +1420,15 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, cTxt, 10);
 		cp += 10;
 
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
 		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
-		memcpy(cTxt, m_cAccountPassword, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
 		ip = (int *)cp;
 		*ip = m_iLevel;
@@ -1397,7 +1440,7 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, G_cCmdLineTokenA, 120);
 		cp += 120;
 
-		iRet = m_pLSock->iSendMsg(cMsg, 200, cKey);
+		iRet = m_pLSock->iSendMsg(cMsg, 230, cKey);
 		break;
 
 	case MSGID_REQUEST_DELETECHARACTER:
@@ -1415,13 +1458,20 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, m_cAccountName, 10);
 		cp += 10;
 
-		memcpy(cp, m_cAccountPassword, 10);
-		cp += 10;
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
+		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
 		memcpy(cp, m_cWorldServerName, 30);
 		cp += 30;
 
-		iRet = m_pLSock->iSendMsg(cMsg, 66, cKey);
+		iRet = m_pLSock->iSendMsg(cMsg, 96, cKey);
 		break;
 
 	case MSGID_REQUEST_SETITEMPOS:
@@ -1481,10 +1531,15 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, cTxt, 10);
 		cp += 10;
 
-		ZeroMemory(cTxt, sizeof(cTxt));
-		memcpy(cTxt, m_cAccountPassword, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
+		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
 
 		*cp = (char)m_bIsObserverMode;
 		cp++;
@@ -1493,7 +1548,7 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, m_cGameServerName, 20);
 		cp += 20;
 
-		iRet = m_pGSock->iSendMsg(cMsg, 37 +21, cKey);
+		iRet = m_pGSock->iSendMsg(cMsg, 67 +21, cKey);
 
 		//m_bIsObserverMode = FALSE;
 		break;
@@ -1703,10 +1758,16 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, cTxt, 10);
 		cp += 10;
 
+		ZeroMemory(szReport, sizeof(szReport));
+		sha1.Reset();
+		sha1.Update((unsigned char *)m_cAccountPassword, strlen(m_cAccountPassword));
+		sha1.Final();
+		sha1.ReportHash(szReport, CSHA1::REPORT_HEX_SHORT);
 		ZeroMemory(cTxt, sizeof(cTxt)); // v1.4
-		memcpy(cTxt, m_cAccountPassword, 10);
-		memcpy(cp, cTxt, 10);
-		cp += 10;
+		memcpy(cTxt, szReport, 40);
+		memcpy(cp, cTxt, 40); 
+		cp += 40;
+
 		char cTemp[21];
 		ZeroMemory(cTemp, sizeof(cTemp));
 		memcpy(cTemp, m_cGuildName, 20);
@@ -1714,7 +1775,7 @@ BOOL CGame::bSendCommand(DWORD dwMsgID, WORD wCommand, char cDir, int iV1, int i
 		memcpy(cp, cTemp, 20);
 		cp += 20;
 
-		iRet = m_pGSock->iSendMsg(cMsg, 56, cKey);
+		iRet = m_pGSock->iSendMsg(cMsg, 86, cKey);
 		break;
 
 	case MSGID_REQUEST_TELEPORT:
@@ -6018,9 +6079,6 @@ void CGame::DrawEffects()
 {int i, dX, dY, iDvalue,  tX, tY, rX, rY, rX2, rY2, rX3, rY3, rX4, rY4, rX5, rY5, iErr;
  char  cTempFrame;
  DWORD dwTime = m_dwCurTime;
- short sObjectType;
- char  cName[21];
- int iStatus;
 
  	for (i = 0;	i < DEF_MAXEFFECTS; i++)
 	if ((m_pEffectList[i] != NULL) && (m_pEffectList[i]->m_cFrame >= 0))
@@ -10069,7 +10127,6 @@ BOOL CGame::DrawObject_OnDying(int indexX, int indexY, int sX, int sY, BOOL bTra
  int iWeaponColor, iShieldColor, iArmorColor, iMantleColor, iArmColor, iPantsColor, iBootsColor, iHelmColor;
  int iSkirtDraw = 0;
  char cFrame;
- int randFrame;
 
 	if (m_cDetailLevel == 0)
 	{	iWeaponColor = 0;
@@ -18576,11 +18633,12 @@ void CGame::CannotConstruct(int iCode)
 }
 
 void CGame::DisplayCommaNumber_G_cTxt(int iGold)
-{char cGold[20];
- int iStrLen;
+{
+ char cGold[20];
+
 	ZeroMemory(cGold, sizeof(cGold));
 	ZeroMemory(G_cTxt, sizeof(G_cTxt));
-	itoa(iGold, cGold, 10);
+	_itoa(iGold, cGold, 10);
 #ifdef DEF_COMMA_GOLD
 	iStrLen = strlen(cGold);
 	iStrLen--;
@@ -38188,7 +38246,7 @@ void CGame::NotifyMsg_MagicStudyFail(char * pData)
 {
  char * cp, cMagicNum, cName[31], cFailCode;
  char cTxt[120];
- int  * ip, iCost, iReqInt, iReqStr;
+ int  * ip, iCost, iReqInt;
 	cp = (char *)(pData + DEF_INDEX2_MSGTYPE + 2);
 	cFailCode = *cp;
 	cp++;

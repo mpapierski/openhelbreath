@@ -13,7 +13,7 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `account_database`;
 CREATE TABLE `account_database` (
   `name` varchar(10) character set utf8 collate utf8_bin NOT NULL default '',
-  `password` varchar(10) NOT NULL default '',
+  `password` varchar(40) NOT NULL default '',
   `AccountID` int(11) unsigned NOT NULL auto_increment,
   `RealName` varchar(30) NOT NULL default '',
   `Gender` char(1) NOT NULL default '',

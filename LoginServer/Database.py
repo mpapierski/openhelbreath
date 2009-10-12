@@ -34,7 +34,7 @@ class DatabaseDriver(object):
 			print "(!) Database tables are corrupted!"
 			return False
 
-		print "(*) Connection to MySQL database was sucessfully established!"
+		print "(*) Connection to MySQL database was successfully established!"
 
 		return True
 		

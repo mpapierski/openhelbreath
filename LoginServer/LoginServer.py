@@ -525,7 +525,7 @@ class CLoginServer(object):
 			+ Check if client is trying to log on correct WS.
 		"""
 		try:
-			format = '<h10s10s30s'
+			format = '<h10s40s30s'
 			if len(buffer) != struct.calcsize(format):
 				raise Exception
 			s = map(packet_format, struct.unpack(format, buffer))
@@ -572,7 +572,7 @@ class CLoginServer(object):
 	def ChangePassword(self, sender, buffer):
 		global packet_format
 		try:
-			format = '<h10s10s10s10s'
+			format = '<h10s40s40s40s'
 			if len(buffer) != struct.calcsize(format):
 				raise Exception
 			s = map(packet_format, struct.unpack(format, buffer))
@@ -614,7 +614,7 @@ class CLoginServer(object):
 	def CreateNewCharacter(self, sender, buffer):
 		global packet_format
 		try:
-			format = '<h10s10s10s30s11B'
+			format = '<h10s10s40s30s11B'
 			if len(buffer) != struct.calcsize(format):
 				raise Exception
 			s = map(packet_format, struct.unpack(format, buffer))
@@ -691,7 +691,7 @@ class CLoginServer(object):
 	def DeleteCharacter(self, sender, buffer):
 		global packet_format
 		try:
-			format = '<h10s10s10s30s'
+			format = '<h10s10s40s30s'
 			if len(buffer) != struct.calcsize(format):
 				raise Exception
 			s = map(packet_format, struct.unpack(format, buffer))
@@ -715,7 +715,7 @@ class CLoginServer(object):
 		global nozeros
 		global packet_format
 		try:
-			format = '<h10s10s50s10s10si2h17s28s45s20s50s'
+			format = '<h10s40s50s10s10si2h17s28s45s20s50s'
 			if len(buffer) != struct.calcsize(format):
 				raise Exception
 			s = map(packet_format, struct.unpack(format, buffer))
@@ -742,7 +742,7 @@ class CLoginServer(object):
 	def ProcessClientRequestEnterGame(self, sender, buffer):
 		try:
 			global packet_format
-			format = '<h10s10s10s10si30s120s'
+			format = '<h10s10s10s40si30s120s'
 			if len(buffer) != struct.calcsize(format):
 				print "%d/%d" % (len(buffer), struct.calcsize(format))
 				raise Exception
@@ -814,7 +814,7 @@ class CLoginServer(object):
 		print "Process request player data..."
 		try:
 			global packet_format
-			format = '<h10s10s10s15sB'
+			format = '<h10s10s40s15sB'
 			if len(buffer) != struct.calcsize(format):
 				print "(!) RequestPlayerData size mismatch!"
 				raise Exception				
@@ -845,6 +845,7 @@ class CLoginServer(object):
 			SendData += self.GetCharacterInfo(Packet.AccountName, Packet.AccountPassword, Packet.CharName)
 			print "SendMsgToGS"
 			self.SendMsgToGS(GS, SendData)
+
 	def GetCharacterInfo(self, AccountName, AccountPassword, CharName):
 		OK = self.Database.GetCharacter(AccountName, AccountPassword, CharName)
 		if OK == False:
