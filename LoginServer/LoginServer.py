@@ -830,6 +830,7 @@ class CLoginServer(object):
 				if C['ClientIP'] != "127.0.0.1" and C['ClientIP'] != Packet.Address:
 					print "IP SIE NIE ZGADZA"
 				else:
+					print C
 					print "Character is valid!"
 					Found = True
 					break
@@ -852,27 +853,7 @@ class CLoginServer(object):
 			return
 		print "GetCharacterInfo..."
 		Ch = OK['Content']
-		"""
-			x 	pad byte 	no value 	 
-			c 	char 	string of length 1 	 
-			b 	signed char 	integer 	 
-			B 	unsigned char 	integer 	 
-			? 	_Bool 	bool 	(1)
-			h 	short 	integer 	 
-			H 	unsigned short 	integer 	 
-			i 	int 	integer 	 
-			I 	unsigned int 	integer or long 	 
-			l 	long 	integer 	 
-			L 	unsigned long 	long 	 
-			q 	long long 	long 	(2)
-			Q 	unsigned long long 	long 	(2)
-			f 	float 	float 	 
-			d 	double 	float 	 
-			s 	char[] 	string 	 
-			p 	char[] 	string 	 
-			P 	void * 	long
-		"""
-		
+
 		Data = struct.pack('10s', CharName)
 		Data += struct.pack('B', int("0")) #Account Status - outdated
 		Data += struct.pack('B', int("0")) #Guild Status - outdated
@@ -897,11 +878,11 @@ class CLoginServer(object):
 		Data += struct.pack('I', Ch['Exp'])
 		Data += struct.pack('100s', Ch['MagicMastery'])
 		
-		# 158 - what goes here??? - 24 spaces here - m_cSkillMastery - each is 1 could be BYTE
-		# m_pClientList[iClientH]->m_cSkillMastery[b] = bGetOffsetValue(pData, (157+b));
-                Data += struct.pack('24s', "0")
-		# 182
-		
+		for each in OK['Skill']:
+			for key, value in each.iteritems():
+				if key == "SkillMastery":
+					Data += struct.pack('B', value)
+					
 		Data += struct.pack('10s', Ch['Nation'])
 		Data += struct.pack('I', Ch['MP'])
 		Data += struct.pack('I', Ch['SP'])
@@ -910,69 +891,98 @@ class CLoginServer(object):
 		Data += struct.pack('I', Ch['PK'])
 		Data += struct.pack('I', Ch['RewardGold'])
 		
-		# 212 - 100 spaces here? - m_iSkillSSN - each is 4 will be INT
-		# m_pClientList[iClientH]->m_iSkillSSN[b] = dwGetOffsetValue(pData, (212+(b*4)));
-		Data += struct.pack('100s', "0")
-		# 312
-		
+		for each in OK['Skill']:
+			for key, value in each.iteritems():
+				if key == "SkillSSN":
+					Data += struct.pack('I', value)
+					
+		Data += struct.pack('I', int("0")) #spacer
 		Data += struct.pack('B', Ch['Hunger'])
-		# Stopped here - 312 - 313: Hunger
-		# BELOW ISNT VERIFIED 		
 		Data += struct.pack('B', Ch['AdminLevel'])
 		Data += struct.pack('I', Ch['LeftShutupTime'])
 		Data += struct.pack('I', Ch['LeftPopTime'])
-		Data += struct.pack('I', Ch['Popularity'])
-		Data += struct.pack('h', Ch['GuildID'])
+		Data += struct.pack('I', Ch['Popularity'])		
+		Data += struct.pack('I', Ch['GuildID']) # changed to I (unsigned int) previously h (short)-
 		Data += struct.pack('b', Ch['DownSkillID'])
 		Data += struct.pack('I', Ch['CharID'])
 		Data += struct.pack('I', Ch['ID1'])
 		Data += struct.pack('I', Ch['ID2'])
 		Data += struct.pack('I', Ch['ID3'])
+		Data += struct.pack('20s', str(Ch['BlockDate']) if Ch['BlockDate'] != None else "0000-00-00 00:00:00")
+		Data += struct.pack('h', Ch['QuestNum'])
+		Data += struct.pack('h', Ch['QuestCount'])
+		Data += struct.pack('h', Ch['QuestRewType'])
+		Data += struct.pack('I', Ch['QuestRewAmmount'])
+		Data += struct.pack('I', Ch['Contribution'])
+		Data += struct.pack('I', Ch['QuestID'])
+		Data += struct.pack('B', Ch['QuestCompleted'])
+		Data += struct.pack('I', Ch['LeftForceRecallTime'])
+		Data += struct.pack('I', Ch['LeftFirmStaminarTime'])
+		Data += struct.pack('I', Ch['EventID'])
+		Data += struct.pack('h', Ch['LeftSAC'])
+		Data += struct.pack('B', Ch['FightNum'])
+		Data += struct.pack('I', Ch['FightDate'])
+		Data += struct.pack('B', Ch['FightTicket'])
+		Data += struct.pack('I', Ch['LeftSpecTime'])
+		Data += struct.pack('I', Ch['WarCon'])
+		Data += struct.pack('10s', Ch['LockMapName'])
+		Data += struct.pack('I', Ch['LockMapTime'])
+		Data += struct.pack('B', Ch['CruJob'])
+		Data += struct.pack('I', Ch['CruConstructPoint'])
+		Data += struct.pack('I', Ch['CruID'])
+		Data += struct.pack('I', Ch['LeftDeadPenaltyTime'])
+		Data += struct.pack('I', Ch['PartyID'])
+		Data += struct.pack('h', Ch['GizonItemUpgradeLeft'])
+
+		Data += struct.pack('B', len(OK['Item']))
 		
-		Data += str(Ch['BlockDate']) if Ch['BlockDate'] != None else ""
-		Data += "\0x00" * 50
-		Data = Data[:368]
-		
-		Data += struct.pack('hhhhI', Ch['QuestNum'], Ch['QuestCount'], Ch['QuestRewType'], Ch['QuestRewAmmount'], Ch['Contribution'])
-		Data += struct.pack('IB', Ch['QuestID'], Ch['QuestCompleted'])
-		Data += struct.pack('II', Ch['LeftForceRecallTime'], Ch['LeftFirmStaminarTime'])
-		Data += struct.pack('Ih', Ch['EventID'], Ch['LeftSAC'])
-		Data += struct.pack('BIB', Ch['FightNum'], Ch['FightDate'], Ch['FightTicket'])
-		Data += struct.pack('III', Ch['LeftSpecTime'], Ch['LeftSpecTime'], Ch['WarCon'])
-		Data += struct.pack('10sI', Ch['LockMapName'], Ch['LockMapTime'])
-		Data += struct.pack('BII', Ch['CruJob'], Ch['CruConstructPoint'], Ch['CruID'])
-		Data += struct.pack('III', Ch['LeftDeadPenaltyTime'], Ch['PartyID'], Ch['GizonItemUpgradeLeft'])
-		#Data += 
-		for i in range(DEF.MAXSKILLS):
-			Data += struct.pack('BBI', i, 0, 0)
-		Data += "\0x00"
-		Data += "\0x00"
-		if Ch['Profile'] == 0:
-			Ch['Profile'] = "_" * 10
+		for each in OK['Item']:
+			Data += struct.pack('20s', each['ItemName'])
+			Data += struct.pack('I', each['Count'])
+			Data += struct.pack('h', each['ItemType'])
+			Data += struct.pack('I', each['ID1'])
+			Data += struct.pack('I', each['ID2'])
+			Data += struct.pack('I', each['ID3'])
+			Data += struct.pack('B', each['Color'])
+			Data += struct.pack('h', each['Effect1'])
+			Data += struct.pack('h', each['Effect2'])
+			Data += struct.pack('h', each['Effect3'])
+			Data += struct.pack('h', each['LifeSpan'])
+			Data += struct.pack('I', each['Attribute'])
+			Data += struct.pack('b', each['ItemEquip'])
+			Data += struct.pack('h', each['ItemPosX'])
+			Data += struct.pack('h', each['ItemPosY'])
+			Data += struct.pack('I', each['ItemID'])
+
+		Data += struct.pack('B', int("0")) #spacer
+
+		Data += struct.pack('B', len(OK['Bank']))		
+		for each in OK['Bank']:
+			Data += struct.pack('20s', each['ItemName'])
+			Data += struct.pack('I', each['Count'])
+			Data += struct.pack('h', each['ItemType'])
+			Data += struct.pack('I', each['ID1'])
+			Data += struct.pack('I', each['ID2'])
+			Data += struct.pack('I', each['ID3'])
+			Data += struct.pack('B', each['Color'])
+			Data += struct.pack('h', each['Effect1'])
+			Data += struct.pack('h', each['Effect2'])
+			Data += struct.pack('h', each['Effect3'])
+			Data += struct.pack('h', each['LifeSpan'])
+			Data += struct.pack('I', each['Attribute'])
+			Data += struct.pack('I', each['ItemID'])
+
 		Data += struct.pack('10s', Ch['Profile'])
+		
 		test = open("CHARDATA.dat", "w")
 		try:
 			test.write(Data)
 		finally:
 			test.close()
 			
-		#DEF_LOGRESMSGTYPE_CONFIRM	
-		#self.SendMsgToGS(
 		print "DONE"
+		#NEXT Packet -> (!) Gate Server -> Packet MsgID: MSGID_ENTERGAMECONFIRM (0x12A01006) 82b * '\x14\x0fAdmin\x00\x00\x0
+		#		0\x00\x0086f7e437faa5a7fce15d1ddcb9eaeaea377667b8TOH\x00\x00\x00\x00\x00\x00\x00192.168.1.6\x00\x00\
+		#		x00\x00\x00\x01\x00\x00\x00'(!) Gate Server -> Packet MsgID: MSGID_SERVERSTOCKMSG (0x3AE90013) 14b *
+		#		 '\x14\x0f\x0etest\x00\x00\x00\x00\x00\x00\x00'
 		return Data
-		#self.SendClientDEF_LOGRESMSGTYPE_CONFIRM
-									
-		#SendData += "".join(map(lambda x: chr(ord(x)-48), OK['Character']['MagicMastery']))
-		
-		
-		#SendData += struct.pack('10s', OK['Character']['Loca
-		#ZeroMemory(m_pClientList[iClientH]->m_cLocation, sizeof(m_pClientList[iClientH]->m_cLocation));
-		#SafeCopy(m_pClientList[iClientH]->m_cLocation, pData+181, 10);
-		#if (memcmp(m_pClientList[iClientH]->m_cLocation+3,"hunter",6) == 0) m_pClientList[iClientH]->m_bIsPlayerCivil = TRUE;
-        #m_pClientList[iClientH]->m_iMP = dwGetOffsetValue(pData, 191);
-		#m_pClientList[iClientH]->m_iSP = dwGetOffsetValue(pData, 195);
-		#m_pClientList[iClientH]->m_iLU_Pool = bGetOffsetValue(pData, 199);
-		#m_pClientList[iClientH]->m_iEnemyKillCount = dwGetOffsetValue(pData, 200);
-		#m_pClientList[iClientH]->m_iPKCount = (int)dwGetOffsetValue(pData, 204);
-		#m_pClientList[iClientH]->m_iRewardGold = dwGetOffsetValue(pData, 208);
-		

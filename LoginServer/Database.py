@@ -295,4 +295,26 @@ class DatabaseDriver(object):
 				break
 			Character['Skill'] += [dict(zip(['SkillID', 'SkillMastery', 'SkillSSN'], row[0]))]
 
+		QueryConsult = "SELECT `ItemName`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`, `ItemEquip`, `ItemPosX`, `ItemPosY`, `ItemID` FROM `item` WHERE `CharID` = '%d' LIMIT %d"
+		if not self.ExecuteSQL(QueryConsult, Character['Content']['CharID'], DEF.MAXITEMS):
+			return False
+		r = self.db.store_result()
+		Character['Item'] = []
+		while True:
+			row = r.fetch_row()
+			if row == ():
+				break
+			Character['Item'] += [dict(zip(['ItemName', 'Count', 'ItemType', 'ID1', 'ID2', 'ID3', 'Color', 'Effect1', 'Effect2', 'Effect3', 'LifeSpan', 'Attribute', 'ItemEquip', 'ItemPosX', 'ItemPosY', 'ItemID'], row[0]))]
+
+		QueryConsult = "SELECT `ItemName`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`, `ItemID` FROM `bank_item` WHERE `CharID` = '%d' LIMIT %d"
+		if not self.ExecuteSQL(QueryConsult, Character['Content']['CharID'], DEF.MAXBANKITEMS):
+			return False
+		r = self.db.store_result()
+		Character['Bank'] = []
+		while True:
+			row = r.fetch_row()
+			if row == ():
+				break
+			Character['Bank'] += [dict(zip(['ItemName', 'Count', 'ItemType', 'ID1', 'ID2', 'ID3', 'Color', 'Effect1', 'Effect2', 'Effect3', 'LifeSpan', 'Attribute', 'ItemID'], row[0]))]
+
 		return Character
