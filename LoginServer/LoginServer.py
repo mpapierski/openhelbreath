@@ -827,10 +827,9 @@ class CLoginServer(object):
 		Found = False
 		for C in self.Clients:
 			if C['CharName'] == Packet.CharName and C['AccountName'] == Packet.AccountName and C['AccountPassword'] == Packet.AccountPassword:
-				if C['ClientIP'] != "127.0.0.1" and C['ClientIP'] != Packet.ClientIP:
+				if C['ClientIP'] != "127.0.0.1" and C['ClientIP'] != Packet.Address:
 					print "IP SIE NIE ZGADZA"
 				else:
-					print C
 					print "Character is valid!"
 					Found = True
 					break
@@ -853,10 +852,30 @@ class CLoginServer(object):
 			return
 		print "GetCharacterInfo..."
 		Ch = OK['Content']
-		Data = struct.pack('10s', CharName)
+		"""
+			x 	pad byte 	no value 	 
+			c 	char 	string of length 1 	 
+			b 	signed char 	integer 	 
+			B 	unsigned char 	integer 	 
+			? 	_Bool 	bool 	(1)
+			h 	short 	integer 	 
+			H 	unsigned short 	integer 	 
+			i 	int 	integer 	 
+			I 	unsigned int 	integer or long 	 
+			l 	long 	integer 	 
+			L 	unsigned long 	long 	 
+			q 	long long 	long 	(2)
+			Q 	unsigned long long 	long 	(2)
+			f 	float 	float 	 
+			d 	double 	float 	 
+			s 	char[] 	string 	 
+			p 	char[] 	string 	 
+			P 	void * 	long
+		"""
 		
-		Data = "\0x00" * 2
-		#Data = "\0x00" #Guild Exists?
+		Data = struct.pack('10s', CharName)
+		Data += struct.pack('B', int("0")) #Account Status - outdated
+		Data += struct.pack('B', int("0")) #Guild Status - outdated
 		Data += struct.pack('10s', Ch['MapLoc'])
 		Data += struct.pack('hh', Ch['LocX'], Ch['LocY'])
 		Data += struct.pack('B', Ch['Gender'])
@@ -864,36 +883,51 @@ class CLoginServer(object):
 		Data += struct.pack('B', Ch['HairStyle'])
 		Data += struct.pack('B', Ch['HairColor'])
 		Data += struct.pack('B', Ch['Underwear'])
-		Data += struct.pack('B', Ch['Gender'])
 		Data += struct.pack('20s', Ch['GuildName'])
-		Data += struct.pack('B', max(Ch['GuildRank'],0))
+		Data += struct.pack('b', Ch['GuildRank'])
 		Data += struct.pack('I', Ch['HP'])
-		Data += struct.pack('I', Ch['Level'])
-		
-		Data += struct.pack('6B', Ch['Strength'], #1
-											Ch['Vitality'], #1
-											Ch['Dexterity'], #1
-											Ch['Intelligence'], #1
-											Ch['Magic'], #1
-											Ch['Agility']) #1
+		Data += struct.pack('h', Ch['Level'])
+		Data += struct.pack('B', Ch['Strength'])
+		Data += struct.pack('B', Ch['Vitality'])
+		Data += struct.pack('B', Ch['Dexterity'])
+		Data += struct.pack('B', Ch['Intelligence'])
+		Data += struct.pack('B', Ch['Magic'])
+		Data += struct.pack('B', Ch['Agility'])
 		Data += struct.pack('B', Ch['Luck'])
 		Data += struct.pack('I', Ch['Exp'])
-		Data += struct.pack(Ch['MagicMastery'])
-		Data += "\0x00" * (182-len(Data)) #align ?
+		Data += struct.pack('100s', Ch['MagicMastery'])
+		
+		# 158 - what goes here??? - 24 spaces here - m_cSkillMastery - each is 1 could be BYTE
+		# m_pClientList[iClientH]->m_cSkillMastery[b] = bGetOffsetValue(pData, (157+b));
+                Data += struct.pack('24s', "0")
+		# 182
+		
 		Data += struct.pack('10s', Ch['Nation'])
-		Data += struct.pack('IIII', Ch['MP'], Ch['SP'], Ch['EK'], Ch['PK'])
+		Data += struct.pack('I', Ch['MP'])
+		Data += struct.pack('I', Ch['SP'])
+		Data += struct.pack('B', int("0")) # LU-pool - outdated
+		Data += struct.pack('I', Ch['EK'])
+		Data += struct.pack('I', Ch['PK'])
 		Data += struct.pack('I', Ch['RewardGold'])
+		
+		# 212 - 100 spaces here? - m_iSkillSSN - each is 4 will be INT
+		# m_pClientList[iClientH]->m_iSkillSSN[b] = dwGetOffsetValue(pData, (212+(b*4)));
+		Data += struct.pack('100s', "0")
+		# 312
+		
 		Data += struct.pack('B', Ch['Hunger'])
+		# Stopped here - 312 - 313: Hunger
+		# BELOW ISNT VERIFIED 		
 		Data += struct.pack('B', Ch['AdminLevel'])
 		Data += struct.pack('I', Ch['LeftShutupTime'])
 		Data += struct.pack('I', Ch['LeftPopTime'])
 		Data += struct.pack('I', Ch['Popularity'])
-		Data += struct.pack('I', Ch['GuildID'])
-		Data += struct.pack('B', max(Ch['DownSkillID'],0))
+		Data += struct.pack('h', Ch['GuildID'])
+		Data += struct.pack('b', Ch['DownSkillID'])
 		Data += struct.pack('I', Ch['CharID'])
-		Data += struct.pack('III', Ch['ID1'], Ch['ID2'], Ch['ID3'])
-		
-		
+		Data += struct.pack('I', Ch['ID1'])
+		Data += struct.pack('I', Ch['ID2'])
+		Data += struct.pack('I', Ch['ID3'])
 		
 		Data += str(Ch['BlockDate']) if Ch['BlockDate'] != None else ""
 		Data += "\0x00" * 50
