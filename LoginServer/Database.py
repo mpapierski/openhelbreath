@@ -1,4 +1,4 @@
-import MySQLdb, _mysql_exceptions, time
+import MySQLdb, _mysql_exceptions, time, random
 from GlobalDef import Account, DEF
 from threading import Semaphore, BoundedSemaphore
 
@@ -207,6 +207,23 @@ class DatabaseDriver(object):
 		if self.db.affected_rows() > 0:
 			try:
 				Char_ID = self.db.insert_id()
+				self.CreateNewItem(Char_ID, 10, 30, 300, 1, "Dagger")
+				self.CreateNewItem(Char_ID, 20, 30, 25, 1, "Map")
+				self.CreateNewItem(Char_ID, 30, 30, 1, 1, "RedPotion")
+				self.CreateNewItem(Char_ID, 40, 30, 1, 1, "RedPotion")
+				self.CreateNewItem(Char_ID, 50, 30, 1, 1, "BluePotion")
+				self.CreateNewItem(Char_ID, 60, 30, 1, 1, "GreenPotion")
+				self.CreateNewItem(Char_ID, 70, 30, 1, 1, "RecallScroll")
+				if Packet.Gender == 1:# Male
+					if random.randint(1, 16) == 16:
+						self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shoes")
+					else:
+						self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shirt(M)")
+					self.CreateNewItem(Char_ID, 50, 40, 1, 1, "KneeTrousers(M)")
+				if Packet.Gender == 2:# Female
+					self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shirt(W)")
+					self.CreateNewItem(Char_ID, 50, 40, 1, 1, "KneeTrousers(W)")
+
 				for s in range(DEF.MAXSKILLS):
 					if s in [4, 5, 7]:
 						SkillMastery = 20
@@ -416,3 +433,11 @@ class DatabaseDriver(object):
 					item.m_dwAttribute):
 				return False
 		return True
+
+	def CreateNewItem(self, CharID, PosX, PosY, LifeSpan, Count, Name):
+		if CharID == None:
+			return False
+			Query = "INSERT INTO `item` (`CharID`,`ItemName`,`Count`,`LifeSpan`,`ItemPosX`,`ItemPosY`) "+\
+		"VALUES('%d','%s','%d','%d','%d','%d')"
+		if not self.ExecuteSQL(Query, CharID, Name, Count, LifeSpan, PosX, PosY):
+			return False
