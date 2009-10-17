@@ -211,11 +211,21 @@ class CLoginServer(object):
 		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
 			GS = self.SockToGS(sender)
 			if GS != None:
-				self.ServerStockMsgHandler(GS, buffer);
-		elif MsgID == Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT:
+				self.ServerStockMsgHandler(GS, buffer)
+
+		elif MsgID == Packets.MSGID_REQUEST_SAVEPLAYERDATA:
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.SavePlayerData(buffer,GS)
+		elif MsgID in [Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT, Packets.MSGID_REQUEST_SAVEPLAYERDATA_REPLY]:
+			GS = self.SockToGS(sender)
+			if GS != None:
+				self.ProcessClientLogout(buffer, GS, True)
+		elif MsgID == Packets.MSGID_REQUEST_NOSAVELOGOUT:
+			GS = self.SockToGS(sender)
+			if GS != None:
+				self.ProcessClientLogout(buffer, GS, False)
+
 		elif MsgID == Packets.MSGID_ENTERGAMECONFIRM:
 			GS = self.SockToGS(sender)
 			if GS != None:
@@ -856,7 +866,8 @@ class CLoginServer(object):
 										'ClientIP': sender.address,
 										'ID': GS['GSID'],
 										'IsPlaying': False,
-										'Time': None}]
+										'Time': None,
+										'IsOnServerChange': False}]
 						
 					SendData = struct.pack('<Lh16sh20s', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_CONFIRM, 
 															GS['IP'], GS['Port'],
@@ -1057,7 +1068,8 @@ class CLoginServer(object):
 				ok = False
 				for i in self.Clients:
 					if i['CharName'] == Packet.PlayerName:
-						self.Clients.remove(i)
+						self.Clients[self.Clients.index(i)]['IsPlaying'] = False
+						#self.Clients.remove(i) - do not delete client here! - sloppy disconnect code in aryes loginserv
 						ok = True
 				if not ok:
 					print "(!!!) Unknown player disconnected [%s] !" % Packet.PlayerName
@@ -1238,3 +1250,43 @@ class CLoginServer(object):
 		FileHandle = open(sFileName, 'a')
 		FileHandle.write("%s - %s\n" % (time.strftime("%Y:%m:%d:%H:%M"), buffer))
 		FileHandle.close()
+
+	def ProcessClientLogout(self, buffer, GS, bSave):
+		global packet_format
+		fmt = "<h10s10s10sc"
+		s=map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
+		Packet = namedtuple('Packet', 'MsgType PlayerName AccountName AccountPassword CountLogout')._make(s)
+		buffer = buffer[struct.calcsize(fmt):]
+
+		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
+		if InUse:
+			Client = self.Clients[ID]
+			if Client['AccountPassword'] == Packet.AccountPassword and Client['AccountName'] == Packet.AccountName and Client['CharName'] == Packet.PlayerName:
+				if bSave:
+					Data = self.DecodeSavePlayerDataContents(buffer)
+					if self.Database.SavePlayerContents(Packet.PlayerName, Packet.AccountName, Packet.AccountPassword, Data):
+						print "(*) Player [ %s ] Account [ %s ] data saved properly." % (Packet.PlayerName, Packet.AccountName)
+					else:
+						print "(!) Player [ %s ] data contents not saved !" % Packet.PlayerName
+				else:
+					print "(*) Player [ %s ] Account [ %s ] logout with no save." % (Packet.PlayerName, Packet.AccountName)
+
+				if Packet.CountLogout:
+					print "(*) CountLogout flag true -> client removed"
+					self.Clients.remove(self.Clients[ID])
+				else:
+					self.Clients[ID]['IsOnServerChange'] = True
+					self.Clients[ID]['Time'] = time.localtime()
+					SendData = struct.pack('L10h', Packets.MSGID_RESPONSE_SAVEPLAYERDATA_REPLY, Packet.PlayerName)
+					self.SendMsgToGS(GS, SendData)
+			else:
+				print "(!) Server change data-error for Character[ %s ]" % Packet.PlayerName
+				print "(!) Wrong data: Character[ %s/%s ] AcctName[ %s/%s ] AcctPwd[ %s/%s ]" % (
+								Packet.PlayerName,
+								Client['CharName'],
+								Packet.AccountName,
+								Client['AccountName'],
+								Packet.AccountPassword,
+								Client['AccountPassword'])
+		else:
+			print "(!) Server change data-error for Character[ %s ] - Account not in use!" % Packet.PlayerName
