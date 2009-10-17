@@ -166,29 +166,32 @@ class CLoginServer(object):
 				
 		if MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVER:
 			self.RegisterGameServer(sender, buffer)
+			
 		elif MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVERSOCKET:
 			self.RegisterGameServerSocket(sender, buffer)
+			
 		elif MsgID == Packets.MSGID_GAMESERVERALIVE:
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.GameServerAliveHandler(GS, buffer)
 			else:
 				print "MSGID_GAMESERVERALIVE ON UNREGISTERED SOCKET. PLEASE RESTART! HACK?"
+				
 		elif MsgID == Packets.MSGID_REQUEST_PLAYERDATA:
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.ProcessRequestPlayerData(sender, buffer, GS)
+				
 		elif MsgID in [Packets.MSGID_GAMEMASTERLOG, Packets.MSGID_ITEMLOG]:
 			print buffer[2:]
+			
 		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
 			GS = self.SockToGS(sender)
-			print "(!!!!!) StockMSG %s" % repr(buffer)
 			if GS != None:
 				self.ServerStockMsgHandler(GS, buffer);
 		elif MsgID == Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT:
 			GS = self.SockToGS(sender)
 			if GS != None:
-				print "(!) Save player data..."
 				self.SavePlayerData(buffer,GS)
 		else:
 			if MsgID in Packets:
@@ -991,14 +994,6 @@ class CLoginServer(object):
 			Data += struct.pack('i', each['ItemID'])
 
 		Data += struct.pack('10s', Ch['Profile'])
-		
-		test = open("CHARDATA.dat", "w")
-		try:
-			test.write(Data)
-		finally:
-			test.close()
-			
-		print "DONE"
 		#NEXT Packet -> (!) Gate Server -> Packet MsgID: MSGID_ENTERGAMECONFIRM (0x12A01006) 82b * '\x14\x0fAdmin\x00\x00\x0
 		#		0\x00\x0086f7e437faa5a7fce15d1ddcb9eaeaea377667b8TOH\x00\x00\x00\x00\x00\x00\x00192.168.1.6\x00\x00\
 		#		x00\x00\x00\x01\x00\x00\x00'(!) Gate Server -> Packet MsgID: MSGID_SERVERSTOCKMSG (0x3AE90013) 14b *
@@ -1042,73 +1037,73 @@ class CLoginServer(object):
 		buffer = buffer[struct.calcsize(fmt)+1:]
 		Data = self.DecodeSavePlayerDataContents(buffer)
 		if self.Database.SavePlayerContents(Header.CharName, Header.AccountName, Header.AccountPassword, Data):
-			print "(!) Player [ %s ] data contents saved !"
+			print "(!) Player [ %s ] data contents saved !" % Header.CharName
 		else:
-			print "(!!!) Player [ %s ] data contents not saved !"
+			print "(!!!) Player [ %s ] data contents not saved !" % Header.CharName
 
 	def DecodeSavePlayerDataContents(self, buffer):
-		global packet_format
-		Values = "wYear wMonth wDay wHour wMinute wSecond m_cLocation m_cMapName " + \
-					"m_sX m_sY m_cGuildName m_iGuildGuid m_cGuildRank " + \
-					"m_iHP m_iMP m_iSP m_iLevel m_iRating m_iStr m_iVit " + \
-					"m_iDex m_iInt m_iMag m_iAgi m_iLuck m_iExp m_iEnemyKillCount " + \
-					"m_iPKCount m_iRewardGold m_iDownSkillIndex m_sCharIDnum1 " + \
-					"m_sCharIDnum2 m_sCharIDnum3 m_cSex m_cSkin m_cHairStyle m_cHairColor " + \
-					"m_cUnderwear m_iHungerStatus m_iTimeLeft_ShutUp m_iTimeLeft_Rating " + \
-					"m_iTimeLeft_ForceRecall m_iTimeLeft_FirmStaminar m_iAdminUserLevel m_iBlockDate " + \
-					"m_iQuest m_iQuestID m_iCurQuestCount m_iQuestRewardType m_iQuestRewardAmount " + \
-					"m_iContribution m_iWarContribution m_bIsQuestCompleted m_iSpecialEventID " + \
-					"m_iSuperAttackLeft m_iFightzoneNumber m_iReserveTime m_iFightZoneTicketNumber " + \
-					"m_iSpecialAbilityTime m_cLockedMapName m_iLockedMapTime " + \
-					"m_iCrusadeDuty m_dwCrusadeGUID m_iConstructionPoint m_iDeadPenaltyTime " + \
-					"m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2 " + \
-					"m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor MagicMastery"
-		Values = Values.split(" ")
-		format = "<hBBBBB10s10shh" # Y M D H M S LOC MAPNAME SX SY
-		format += "20shhiii" #guildname guildrank guildguid hp mp sp
-		format += "hiBBBBBB" #ilevel irating [stats * 6]
-		format += "Biiiib" # m_iLuck m_iExp m_iEnemyKillCount m_iPKCount m_iRewardGold m_iDownSkillIndex
-		format += "iii" #id1 id2 id3
-		format += "BBBBBB" # sex skin hairstyl haircol underwear hunger
-		format += "iiii" # shutup leftrating forcerecall firmstaminar
-		format += "B20s" #adminlevel blockdate
-		format += "hhhhi" #quests
-		format += "iiBi" # m_iContribution m_iWarContribution m_bIsQuestCompleted m_iSpecialEventID 
-		format += "hBiB" # m_iSuperAttackLeft m_iFightzoneNumber m_iReserveTime m_iFightZoneTicketNumber
-		format += "i10si" #m_iSpecialAbilityTime m_cLockedMapName m_iLockedMapTime
-		format += "Bii" #DUTY m_iCrusadeGUID m_iConstructionPoint
-		format += "iih" #m_iDeadPenaltyTime m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2
-		format += "iiiiii"  #m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor
-		format += "100s" #Mastry
+			global packet_format
+			Values = "wYear wMonth wDay wHour wMinute wSecond m_cLocation m_cMapName " + \
+									"m_sX m_sY m_cGuildName m_iGuildGuid m_cGuildRank " + \
+									"m_iHP m_iMP m_iSP m_iLevel m_iRating m_iStr m_iVit " + \
+									"m_iDex m_iInt m_iMag m_iAgi m_iLuck m_iExp m_iEnemyKillCount " + \
+									"m_iPKCount m_iRewardGold m_iDownSkillIndex m_sCharIDnum1 " + \
+									"m_sCharIDnum2 m_sCharIDnum3 m_cSex m_cSkin m_cHairStyle m_cHairColor " + \
+									"m_cUnderwear m_iHungerStatus m_iTimeLeft_ShutUp m_iTimeLeft_Rating " + \
+									"m_iTimeLeft_ForceRecall m_iTimeLeft_FirmStaminar m_iAdminUserLevel m_iBlockDate " + \
+									"m_iQuest m_iQuestID m_iCurQuestCount m_iQuestRewardType m_iQuestRewardAmount " + \
+									"m_iContribution m_iWarContribution m_bIsQuestCompleted m_iSpecialEventID " + \
+									"m_iSuperAttackLeft m_iFightzoneNumber m_iReserveTime m_iFightZoneTicketNumber " + \
+									"m_iSpecialAbilityTime m_cLockedMapName m_iLockedMapTime " + \
+									"m_iCrusadeDuty m_dwCrusadeGUID m_iConstructionPoint m_iDeadPenaltyTime " + \
+									"m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2 " + \
+									"m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor MagicMastery"
+			Values = Values.split(" ")
+			format = "<hBBBBB10s10shh" # Y M D H M S LOC MAPNAME SX SY
+			format += "20shhiii" #guildname guildrank guildguid hp mp sp
+			format += "hiBBBBBB" #ilevel irating [stats * 6]
+			format += "Biiiib" # m_iLuck m_iExp m_iEnemyKillCount m_iPKCount m_iRewardGold m_iDownSkillIndex
+			format += "iii" #id1 id2 id3
+			format += "BBBBBB" # sex skin hairstyl haircol underwear hunger
+			format += "iiii" # shutup leftrating forcerecall firmstaminar
+			format += "B20s" #adminlevel blockdate
+			format += "hhhhi" #quests
+			format += "iiBi" # m_iContribution m_iWarContribution m_bIsQuestCompleted m_iSpecialEventID
+			format += "hBiB" # m_iSuperAttackLeft m_iFightzoneNumber m_iReserveTime m_iFightZoneTicketNumber
+			format += "i10si" #m_iSpecialAbilityTime m_cLockedMapName m_iLockedMapTime
+			format += "Bii" #DUTY m_iCrusadeGUID m_iConstructionPoint
+			format += "iih" #m_iDeadPenaltyTime m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2
+			format += "iiiiii"  #m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor
+			format += "100s" #Mastry
 
-		SkillsFormat = "24B24I"
-		ContentSize = struct.calcsize(format)
-		SkillsSize = struct.calcsize(SkillsFormat)
+			SkillsFormat = "24B24I"
+			ContentSize = struct.calcsize(format)
+			SkillsSize = struct.calcsize(SkillsFormat)
 
-		p = map(packet_format, struct.unpack(format, buffer[:ContentSize]))#Decode player contents + add profile
-		Content = namedtuple('pp', " ".join(Values))._make(p) #make named structure
-		Skills = struct.unpack(SkillsFormat,buffer[ContentSize:ContentSize + SkillsSize]) #skills [24*Skill%, 24*SkillSSN]
-		Index = ContentSize + SkillsSize + 4
-		NItems = ord(buffer[Index])
-		Items = []
-		if NItems > 0:
-			for I in range(NItems):
-				IndexForItem = (471 + (I*60))
-				fmt = "<20sihiiiBhhhhiBhhI"
-				Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + struct.calcsize(fmt)]))
-				Item = namedtuple('Item', "m_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute m_bIsItemEquipped X Y ItemUniqueID")._make(Item)
-				Items += [Item]
-				
-		Index = 471+(NItems*60)
-		NBankItems = ord(buffer[Index])
-		BankItems = []
-		if NBankItems > 0:
-			for I in range(NBankItems):
-				IndexForItem = (Index+1+(I*55))
-				fmt = "<20sihiiibhhhhii"
-				Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + 55]))
-				Item = namedtuple('Item', 'm_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute ItemUniqueID')._make(Item)
-				BankItems += [Item]
-				
-		Index += (NBankItems*55)+1
-		return {'Player': Content, 'Items': Items, 'BankItems': BankItems, 'Skills': Skills, 'Profile': buffer[Index:]}
+			p = map(packet_format, struct.unpack(format, buffer[:ContentSize]))#Decode player contents + add profile
+			Content = namedtuple('pp', " ".join(Values))._make(p) #make named structure
+			Skills = struct.unpack(SkillsFormat,buffer[ContentSize:ContentSize + SkillsSize]) #skills [24*Skill%, 24*SkillSSN]
+			Index = ContentSize + SkillsSize + 4
+			NItems = ord(buffer[Index])
+			Items = []
+			if NItems > 0:
+					for I in range(NItems):
+							IndexForItem = (471 + (I*60))
+							fmt = "<20sihiiiBhhhhiBhhI"
+							Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + struct.calcsize(fmt)]))
+							Item = namedtuple('Item', "m_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute m_bIsItemEquipped X Y ItemUniqueID")._make(Item)
+							Items += [Item]
+						   
+			Index = 471+(NItems*60)
+			NBankItems = ord(buffer[Index])
+			BankItems = []
+			if NBankItems > 0:
+					for I in range(NBankItems):
+							IndexForItem = (Index+1+(I*55))
+							fmt = "<20sihiiibhhhhii"
+							Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + 55]))
+							Item = namedtuple('Item', 'm_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute ItemUniqueID')._make(Item)
+							BankItems += [Item]
+						   
+			Index += (NBankItems*55)+1
+			return {'Player': Content, 'Items': Items, 'BankItems': BankItems, 'Skills': Skills, 'Profile': buffer[Index:]}

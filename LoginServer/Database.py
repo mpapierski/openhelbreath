@@ -223,7 +223,7 @@ class DatabaseDriver(object):
 				if Packet.Gender == 2:# Female
 					self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shirt(W)")
 					self.CreateNewItem(Char_ID, 50, 40, 1, 1, "KneeTrousers(W)")
-
+				print "Itemki"
 				for s in range(DEF.MAXSKILLS):
 					if s in [4, 5, 7]:
 						SkillMastery = 20
@@ -437,7 +437,7 @@ class DatabaseDriver(object):
 	def CreateNewItem(self, CharID, PosX, PosY, LifeSpan, Count, Name):
 		if CharID == None:
 			return False
-			Query = "INSERT INTO `item` (`CharID`,`ItemName`,`Count`,`LifeSpan`,`ItemPosX`,`ItemPosY`) "+\
+		Query = "INSERT INTO `item` (`CharID`,`ItemName`,`Count`,`LifeSpan`,`ItemPosX`,`ItemPosY`) "+\
 		"VALUES('%d','%s','%d','%d','%d','%d')"
 		if not self.ExecuteSQL(Query, CharID, Name, Count, LifeSpan, PosX, PosY):
 			return False

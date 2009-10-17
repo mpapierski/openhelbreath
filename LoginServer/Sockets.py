@@ -107,7 +107,7 @@ class ClientSocket(Thread):
 		Thread.__init__(self)
 		self.client = client
 		self.address = address[0]
-		self.size = 1024
+		self.size = 1024*32
 		self.buffer = ""
 		self.parent = parent
 		#self.callbacks = copy.deepcopy(self.parent.callbacks)
