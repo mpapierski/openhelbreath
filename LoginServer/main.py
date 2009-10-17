@@ -46,13 +46,11 @@ def main():
 	if not Server.InitServer():
 		del Server
 		return False
+		
 	while True:
 		q = raw_input(">>> ")
-		if q == "quit":
-			break
-		if q == "test":
-			for i in range(10):
-				print i
+		if q != "":
+			Server.CommandHandler(q)
 	
 if __name__ == '__main__':
 	main()

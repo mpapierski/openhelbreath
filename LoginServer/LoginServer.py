@@ -72,6 +72,33 @@ class CLoginServer(object):
 		self.WorldServerName = "WS1"
 		self.Clients = []
 		
+	def CommandHandler(self, command):
+		tok = command.split(" ")
+		if len(tok)==0:
+			return
+		if tok[0].lower() == "list" and len(tok) == 2:
+			if tok[1].lower() == "gameservers":
+				print "Game server list:"
+				for id in self.GameServer:
+					print " - GSID: %d Name: %s Maps: %d Registered: %s SLSock: %d/%d" % (
+								id,
+								self.GameServer[id].Data['ServerName'],
+								len(self.GameServer[id].MapName),
+								["False","True"][self.GameServer[id].IsRegistered],
+								len(self.GameServer[id].GameServerSocket),
+								DEF.MAXSOCKETSPERSERVER)
+					for s in self.GameServer[id].MapName:
+						print "    * %s" % s
+					print
+					print self.GameServer[id].Data
+				return
+			elif tok[1].lower() == "clients":
+				print "Client list:"
+				for i in self.Clients:
+					print i
+				return
+		print "(***) Unknown command: %s" % tok[0].upper()
+		
 	def DoInitialSetup(self):
 		"""
 			Loading main configuration, and initializing Database Driver
@@ -193,6 +220,13 @@ class CLoginServer(object):
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.SavePlayerData(buffer,GS)
+		elif MsgID == Packets.MSGID_ENTERGAMECONFIRM:
+			GS = self.SockToGS(sender)
+			if GS != None:
+				self.EnterGameConfirm(buffer, GS)
+			else:
+				print "Unknown game server sends MSGID_ENTERGAMECONFIRM."
+
 		else:
 			if MsgID in Packets:
 				print "(!) Gate Server -> Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
@@ -246,7 +280,7 @@ class CLoginServer(object):
 		"""
 			Reading HG cfgs in order
 		"""
-		Files = ["Item.cfg", "Item2.cfg", "Item3.cfg", "BuildItem.cfg",
+		Files = ["Item.cfg", "Item2.cfg", "Item3.cfg", "Item4.cfg", "BuildItem.cfg",
 				"DupItemID.cfg", "Magic.cfg", "noticement.txt", 
 				"NPC.cfg", "Potion.cfg", "Quest.cfg", "Skill.cfg",
 				"AdminSettings.cfg", "Settings.cfg"]
@@ -407,6 +441,7 @@ class CLoginServer(object):
 					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item'),
 					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item2'),
 					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item3'),
+					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item4'),
 					(Packets.MSGID_BUILDITEMCONFIGURATIONCONTENTS, 'BuildItem'),
 					(Packets.MSGID_DUPITEMIDFILECONTENTS, 'DupItemID'),
 					(Packets.MSGID_MAGICCONFIGURATIONCONTENTS, 'Magic'),
@@ -806,7 +841,9 @@ class CLoginServer(object):
 										'CharName': Packet.PlayerName,
 										'Level': Packet.Level,
 										'ClientIP': sender.address,
-										'ID': GS['GSID']}]
+										'ID': GS['GSID'],
+										'IsPlaying': False,
+										'Time': None}]
 						
 					SendData = struct.pack('<Lh16sh20s', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_CONFIRM, 
 															GS['IP'], GS['Port'],
@@ -831,7 +868,6 @@ class CLoginServer(object):
 		return False
 
 	def ProcessRequestPlayerData(self, sender, buffer, GS):
-		print "Process request player data..."
 		try:
 			global packet_format
 			format = '<h10s10s10s15sB'
@@ -858,10 +894,8 @@ class CLoginServer(object):
 			SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
 			self.SendMsgToGS(GS, SendData)
 		else:
-			print "GetCharacterInfo"
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_CONFIRM)
 			SendData += self.GetCharacterInfo(Packet.AccountName, Packet.AccountPassword, Packet.CharName)
-			print "SendMsgToGS"
 			self.SendMsgToGS(GS, SendData)
 
 	def GetCharacterInfo(self, AccountName, AccountPassword, CharName):
@@ -871,138 +905,135 @@ class CLoginServer(object):
 			return
 		print "GetCharacterInfo..."
 		Ch = OK['Content']
-
-		Data = struct.pack('10s', CharName)
-		Data += struct.pack('B', int("0")) #Account Status - outdated
-		Data += struct.pack('B', int("0")) #Guild Status - outdated
-		Data += struct.pack('10s', Ch['MapLoc'])
-		Data += struct.pack('hh', Ch['LocX'], Ch['LocY'])
-		Data += struct.pack('B', Ch['Gender'])
-		Data += struct.pack('B', Ch['Skin'])
-		Data += struct.pack('B', Ch['HairStyle'])
-		Data += struct.pack('B', Ch['HairColor'])
-		Data += struct.pack('B', Ch['Underwear'])
-		Data += struct.pack('20s', Ch['GuildName'])
-		#Data += struct.pack('b', Ch['GuildRank'])
-		Data += chr(Ch['GuildRank'] & 255)
-		Data += struct.pack('i', Ch['HP'])
-		Data += struct.pack('h', Ch['Level'])
-		Data += struct.pack('B', Ch['Strength'])
-		Data += struct.pack('B', Ch['Vitality'])
-		Data += struct.pack('B', Ch['Dexterity'])
-		Data += struct.pack('B', Ch['Intelligence'])
-		Data += struct.pack('B', Ch['Magic'])
-		Data += struct.pack('B', Ch['Agility'])
-		Data += struct.pack('B', Ch['Luck'])
-		Data += struct.pack('i', Ch['Exp'])
-		Data += struct.pack('100s', Ch['MagicMastery'])
+		
+		Data = struct.pack('<10s2B10s2h5B20sBih7Bi100s',
+									CharName,
+									0, #Account Status - outdated
+									0, #Guild Status - outdated
+									Ch['MapLoc'],
+									Ch['LocX'], Ch['LocY'],
+									Ch['Gender'],
+									Ch['Skin'],
+									Ch['HairStyle'],
+									Ch['HairColor'],
+									Ch['Underwear'],
+									Ch['GuildName'],
+									Ch['GuildRank'] & 255,
+									Ch['HP'],
+									Ch['Level'],
+									Ch['Strength'],
+									Ch['Vitality'],
+									Ch['Dexterity'],
+									Ch['Intelligence'],
+									Ch['Magic'],
+									Ch['Agility'],
+									Ch['Luck'],
+									Ch['Exp'],
+									Ch['MagicMastery'])
 		
 		for each in OK['Skill']:
 			for key, value in each.iteritems():
 				if key == "SkillMastery":
 					Data += struct.pack('B', value)
 					
-		Data += struct.pack('10s', Ch['Nation'])
-		Data += struct.pack('i', Ch['MP'])
-		Data += struct.pack('i', Ch['SP'])
-		Data += struct.pack('B', int("0")) # LU-pool - outdated
-		Data += struct.pack('i', Ch['EK'])
-		Data += struct.pack('i', Ch['PK'])
-		Data += struct.pack('i', Ch['RewardGold'])
+		Data += struct.pack('<10s2iB3i', 
+									Ch['Nation'],
+									Ch['MP'],
+									Ch['SP'],
+									0, # LU-pool - outdated
+									Ch['EK'],
+									Ch['PK'],
+									Ch['RewardGold'])
 		
 		for each in OK['Skill']:
 			for key, value in each.iteritems():
 				if key == "SkillSSN":
 					Data += struct.pack('i', value)
-					
-		Data += struct.pack('i', int("0")) #spacer
-		Data += struct.pack('B', Ch['Hunger'])
-		Data += struct.pack('B', Ch['AdminLevel'])
-		Data += struct.pack('i', Ch['LeftShutupTime'])
-		Data += struct.pack('i', Ch['LeftPopTime'])
-		Data += struct.pack('i', Ch['Popularity'])		
-		Data += struct.pack('i', Ch['GuildID']) # changed to I (unsigned int) previously h (short)-
-		#Data += struct.pack('b', Ch['DownSkillID'])
-		Data += chr(Ch['DownSkillID'] & 255)
-		Data += struct.pack('i', Ch['CharID'])
-		Data += struct.pack('i', Ch['ID1'])
-		Data += struct.pack('i', Ch['ID2'])
-		Data += struct.pack('i', Ch['ID3'])
-		Data += struct.pack('20s', str(Ch['BlockDate']) if Ch['BlockDate'] != None else "0000-00-00 00:00:00")
-		Data += struct.pack('h', Ch['QuestNum'])
-		Data += struct.pack('h', Ch['QuestCount'])
-		Data += struct.pack('h', Ch['QuestRewType'])
-		Data += struct.pack('i', Ch['QuestRewAmmount'])
-		Data += struct.pack('i', Ch['Contribution'])
-		Data += struct.pack('i', Ch['QuestID'])
-		Data += struct.pack('B', Ch['QuestCompleted'])
-		Data += struct.pack('i', Ch['LeftForceRecallTime'])
-		Data += struct.pack('i', Ch['LeftFirmStaminarTime'])
-		Data += struct.pack('i', Ch['EventID'])
-		Data += struct.pack('h', Ch['LeftSAC'])
-		Data += struct.pack('B', Ch['FightNum'])
-		Data += struct.pack('i', Ch['FightDate'])
-		Data += struct.pack('B', Ch['FightTicket'])
-		Data += struct.pack('i', Ch['LeftSpecTime'])
-		Data += struct.pack('i', Ch['WarCon'])
-		Data += struct.pack('10s', Ch['LockMapName'])
-		Data += struct.pack('i', Ch['LockMapTime'])
-		Data += struct.pack('B', Ch['CruJob'])
-		Data += struct.pack('i', Ch['CruConstructPoint'])
-		Data += struct.pack('i', Ch['CruID'])
-		Data += struct.pack('i', Ch['LeftDeadPenaltyTime'])
-		Data += struct.pack('i', Ch['PartyID'])
-		Data += struct.pack('h', Ch['GizonItemUpgradeLeft'])
-
-		Data += struct.pack('B', len(OK['Item']))
+		
+		Data += struct.pack('<4x2B4iB4i20s3h3iB3ihBiB2i10siB4ihB', #4x = 4 byte padding
+									Ch['Hunger'],
+									Ch['AdminLevel'],
+									Ch['LeftShutupTime'],
+									Ch['LeftPopTime'],
+									Ch['Popularity'],
+									Ch['GuildID'], # changed to I (unsigned int) previously h (short)-
+									Ch['DownSkillID'] & 255,
+									Ch['CharID'],
+									Ch['ID1'],
+									Ch['ID2'],
+									Ch['ID3'],
+									str(Ch['BlockDate']) if Ch['BlockDate'] != None else "0000-00-00 00:00:00",
+									Ch['QuestNum'],
+									Ch['QuestCount'],
+									Ch['QuestRewType'],
+									Ch['QuestRewAmmount'],
+									Ch['Contribution'],
+									Ch['QuestID'],
+									Ch['QuestCompleted'],
+									Ch['LeftForceRecallTime'],
+									Ch['LeftFirmStaminarTime'],
+									Ch['EventID'],
+									Ch['LeftSAC'],
+									Ch['FightNum'],
+									Ch['FightDate'],
+									Ch['FightTicket'],
+									Ch['LeftSpecTime'],
+									Ch['WarCon'],
+									Ch['LockMapName'],
+									Ch['LockMapTime'],
+									Ch['CruJob'],
+									Ch['CruConstructPoint'],
+									Ch['CruID'],
+									Ch['LeftDeadPenaltyTime'],
+									Ch['PartyID'],
+									Ch['GizonItemUpgradeLeft'],
+									len(OK['Item']))
 		
 		for each in OK['Item']:
-			Data += struct.pack('20s', each['ItemName'])
-			Data += struct.pack('i', each['Count'])
-			Data += struct.pack('h', each['ItemType'])
-			Data += struct.pack('i', each['ID1'])
-			Data += struct.pack('i', each['ID2'])
-			Data += struct.pack('i', each['ID3'])
-			Data += struct.pack('B', each['Color'])
-			Data += struct.pack('h', each['Effect1'])
-			Data += struct.pack('h', each['Effect2'])
-			Data += struct.pack('h', each['Effect3'])
-			Data += struct.pack('h', each['LifeSpan'])
-			Data += struct.pack('i', each['Attribute'])
-			#Data += struct.pack('b', each['ItemEquip'])
-			Data += chr(each['ItemEquip'] & 255)
-			Data += struct.pack('h', each['ItemPosX'])
-			Data += struct.pack('h', each['ItemPosY'])
-			Data += struct.pack('i', each['ItemID'])
-
-		Data += struct.pack('B', int("0")) #spacer
-
-		Data += struct.pack('B', len(OK['Bank']))		
+			Data += struct.pack('<20sih3iB4hiB2hi',
+									each['ItemName'],
+									each['Count'],
+									each['ItemType'],
+									each['ID1'],
+									each['ID2'],
+									each['ID3'],
+									each['Color'],
+									each['Effect1'],
+									each['Effect2'],
+									each['Effect3'],
+									each['LifeSpan'],
+									each['Attribute'],
+									each['ItemEquip'],
+									each['ItemPosX'],
+									each['ItemPosY'],
+									each['ItemID'])
+									
+		Data += struct.pack('<xB', len(OK['Bank'])) #Padding (1 byte), Bank items count
 		for each in OK['Bank']:
-			Data += struct.pack('20s', each['ItemName'])
-			Data += struct.pack('i', each['Count'])
-			Data += struct.pack('h', each['ItemType'])
-			Data += struct.pack('i', each['ID1'])
-			Data += struct.pack('i', each['ID2'])
-			Data += struct.pack('i', each['ID3'])
-			Data += struct.pack('B', each['Color'])
-			Data += struct.pack('h', each['Effect1'])
-			Data += struct.pack('h', each['Effect2'])
-			Data += struct.pack('h', each['Effect3'])
-			Data += struct.pack('h', each['LifeSpan'])
-			Data += struct.pack('i', each['Attribute'])
-			Data += struct.pack('i', each['ItemID'])
+			Data += struct.pack('<20sih3iB4h2i', 
+									each['ItemName'],
+									each['Count'],
+									each['ItemType'],
+									each['ID1'],
+									each['ID2'],
+									each['ID3'],
+									each['Color'],
+									each['Effect1'],
+									each['Effect2'],
+									each['Effect3'],
+									each['LifeSpan'],
+									each['Attribute'],
+									each['ItemID'])
 
-		Data += struct.pack('10s', Ch['Profile'])
-		#NEXT Packet -> (!) Gate Server -> Packet MsgID: MSGID_ENTERGAMECONFIRM (0x12A01006) 82b * '\x14\x0fAdmin\x00\x00\x0
-		#		0\x00\x0086f7e437faa5a7fce15d1ddcb9eaeaea377667b8TOH\x00\x00\x00\x00\x00\x00\x00192.168.1.6\x00\x00\
-		#		x00\x00\x00\x01\x00\x00\x00'(!) Gate Server -> Packet MsgID: MSGID_SERVERSTOCKMSG (0x3AE90013) 14b *
-		#		 '\x14\x0f\x0etest\x00\x00\x00\x00\x00\x00\x00'
+		Data += struct.pack('<10s', Ch['Profile'])
 		return Data
+		
 	def ServerStockMsgHandler(self, GS, buffer):
+		"""
+			Write rest of GSM's (only GSM_DISCONNECT now)
+		"""
 		buffer = buffer[2:]
 		global packet_format
-		print "(*****) SERVERSTOCKMSGHANDLER : %s" % repr(buffer)
 		while len(buffer)>0:
 			ID = ord(buffer[0])
 			buffer = buffer[1:]
@@ -1010,7 +1041,16 @@ class CLoginServer(object):
 				s=map(packet_format, struct.unpack('<10s', buffer[:10]))
 				buffer=buffer[10:]
 				Packet = namedtuple('Packet', 'PlayerName')._make(s)
-				print "(***) GSM_DISCONNECT -> %s" % Packet.PlayerName
+				ok = False
+				for i in self.Clients:
+					if i['CharName'] == Packet.PlayerName:
+						self.Clients.remove(i)
+						ok = True
+				if not ok:
+					print "(!!!) Unknown player disconnected [%s] !" % Packet.PlayerName
+				else:
+					print "(!!!) Character[%s] disconnected from game server [ %s ]." % (Packet.PlayerName, GS.Data['ServerName'])
+					
 			elif ID == Packets.GSM_REQUEST_FINDCHARACTER:
 				SendBuffer = buffer[:25]
 				buffer = buffer[25:]
@@ -1022,12 +1062,10 @@ class CLoginServer(object):
 					if i == InternalID:
 						self.SendMsgToGS(self.GameServer[i], SendData)
 						ok = True
-						
 				if not ok:
 					print "NOT OK."
-				
-			else:
-				print "%04X" % ID
+#			else:
+#				print "%04X" % ID
 
 	def SavePlayerData(self, buffer, GS):
 		global packet_format
@@ -1042,68 +1080,117 @@ class CLoginServer(object):
 			print "(!!!) Player [ %s ] data contents not saved !" % Header.CharName
 
 	def DecodeSavePlayerDataContents(self, buffer):
+		global packet_format
+		Values = "wYear wMonth wDay wHour wMinute wSecond m_cLocation m_cMapName " + \
+								"m_sX m_sY m_cGuildName m_iGuildGuid m_cGuildRank " + \
+								"m_iHP m_iMP m_iSP m_iLevel m_iRating m_iStr m_iVit " + \
+								"m_iDex m_iInt m_iMag m_iAgi m_iLuck m_iExp m_iEnemyKillCount " + \
+								"m_iPKCount m_iRewardGold m_iDownSkillIndex m_sCharIDnum1 " + \
+								"m_sCharIDnum2 m_sCharIDnum3 m_cSex m_cSkin m_cHairStyle m_cHairColor " + \
+								"m_cUnderwear m_iHungerStatus m_iTimeLeft_ShutUp m_iTimeLeft_Rating " + \
+								"m_iTimeLeft_ForceRecall m_iTimeLeft_FirmStaminar m_iAdminUserLevel m_iBlockDate " + \
+								"m_iQuest m_iQuestID m_iCurQuestCount m_iQuestRewardType m_iQuestRewardAmount " + \
+								"m_iContribution m_iWarContribution m_bIsQuestCompleted m_iSpecialEventID " + \
+								"m_iSuperAttackLeft m_iFightzoneNumber m_iReserveTime m_iFightZoneTicketNumber " + \
+								"m_iSpecialAbilityTime m_cLockedMapName m_iLockedMapTime " + \
+								"m_iCrusadeDuty m_dwCrusadeGUID m_iConstructionPoint m_iDeadPenaltyTime " + \
+								"m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2 " + \
+								"m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor MagicMastery"
+								
+		format = "<h5B10s10s2h20s2h3ihi7B4ib3i6B4iB20s4h3iBihBiBi10siB4ih6i100s"
+		SkillsFormat = "<24B24I"
+		ContentSize = struct.calcsize(format)
+		SkillsSize = struct.calcsize(SkillsFormat)
+		p = map(packet_format, struct.unpack(format, buffer[:ContentSize])) #Decode player contents + add profile
+		Content = namedtuple('Content', Values)._make(p) #Make named structure with player contents
+		Skills = struct.unpack(SkillsFormat,buffer[ContentSize:ContentSize + SkillsSize]) #Skills [24*Skill%, 24*SkillSSN]
+		Index = ContentSize + SkillsSize + 4
+		NItems = ord(buffer[Index])
+		Items = []
+		if NItems > 0:
+				for I in range(NItems):
+						IndexForItem = (471 + (I*60))
+						fmt = "<20sih3iB4hiB2hI"
+						Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + struct.calcsize(fmt)]))
+						Item = namedtuple('Item', "m_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute m_bIsItemEquipped X Y ItemUniqueID")._make(Item)
+						Items += [Item]
+
+		Index = 471+(NItems*60)
+		NBankItems = ord(buffer[Index])
+		BankItems = []
+		if NBankItems > 0:
+				for I in range(NBankItems):
+						IndexForItem = (Index+1+(I*55))
+						fmt = "<20sih3ib4h2i"
+						Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + 55]))
+						Item = namedtuple('Item', 'm_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute ItemUniqueID')._make(Item)
+						BankItems += [Item]
+					   
+		Index += (NBankItems*55)+1
+		return {'Player': Content, 'Items': Items, 'BankItems': BankItems, 'Skills': Skills, 'Profile': buffer[Index:]}
+		
+	def IsAccountInUse(self, AccName):
+		for i in range(len(self.Clients)):
+			if self.Clients[i]['AccountName'] == AccName:
+				return (True, i)
+		return (False, -1)
+		
+	def EnterGameConfirm(self, buffer, GS):
+		try:
 			global packet_format
-			Values = "wYear wMonth wDay wHour wMinute wSecond m_cLocation m_cMapName " + \
-									"m_sX m_sY m_cGuildName m_iGuildGuid m_cGuildRank " + \
-									"m_iHP m_iMP m_iSP m_iLevel m_iRating m_iStr m_iVit " + \
-									"m_iDex m_iInt m_iMag m_iAgi m_iLuck m_iExp m_iEnemyKillCount " + \
-									"m_iPKCount m_iRewardGold m_iDownSkillIndex m_sCharIDnum1 " + \
-									"m_sCharIDnum2 m_sCharIDnum3 m_cSex m_cSkin m_cHairStyle m_cHairColor " + \
-									"m_cUnderwear m_iHungerStatus m_iTimeLeft_ShutUp m_iTimeLeft_Rating " + \
-									"m_iTimeLeft_ForceRecall m_iTimeLeft_FirmStaminar m_iAdminUserLevel m_iBlockDate " + \
-									"m_iQuest m_iQuestID m_iCurQuestCount m_iQuestRewardType m_iQuestRewardAmount " + \
-									"m_iContribution m_iWarContribution m_bIsQuestCompleted m_iSpecialEventID " + \
-									"m_iSuperAttackLeft m_iFightzoneNumber m_iReserveTime m_iFightZoneTicketNumber " + \
-									"m_iSpecialAbilityTime m_cLockedMapName m_iLockedMapTime " + \
-									"m_iCrusadeDuty m_dwCrusadeGUID m_iConstructionPoint m_iDeadPenaltyTime " + \
-									"m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2 " + \
-									"m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor MagicMastery"
-			Values = Values.split(" ")
-			format = "<hBBBBB10s10shh" # Y M D H M S LOC MAPNAME SX SY
-			format += "20shhiii" #guildname guildrank guildguid hp mp sp
-			format += "hiBBBBBB" #ilevel irating [stats * 6]
-			format += "Biiiib" # m_iLuck m_iExp m_iEnemyKillCount m_iPKCount m_iRewardGold m_iDownSkillIndex
-			format += "iii" #id1 id2 id3
-			format += "BBBBBB" # sex skin hairstyl haircol underwear hunger
-			format += "iiii" # shutup leftrating forcerecall firmstaminar
-			format += "B20s" #adminlevel blockdate
-			format += "hhhhi" #quests
-			format += "iiBi" # m_iContribution m_iWarContribution m_bIsQuestCompleted m_iSpecialEventID
-			format += "hBiB" # m_iSuperAttackLeft m_iFightzoneNumber m_iReserveTime m_iFightZoneTicketNumber
-			format += "i10si" #m_iSpecialAbilityTime m_cLockedMapName m_iLockedMapTime
-			format += "Bii" #DUTY m_iCrusadeGUID m_iConstructionPoint
-			format += "iih" #m_iDeadPenaltyTime m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2
-			format += "iiiiii"  #m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor
-			format += "100s" #Mastry
+			format = '<h10s10s10s16si'
+			if len(buffer) != struct.calcsize(format):
+				print "(!) RequestPlayerData size mismatch!"
+				raise Exception				
+			s = map(packet_format, struct.unpack(format, buffer))
+			Packet = namedtuple('Packet', 'MsgType AccountName AccountPassword ServerName IP Level')._make(s)
+		except:
+			#TODO: Force logout player ?
+			print "(!) Error reading packet in EnterGameConfirm"
+			return
+			
+		ok = False
+		GSID = -1
+		for id in self.GameServer:
+			if self.GameServer[id].Data['ServerName'] == Packet.ServerName:
+				ok = True
+				GSID = id
+				
+		if not ok:
+			print "(!!!) Wrong data: Game server ID: [ %s ] ClientIP[%s] not found!" % (Packet.ServerName, Packet.IP)
+			return
+		
+		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
+		
+		if InUse:
+			Client = self.Clients[ID]
+			if Client['Level'] == Packet.Level and Client['AccountName'] == Packet.AccountName:
+				if Client['AccountPassword'] != Packet.AccountPassword or Client['Level'] != Packet.Level:
+					print "(!!!) Wrong data: Account(%s) pwd[%s/%s] Level[%d/%d] IP[%s/%s] Char[%s] GSID[%d/%d]" % (
+									Packet.AccountName,
+									Packet.AccountPassword,
+									Client['AccountPassword'],
+									Packet.Level,
+									Client['Level'],
+									Client['CharName'],
+									Packet.IP,
+									Client['ClientIP'],
+									GSID,
+									Client['ID'])
+					return #REJECT
+				if Client['ClientIP'] != "127.0.0.1" and Packet.IP != Client['ClientIP']:
+					print "(!!!) Client IP mismatch: Account(%s) IP[%s/%s]" % (
+									Packet.AccountName,
+									Packet.IP,
+									Client['ClientIP'])
+					return #REJECT
+				self.Clients[ID]['IsPlaying'] = True
+				self.Clients[ID]['Time'] = time.localtime()
+				print "(!) Set character(%s) Account[%s] status: playing." % (Client['CharName'], Client['AccountName'])
 
-			SkillsFormat = "24B24I"
-			ContentSize = struct.calcsize(format)
-			SkillsSize = struct.calcsize(SkillsFormat)
-
-			p = map(packet_format, struct.unpack(format, buffer[:ContentSize]))#Decode player contents + add profile
-			Content = namedtuple('pp', " ".join(Values))._make(p) #make named structure
-			Skills = struct.unpack(SkillsFormat,buffer[ContentSize:ContentSize + SkillsSize]) #skills [24*Skill%, 24*SkillSSN]
-			Index = ContentSize + SkillsSize + 4
-			NItems = ord(buffer[Index])
-			Items = []
-			if NItems > 0:
-					for I in range(NItems):
-							IndexForItem = (471 + (I*60))
-							fmt = "<20sihiiiBhhhhiBhhI"
-							Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + struct.calcsize(fmt)]))
-							Item = namedtuple('Item', "m_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute m_bIsItemEquipped X Y ItemUniqueID")._make(Item)
-							Items += [Item]
-						   
-			Index = 471+(NItems*60)
-			NBankItems = ord(buffer[Index])
-			BankItems = []
-			if NBankItems > 0:
-					for I in range(NBankItems):
-							IndexForItem = (Index+1+(I*55))
-							fmt = "<20sihiiibhhhhii"
-							Item = map(packet_format, struct.unpack(fmt, buffer[IndexForItem:IndexForItem + 55]))
-							Item = namedtuple('Item', 'm_cName m_dwCount m_sTouchEffectType m_sTouchEffectValue1 m_sTouchEffectValue2 m_sTouchEffectValue3 m_cItemColor m_sItemSpecEffectValue1 m_sItemSpecEffectValue2 m_sItemSpecEffectValue3 m_wCurLifeSpan m_dwAttribute ItemUniqueID')._make(Item)
-							BankItems += [Item]
-						   
-			Index += (NBankItems*55)+1
-			return {'Player': Content, 'Items': Items, 'BankItems': BankItems, 'Skills': Skills, 'Profile': buffer[Index:]}
+			else:
+				print "Unknown data 1"
+				print Packet
+		else:
+			print "Unknown data 2"
+			print Packet
