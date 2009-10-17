@@ -36,7 +36,8 @@ DEF = Enum({
 'MAXITEMS'            : 50,
 'MAXBANKITEMS'        : 120,
 'MAXPARTYMEMBERS'     : 8,
-'MAXPARTYNUMBER'      : 200
+'MAXPARTYNUMBER'      : 200,
+'MAXLOGLINESIZE'      : 5000
 })
 
 Account = Enum({
@@ -46,6 +47,19 @@ Account = Enum({
 'BLOCKED'   : 3,
 'EXISTS'    : 4,
 'FAIL'      : 5
+})
+
+Logfile = Enum({
+'BASE'         : 'Logs/',
+'GM'           : 'GM/',
+'ITEM'         : 'Item/',
+'CHAT'         : 'Chat/',
+'CRUSADE'      : 'Crusade/',
+'PACKETMS'     : 'Packet-MS.txt',
+'PACKETGS'     : 'Packet-GS.txt',
+'HACK'         : 'Hack.txt',
+'ERROR'        : 'Error.txt',
+'MYSQL'        : 'MysqlError.txt'
 })
 
 Version = Enum({

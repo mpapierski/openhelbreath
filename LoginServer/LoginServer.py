@@ -32,7 +32,7 @@ import socket, os, sys, select, struct, time, re, random
 from Enum import Enum
 from threading import Thread, Semaphore, Event
 from NetMessages import Packets
-from GlobalDef import DEF, Account, Version
+from GlobalDef import DEF, Account, Logfile, Version
 from Helpers import Callbacks
 from Sockets import ServerSocket
 from Database import DatabaseDriver
@@ -190,7 +190,7 @@ class CLoginServer(object):
 				
 		MsgID = struct.unpack('<L', buffer[:4])[0]
 		buffer = buffer[4:]
-				
+		
 		if MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVER:
 			self.RegisterGameServer(sender, buffer)
 			
@@ -208,10 +208,6 @@ class CLoginServer(object):
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.ProcessRequestPlayerData(sender, buffer, GS)
-				
-		elif MsgID in [Packets.MSGID_GAMEMASTERLOG, Packets.MSGID_ITEMLOG]:
-			print buffer[2:]
-			
 		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
 			GS = self.SockToGS(sender)
 			if GS != None:
@@ -227,11 +223,26 @@ class CLoginServer(object):
 			else:
 				print "Unknown game server sends MSGID_ENTERGAMECONFIRM."
 
+		elif MsgID == Packets.MSGID_GAMEMASTERLOG:
+			GS = self.SockToGS(sender)
+			if GS != None:
+				self.PutLogFileList(buffer, Logfile.GM, True)
+		elif MsgID in [Packets.MSGID_GAMEITEMLOG, Packets.MSGID_ITEMLOG]:
+			GS = self.SockToGS(sender)
+			if GS != None:
+				self.PutLogFileList(buffer, Logfile.ITEM, True)
+		elif MsgID == Packets.MSGID_GAMECRUSADELOG:
+			GS = self.SockToGS(sender)
+			if GS != None:
+				self.PutLogFileList(buffer, Logfile.CRUSADE, True)
+				
 		else:
 			if MsgID in Packets:
 				print "(!) Gate Server -> Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
+				self.PutLogFileList("(!) Gate Server -> Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
 			else:
 				print "(!) Gate Server -> Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
+				self.PutLogFileList("(!) Gate Server -> Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
 				
 	def GateServer_OnClose(self, sender, size):
 		"""
@@ -543,8 +554,10 @@ class CLoginServer(object):
 		else:
 			if MsgID in Packets:
 				print "Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
+				self.PutLogFileList("Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
 			else:
 				print "Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
+				self.PutLogFileList("Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
 			#sender.disconnect()
 			
 	def MainSocket_OnClose(self, sender):
@@ -1194,3 +1207,34 @@ class CLoginServer(object):
 		else:
 			print "Unknown data 2"
 			print Packet
+
+	def PutLogFileList(self, buffer, sLogName, bIsPacket = False):
+		if bIsPacket:
+			global packet_format
+			fmt = "<h"
+			s=map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
+			Header = namedtuple("Header", "MsgType")._make(s)
+			buffer = buffer[struct.calcsize(fmt):]
+			if len(buffer) > DEF.MAXLOGLINESIZE or len(buffer) == 0:
+				return
+
+		if not os.path.isdir(Logfile.BASE):
+			os.mkdir(Logfile.BASE)
+		if sLogName in [Logfile.GM, Logfile.ITEM, Logfile.CRUSADE]:
+			sDirPath = "%s%s" % (Logfile.BASE, sLogName)
+			if not os.path.isdir(sDirPath):
+				os.mkdir(sDirPath)
+
+		sFileName = ''
+		if sLogName == Logfile.GM:
+			sFileName = '%s/%s/GM-Event-%s.txt' % (Logfile.BASE, Logfile.GM, time.strftime("%Y-%m-%d"))
+		if sLogName == Logfile.ITEM:
+			sFileName = '%s/%s/Item-Event-%s.txt' % (Logfile.BASE, Logfile.ITEM, time.strftime("%Y-%m-%d"))
+		if sLogName == Logfile.CRUSADE:
+			sFileName = '%s/%s/Crusade-Event-%s.txt' % (Logfile.BASE, Logfile.CRUSADE, time.strftime("%Y-%m-%d"))
+		if sFileName == '':
+			sFileName = '%s/%s' % (Logfile.BASE, sLogName)
+
+		FileHandle = open(sFileName, 'a')
+		FileHandle.write("%s - %s\n" % (time.strftime("%Y:%m:%d:%H:%M"), buffer))
+		FileHandle.close()
