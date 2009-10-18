@@ -133,14 +133,14 @@ class CLoginServer(object):
 		for i in self.GameServer.values():
 			for j in i.GameServerSocket:
 				if j == sender:
-					PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d] (!)" % (i.Data['ServerName'],i.GSID), Logfile.Error)
+					PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d] (!)" % (i.Data['ServerName'],i.GSID), Logfile.ERROR)
 					i.GameServerSocket.remove(sender)
 					return
 		GS = self.SockToGS(sender)
 		if GS != None:
-			PutLogList("(*) GateServer %s -> Lost connection" % (GS.Data['ServerName']), Logfile.Error)
+			PutLogList("(*) GateServer %s -> Lost connection" % (GS.Data['ServerName']), Logfile.ERROR)
 		else:
-			PutLogList("Lost unknown connection on GateServer (not registered? hack attempt?)", Logfile.Error)
+			PutLogList("Lost unknown connection on GateServer (not registered? hack attempt?)", Logfile.ERROR)
 		
 	def GateServer_OnListen(self, sender):
 		"""
@@ -733,7 +733,7 @@ class CLoginServer(object):
 											Packet.PlayerName)
 			SendData += self.GetCharList(Packet.AccountName, Packet.AccountPassword)
 			self.SendMsgToClient(sender, SendData)
-			PutLogList("(!) Create new character -> Create new character success on account %s [CharName: %s ]!" % (Packet.AccountName, Packet.PlayerName))
+			PutLogList("(*) Create new character -> Create new character success on account %s [CharName: %s ]!" % (Packet.AccountName, Packet.PlayerName))
 
 	def GetCharList(self, account_name, account_password):
 		global fillzeros
@@ -817,7 +817,7 @@ class CLoginServer(object):
 			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
 			self.SendMsgToClient(sender, SendData)
 			return
-		
+
 		if Packet.WS != self.WorldServerName:
 			PutLogList("(!) Player tries to enter game with unknown World Server : %s" % Packet.WS)
 			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
@@ -836,14 +836,19 @@ class CLoginServer(object):
 			if C['char_name'] == Packet.PlayerName:
 				Found = True
 		if Found:
+
 			GS = self.IsMapAvailable(Packet.MapName)
-			if GS == False:
-				PutLogList("(!) Player %s is stuck at %s !" % (Packet.PlayerName, Packet.MapName))
-				SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
-				self.SendMsgToClient(sender, SendData)
-			else:
-				if Packet.MsgType == Packets.DEF_ENTERGAMEMSGTYPE_NEW:
-					self.Clients += [{
+			(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
+
+			if Packet.MsgType == Packets.DEF_ENTERGAMEMSGTYPE_NEW:
+				if GS == False or self.GameServer[GS['GSID']].IsRegistered == False:
+					PutLogList("(!) Player %s is stuck at %s !" % (Packet.PlayerName, Packet.MapName))
+					SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
+				else:
+					if InUse:
+						SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_PLAYING)
+					else:
+						self.Clients += [{
 										'AccountName': Packet.AccountName,
 										'AccountPassword': Packet.AccountPassword,
 										'CharName': Packet.PlayerName,
@@ -852,14 +857,49 @@ class CLoginServer(object):
 										'ID': GS['GSID'],
 										'IsPlaying': False,
 										'Time': None,
-										'IsOnServerChange': False}]
+										'IsOnServerChange': False,
+										'ForceDisconnRequestTime': None}]
 						
-					SendData = struct.pack('<Lh16sh20s', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_CONFIRM, 
-															GS['IP'], GS['Port'],
-															"") #ServerName?
-					PutLogList("Client enter game : %s" % Packet.PlayerName)
+						SendData = struct.pack('<Lh16sh20s', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_CONFIRM, 
+																GS['IP'], GS['Port'],
+																"") #ServerName?
+						PutLogList("(*) Client enter game : %s" % Packet.PlayerName)
+				self.SendMsgToClient(sender, SendData)
+
+			elif Packet.MsgType == Packets.DEF_ENTERGAMEMSGTYPE_NOENTER_FORCEDISCONN:
+					if InUse and Packet.AccountName == self.Clients[ID]['AccountName'] and Packet.AccountPassword == self.Clients[ID]['AccountPassword'] and self.Clients[ID]['IsPlaying'] == True:
+						if GS != False:
+							self.RequestForceDisconnect(self.GameServer[self.Clients[ID]['ID']], ID, 10)
+							PutLogList("(*) Client force logout: %s" % Packet.PlayerName)
+						else:
+							self.Clients.remove(self.Clients[ID])
+						SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_FORCEDISCONN)
+						self.SendMsgToClient(sender, SendData)
+					else:
+						#SAFEDELETE(ClientSocket[ClientID]);
+						print "TODO: DEF_ENTERGAMEMSGTYPE_NOENTER_FORCEDISCONN delete ClientSocket[] (?)"
+
+			elif Packet.MsgType == Packets.DEF_ENTERGAMEMSGTYPE_CHANGINGSERVER:
+				# Removed ip check - Aryes made request here to getpeeraddress and compare with self.clients
+				if InUse and Packet.AccountName == self.Clients[ID]['AccountName'] and Packet.AccountPassword == self.Clients[ID]['AccountPassword'] and Packet.PlayerName == self.Clients[ID]['CharName'] and self.Clients[ID]['IsOnServerChange'] == True:
+					if GS != False:
+						self.Clients[ID]['ID'] = GS['GSID']
+						self.Clients[ID]['Time'] = time.localtime()
+						self.Clients[ID]['IsOnServerChange'] = False
+						self.Clients[ID]['IsPlaying'] = True
+						SendData = struct.pack('<Lh16sh20s', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_CONFIRM, GS['IP'], GS['Port'], "")
+						PutLogList("(*) Client change server : %s" % Packet.PlayerName)
+					else:
+						SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
+						self.Clients.remove(self.Clients[ID])
 					self.SendMsgToClient(sender, SendData)
-					
+				else:
+					#SAFEDELETE(ClientSocket[ClientID]);
+					print "TODO: DEF_ENTERGAMEMSGTYPE_CHANGINGSERVER delete ClientSocket[] (?)"
+
+			else:
+				#SAFEDELETE(ClientSocket[ClientID]);
+				print "TODO: Unknown ProcessClientRequestEnterGame message type - delete ClientSocket[] (?)"
 		else:
 			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
 			self.SendMsgToClient(sender, SendData)
@@ -889,22 +929,39 @@ class CLoginServer(object):
 			SendData = SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_REJECT, "")
 			self.SendMsgToGS(GS, SendData)
 			return
+		
 		Found = False
-		for C in self.Clients:
-			if C['CharName'] == Packet.CharName and C['AccountName'] == Packet.AccountName and C['AccountPassword'] == Packet.AccountPassword:
-				if C['ClientIP'] != "127.0.0.1" and C['ClientIP'] != Packet.Address:
-					print "IP SIE NIE ZGADZA"
-				else:
+		CharInfoSize = None
+		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
+		Client = self.Clients[ID]
+		if InUse:
+			if Client['CharName'] != Packet.CharName or Client['AccountName'] != Packet.AccountName or Client['AccountPassword'] != Packet.AccountPassword:
+				PutLogList("(!) Wrong data: Account[%s/%s] CharName[%s/%s] IP[%s/%s]" % (
+								Packet.AccountName,
+								Client['AccountName'],
+								Packet.AccountPassword,
+								Client['AccountPassword'],
+								Packet.CharName,
+								Client['CharName']), Logfile.HACK)
+			elif Client['ClientIP'] == "127.0.0.1" or Client['ClientIP'] != Packet.Address:
+				PutLogList("(!) IP mismatch: Account(%s) IP[%s/%s]" % (
+								Packet.AccountName,
+								Packet.Address,
+								Client['ClientIP']), Logfile.HACK)
+			else:
+				CharInfoSize = self.GetCharacterInfo(Packet.AccountName, Packet.AccountPassword, Packet.CharName)
+				if len(CharInfoSize) != 0:
+					self.Clients[ID]['IsOnServerChange'] = False;
 					Found = True
-					break
-				
 		if not Found:
+			# Sending this message to Aryes HGServer causes HG crash - That Needs fix
 			PutLogList("(!) HG server is requesting not logged player! HACK!", Logfile.HACK)
 			SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
 			self.SendMsgToGS(GS, SendData)
+			self.Clients.remove(self.Clients[ID])
 		else:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_CONFIRM)
-			SendData += self.GetCharacterInfo(Packet.AccountName, Packet.AccountPassword, Packet.CharName)
+			SendData += CharInfoSize
 			self.SendMsgToGS(GS, SendData)
 
 	def GetCharacterInfo(self, AccountName, AccountPassword, CharName):
@@ -1162,7 +1219,7 @@ class CLoginServer(object):
 				GSID = id
 				
 		if not ok:
-			PutLogList("(!!!) Wrong data: Game server ID: [ %s ] ClientIP[%s] not found!" % (Packet.ServerName, Packet.IP), Logfile.HACK)
+			PutLogList("(!) Wrong data: Game server ID: [ %s ] ClientIP[ %s ] not found!" % (Packet.ServerName, Packet.IP), Logfile.HACK)
 			return
 		
 		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
@@ -1182,17 +1239,28 @@ class CLoginServer(object):
 									Client['ClientIP'],
 									GSID,
 									Client['ID']), Logfile.HACK)
+					self.RequestForceDisconnect(GS, ID, 10)
 					return #REJECT
 				if Client['ClientIP'] != "127.0.0.1" and Packet.IP != Client['ClientIP']:
 					PutLogList("(!!!) Client IP mismatch: Account(%s) IP[%s/%s]" % (
 									Packet.AccountName,
 									Packet.IP,
 									Client['ClientIP']), Logfile.HACK)
+					self.RequestForceDisconnect(GS, ID, 10)
 					return #REJECT
+
+				# Need to add mapname in Packet to do a check if player is entering active zone
+				"""
+				changeGS = self.IsMapAvailable(Packet.MapName)
+				if changeGS == False or self.GameServer[changeGS['GSID']].IsRegistered == False:
+					PutLogList("(!) Player %s is stuck at %s !" % (Packet.PlayerName, Packet.MapName))
+					SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
+					self.SendMsgToClient(sender, SendData)
+				else:
+				"""
 				self.Clients[ID]['IsPlaying'] = True
 				self.Clients[ID]['Time'] = time.localtime()
-				PutLogList("(!) Set character(%s) Account[%s] status: playing." % (Client['CharName'], Client['AccountName']))
-
+				PutLogList("(*) Set character(%s) Account[%s] status: playing." % (Client['CharName'], Client['AccountName']))
 			else:
 				PutLogList("Unknown data 1", Logfile.HACK)
 				print Packet
@@ -1229,7 +1297,7 @@ class CLoginServer(object):
 				else:
 					self.Clients[ID]['IsOnServerChange'] = True
 					self.Clients[ID]['Time'] = time.localtime()
-					SendData = struct.pack('L10h', Packets.MSGID_RESPONSE_SAVEPLAYERDATA_REPLY, Packet.PlayerName)
+					SendData = struct.pack('L10s', Packets.MSGID_RESPONSE_SAVEPLAYERDATA_REPLY, Packet.PlayerName)
 					self.SendMsgToGS(GS, SendData)
 			else:
 				PutLogList("(!) Server change data-error for Character[ %s ]" % Packet.PlayerName, Logfile.HACK)
@@ -1242,3 +1310,15 @@ class CLoginServer(object):
 								Client['AccountPassword']), Logfile.HACK)
 		else:
 			PutLogList("(!) Server change data-error for Character[ %s ] - Account not in use!" % Packet.PlayerName, Logfile.HACK)
+			
+	def RequestForceDisconnect(self, GS, ID, Count):
+		Client = self.Clients[ID]
+		if Client == None:
+			return
+		if self.GameServer[Client['ID']] == None:
+			self.Clients[ID]['ForceDisconnRequestTime'] = time.localtime()
+			return
+		SendData = struct.pack('Lh10s', Packets.MSGID_REQUEST_FORCEDISCONECTACCOUNT, Count, Client['AccountName'])
+		self.SendMsgToGS(GS, SendData)
+		if (Client['ForceDisconnRequestTime'] == 0):
+			self.Clients[ID]['ForceDisconnRequestTime'] = time.localtime()
