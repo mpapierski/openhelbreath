@@ -59,7 +59,8 @@ Logfile = Enum({
 'PACKETGS'     : 'Packet-GS.txt',
 'HACK'         : 'Hack.txt',
 'ERROR'        : 'Error.txt',
-'MYSQL'        : 'MysqlError.txt'
+'MYSQL'        : 'MysqlError.txt',
+'EVENTS'       : 'Events.txt'
 })
 
 Version = Enum({

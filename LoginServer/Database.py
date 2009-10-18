@@ -1,5 +1,6 @@
 import MySQLdb, _mysql_exceptions, time, random
-from GlobalDef import Account, DEF
+from Helpers import PutLogFileList
+from GlobalDef import Account, DEF, Logfile
 from threading import Semaphore, BoundedSemaphore
 
 MySQL_Auth = {'host' : 'localhost', 'port': 3307, 'user': 'root', 'passwd': '', 'db': 'playerdb'}
@@ -52,9 +53,11 @@ class DatabaseDriver(object):
 		if not self.Ready:
 			return False
 		self.Access.acquire()
+		QueryConsult = self.__querybuilder(Query, *Args)
 		try:
-			self.db.query(self.__querybuilder(Query, *Args))
+			self.db.query(QueryConsult)
 		except:
+			PutLogFileList(QueryConsult, Logfile.MYSQL)
 			self.Access.release()
 			return False
 
@@ -280,7 +283,7 @@ class DatabaseDriver(object):
 			return Account.FAIL
 		r = self.db.store_result()
 		if r.num_rows() > 0:
-			return Account.FAIL
+			return Account.EXISTS
 		QueryConsult = "INSERT INTO `account_database` (`name`, `password`, `Email`, `Quiz`, `Answer`, `SignUpIpAddress`, `SignUpDate`, `SignUpFromClient`)" + \
 							"VALUES ('%s', '%s', '%s', '%s', '%s', '%s', NOW(), 1)"
 		if not self.ExecuteSQL(QueryConsult, account_name, account_password, mail, quiz, answer, address):

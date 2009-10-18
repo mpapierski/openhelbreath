@@ -33,7 +33,7 @@ from Enum import Enum
 from threading import Thread, Semaphore, Event
 from NetMessages import Packets
 from GlobalDef import DEF, Account, Logfile, Version
-from Helpers import Callbacks
+from Helpers import Callbacks, PutLogFileList, PutLogList
 from Sockets import ServerSocket
 from Database import DatabaseDriver
 from collections import namedtuple
@@ -71,6 +71,8 @@ class CLoginServer(object):
 		self.MaxTotalUsers = 1000
 		self.WorldServerName = "WS1"
 		self.Clients = []
+		PutLogFileList("", Logfile.EVENTS)
+		PutLogFileList("Starting new events...", Logfile.EVENTS)
 		
 	def CommandHandler(self, command):
 		tok = command.split(" ")
@@ -108,7 +110,7 @@ class CLoginServer(object):
 			return False
 		self.Database = DatabaseDriver()
 		if not self.Database.Initialize():
-			print "(!) DatabaseDriver initialization fails!"
+			PutLogList("(!) DatabaseDriver initialization fails!")
 			return False
 		return True
 		
@@ -131,20 +133,20 @@ class CLoginServer(object):
 		for i in self.GameServer.values():
 			for j in i.GameServerSocket:
 				if j == sender:
-					print "(!) Lost connection to sub log socket on %s [GSID: %d] (!)" % (i.Data['ServerName'],i.GSID)
+					PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d] (!)" % (i.Data['ServerName'],i.GSID), Logfile.Error)
 					i.GameServerSocket.remove(sender)
 					return
 		GS = self.SockToGS(sender)
 		if GS != None:
-			print "(*) GateServer %s -> Lost connection" % (GS.Data['ServerName'])
+			PutLogList("(*) GateServer %s -> Lost connection" % (GS.Data['ServerName']), Logfile.Error)
 		else:
-			print "Lost unknown connection on GateServer (not registered? hack attempt?)"	
+			PutLogList("Lost unknown connection on GateServer (not registered? hack attempt?)", Logfile.Error)
 		
 	def GateServer_OnListen(self, sender):
 		"""
 			When socket is ready to accept connections
 		"""
-		print "(*) GateServer -> Server open"
+		PutLogList("(*) GateServer -> Server open")
 		
 	
 	def SockToGS(self, sender):
@@ -175,12 +177,11 @@ class CLoginServer(object):
 			Header = namedtuple('Header', 'cKey dwSize')._make(s)
 			buffer = buffer[header_size:]
 		except:
-			print "Except"
 			sender.disconnect()
 			return
 			
 		if Header.dwSize != size or size < 4 or Header.dwSize < 4:
-			print "(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address
+			PutLogList("(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address, Logfile.HACK)
 			sender.disconnect()
 			return
 
@@ -201,22 +202,17 @@ class CLoginServer(object):
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.GameServerAliveHandler(GS, buffer)
-			else:
-				print "MSGID_GAMESERVERALIVE ON UNREGISTERED SOCKET. PLEASE RESTART! HACK?"
 				
 		elif MsgID == Packets.MSGID_REQUEST_PLAYERDATA:
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.ProcessRequestPlayerData(sender, buffer, GS)
+
 		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
 			GS = self.SockToGS(sender)
 			if GS != None:
-				self.ServerStockMsgHandler(GS, buffer)
+				self.ServerStockMsgHandler(GS, buffer);
 
-		elif MsgID == Packets.MSGID_REQUEST_SAVEPLAYERDATA:
-			GS = self.SockToGS(sender)
-			if GS != None:
-				self.SavePlayerData(buffer,GS)
 		elif MsgID in [Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT, Packets.MSGID_REQUEST_SAVEPLAYERDATA_REPLY]:
 			GS = self.SockToGS(sender)
 			if GS != None:
@@ -230,35 +226,31 @@ class CLoginServer(object):
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.EnterGameConfirm(buffer, GS)
-			else:
-				print "Unknown game server sends MSGID_ENTERGAMECONFIRM."
 
 		elif MsgID == Packets.MSGID_GAMEMASTERLOG:
 			GS = self.SockToGS(sender)
 			if GS != None:
-				self.PutLogFileList(buffer, Logfile.GM, True)
+				PutLogFileList(buffer, Logfile.GM, True)
 		elif MsgID in [Packets.MSGID_GAMEITEMLOG, Packets.MSGID_ITEMLOG]:
 			GS = self.SockToGS(sender)
 			if GS != None:
-				self.PutLogFileList(buffer, Logfile.ITEM, True)
+				PutLogFileList(buffer, Logfile.ITEM, True)
 		elif MsgID == Packets.MSGID_GAMECRUSADELOG:
 			GS = self.SockToGS(sender)
 			if GS != None:
-				self.PutLogFileList(buffer, Logfile.CRUSADE, True)
+				PutLogFileList(buffer, Logfile.CRUSADE, True)
 				
 		else:
 			if MsgID in Packets:
-				print "(!) Gate Server -> Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
-				self.PutLogFileList("(!) Gate Server -> Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
+				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
 			else:
-				print "(!) Gate Server -> Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
-				self.PutLogFileList("(!) Gate Server -> Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
+				PutLogFileList("MsgID: 0x%08X %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
 				
 	def GateServer_OnClose(self, sender, size):
 		"""
 			Triggered when Gate Server thread is closed
 		"""
-		print "(*) GateServer -> Server close"
+		PutLogList("(*) GateServer -> Server close")
 		
 	def InitServer(self):
 		"""
@@ -267,7 +259,7 @@ class CLoginServer(object):
 		"""
 		if not self.bReadAllConfig():
 			return False
-		print "(*) Done!"
+		PutLogList("(*) Done!")
 		
 		GateServerCB = {'onConnected': self.GateServer_OnConnect,
 						'onDisconnected': self.GateServer_OnDisconnected,
@@ -282,18 +274,18 @@ class CLoginServer(object):
 						'onClose': self.MainSocket_OnClose}
 
 		if self.ListenToAllAddresses:
-			print "(!) permitted-address line not found in LServer.cfg. Server will be listening to all IPs!"
+			PutLogList("(!) permitted-address line not found in LServer.cfg. Server will be listening to all IPs!")
 
 		if self.ListenPortDefault:
-			print "(*) login-server-port line not found in LServer.cfg. Server will use port %d" % self.ListenPort
+			PutLogList("(*) login-server-port line not found in LServer.cfg. Server will use port %d" % self.ListenPort)
 
 		self.GateServerSocket = ServerSocket((self.ListenAddress, self.GateServerPort), GateServerCB)
 		self.GateServerSocket.start()
-		print "(*) Gate server successfully started!"
+		PutLogList("(*) Gate server successfully started!")
 
 		self.MainSocket = ServerSocket((self.ListenAddress, self.ListenPort), MainSocketCB)
 		self.MainSocket.start()
-		print "(*) Login server sucessfully started!"
+		PutLogList("(*) Login server sucessfully started!")
 		
 		return True
 			
@@ -316,7 +308,7 @@ class CLoginServer(object):
 			Parse main configuration file
 		"""
 		if not os.path.exists(cFn) and not os.path.isfile(cFn):
-			print "(!) Cannot open configuration file."
+			PutLogList("(!) Cannot open configuration file.")
 			return False
 			
 		reg = re.compile('[a-zA-Z]')
@@ -333,31 +325,31 @@ class CLoginServer(object):
 					
 				if token[0] == "login-server-address":
 					self.ListenAddress = token[1]
-					print "(*) Login server address : %s" % (self.ListenAddress)
+					PutLogList("(*) Login server address : %s" % (self.ListenAddress))
 					
 				if token[0] == "login-server-port":
 					self.ListenPort = token[1]
-					print "(*) Login server port : %d" % (self.ListenPort)
+					PutLogList("(*) Login server port : %d" % (self.ListenPort))
 					if self.ListenPortDefault:
 						self.ListenPortDefault = False
 					
 				if token[0] == "gate-server-port":
 					self.GateServerPort = token[1]
-					print "(*) Gate Server port : %d" % (self.GateServerPort)
+					PutLogList("(*) Gate Server port : %d" % (self.GateServerPort))
 					
 				if token[0] == "permitted-address":
 					self.PermittedAddress += [token[1]]
-					print "(*) IP [%s] added to permitted addresses list!" % (token[1])
+					PutLogList("(*) IP [%s] added to permitted addresses list!" % (token[1]))
 					if self.ListenToAllAddresses:
 						self.ListenToAllAddresses = False
 						
 				if token[0] == "max-total-users":
 					self.MaxTotalUsers = token[1]
-					print "(*) Max total users allowed on server : %d" % self.MaxTotalUsers
+					PutLogList("(*) Max total users allowed on server : %d" % self.MaxTotalUsers)
 					
 				if token[0] == "world-server-name":
 					self.WorldServerName = token[1]
-					print "(*) World Server Name : %s" % self.WorldServerName
+					PutLogList("(*) World Server Name : %s" % self.WorldServerName)
 		finally:
 			fin.close()
 		return True
@@ -367,11 +359,11 @@ class CLoginServer(object):
 			Read contents of file to Config dict
 		"""
 		if not os.path.exists(FileName) and not os.path.isfile(FileName):
-			print "(!) Cannot open configuration file [%s]." % FileName
+			PutLogList("(!) Cannot open configuration file [%s]." % FileName)
 			return False
 		key = FileName.split('/')[-1].split(".")[0]
 		fin = open(FileName,'r')
-		print "(*) Reading configuration file [%s] -> {'%s'}..." % (FileName, key)
+		PutLogList("(*) Reading configuration file [%s] -> {'%s'}..." % (FileName, key))
 		try:
 			self.Config[key] = fin.read()
 		finally:
@@ -386,7 +378,7 @@ class CLoginServer(object):
 		PacketID = Packets.DEF_MSGTYPE_REJECT if ok == False else Packets.DEF_MSGTYPE_CONFIRM
 		SendData = struct.pack('L2h', Packets.MSGID_RESPONSE_REGISTERGAMESERVER, PacketID, GSID)
 		self.SendMsgToGS(GS, SendData)
-		print "(*) Game Server registered at ID[%u]-[%u]." % (GSID, GS.Data['InternalID'])
+		PutLogList("(*) Game Server registered at ID[%u]-[%u]. Maps: %s" % (GSID, GS.Data['InternalID'], ", ".join(GS.MapName)))
 		
 	def FindNewGSID(self):
 		"""
@@ -409,7 +401,7 @@ class CLoginServer(object):
 		Read = {}
 		Request = struct.unpack('h', data[:2])[0]
 		if Request != Packets.DEF_LOGRESMSGTYPE_CONFIRM:
-			print "Unknown Register Game Server Packet ID"
+			PutLogList("Unknown Register Game Server Packet ID")
 			return (False, -1, None)
 		data = data[2:]
 		Read['ServerName'] = nozeros(data[:10])
@@ -422,20 +414,17 @@ class CLoginServer(object):
 		Read['InternalID'] = struct.unpack('h', data[30:32])[0] #ord(data[30])
 		
 		if sender.address not in self.PermittedAddress and not self.ListenToAllAddresses:
-			print "(!) %s is not in permitted address list and tries to register Game Server!"
+			PutLogList("(!) %s is not in permitted address list and tries to register Game Server!" % sender.address, Logfile.HACK)
 			return (False, -1, None)
 		
 		NGSID = self.FindNewGSID()
-		print Read
 		GS = CGameServer(NGSID, sender)
 		GS.Data = Read
-		print "(*) Maps registered:"
 		data = data[32:]
 		while len(data)>0:
 			map_name = nozeros(data[:11])
 			GS.MapName += [map_name]
 			data = data[11:]
-			print "- %s" % (map_name)
 		if not GS.Data['ReceivedConfig']:
 			self.SendConfigToGS(GS)
 		self.GameServer[NGSID] = GS
@@ -477,7 +466,7 @@ class CLoginServer(object):
 				
 		for packet_id, key in Order:
 			if not key in self.Config:
-				print "%s config not loaded!" % key
+				PutLogList("%s config not loaded!" % key, Logfile.ERROR)
 				break
 			SendCfgData = struct.pack('Lh', packet_id, 0) + self.Config[key]
 			self.SendMsgToGS(GS, SendCfgData)
@@ -487,16 +476,16 @@ class CLoginServer(object):
 			Here we are adding socket to Game Server
 		"""
 		GSID = ord(data[0])
-		print "(*) Trying to register socket on GS[%d]." % GSID
+		PutLogList("(*) Trying to register socket on GS[%d]." % GSID)
 		if not GSID in self.GameServer:
 			print "(!) GSID is not registered!"
 			return False
 		self.GameServer[GSID].GameServerSocket += [sender]
-		print "(*) Registered Socket(%d) GSID(%d) ServerName(%s)" % (len(self.GameServer[GSID].GameServerSocket), GSID, self.GameServer[GSID].Data['ServerName'])
+		PutLogList("(*) Registered Socket(%d) GSID(%d) ServerName(%s)" % (len(self.GameServer[GSID].GameServerSocket), GSID, self.GameServer[GSID].Data['ServerName']))
 		if len(self.GameServer[GSID].GameServerSocket) == DEF.MAXSOCKETSPERSERVER:
 			self.GameServer[GSID].IsRegistered = True
-			print "(*) Gameserver(%s) registered!" % (self.GameServer[GSID].Data['ServerName'])
-			print
+			PutLogList("(*) Gameserver(%s) registered!" % (self.GameServer[GSID].Data['ServerName']))
+			PutLogList("")
 			
 	def GameServerAliveHandler(self, GS, data):
 		"""
@@ -506,23 +495,23 @@ class CLoginServer(object):
 			TODO: Disconnecting not responding game servers
 		"""
 		if len(data)<4:
-			print "GameServerAliveHandler: Size mismatch!"
+			PutLogList("GameServerAliveHandler: Size mismatch!")
 			return	
 		(MsgType, TotalPlayers) = struct.unpack('hh', data[:4])
 		if MsgType == Packets.DEF_MSGTYPE_CONFIRM:
 			GS.AliveResponseTime = time.time()
 			
 	def MainSocket_OnConnect(self, sender):
-		print "(*) MainSocket-> Client accepted [%s]" % sender.address
+		PutLogList("(*) MainSocket-> Client accepted [%s]" % sender.address)
 		
 	def MainSocket_OnDisconnected(self, sender):
-		print "(*) MainSocket -> Client disconnected"
+		PutLogList("(*) MainSocket -> Client disconnected")
 		
 	def MainSocket_OnListen(self, sender):
-		print "(*) MainSocket -> Server open"
+		PutLogList("(*) MainSocket -> Server open")
 		
 	def MainSocket_OnReceive(self, sender, size):
-		print "(*) MainSocket -> Received %d bytes" % size
+		PutLogList("(*) MainSocket -> Received %d bytes" % size)
 		buffer = sender.receive(size)
 		try:
 			format = '<Bh'
@@ -533,12 +522,12 @@ class CLoginServer(object):
 			Header = namedtuple('Header', 'cKey dwSize')._make(s)
 			buffer = buffer[header_size:]
 		except:
-			print "Except"
+			PutLogList("[%s] Except in MainSocket_OnReceive" % sender.address, Logfile.HACK)
 			sender.disconnect()
 			return
 			
 		if Header.dwSize != size or size < 4 or Header.dwSize < 4:
-			print "(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address
+			PutLogList("(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address, Logfile.HACK)
 			sender.disconnect()
 			return
 
@@ -563,12 +552,9 @@ class CLoginServer(object):
 			self.ProcessClientRequestEnterGame(sender, buffer)
 		else:
 			if MsgID in Packets:
-				print "Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer))
-				self.PutLogFileList("Packet MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
+				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
 			else:
-				print "Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer))
-				self.PutLogFileList("Unknown packet MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
-			#sender.disconnect()
+				PutLogFileList("MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
 			
 	def MainSocket_OnClose(self, sender):
 		pass
@@ -616,14 +602,14 @@ class CLoginServer(object):
 			return
 			
 		if Packet.WS != self.WorldServerName:
-			print "(!) Player tries to enter unknown World Server : %s" % Packet.WS
+			PutLogList("(!) Player tries to enter unknown World Server : %s" % Packet.WS, Logfile.HACK)
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGWORLDSERVER)
 			self.SendMsgToClient(sender, SendData)
 			return
 			
 		OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
 		if OK[0] == Account.OK:
-			print "(*) Login OK: %s" % Packet.AccountName
+			PutLogList("(*) Login success: %s" % Packet.AccountName)
 			SendData = struct.pack('<L3hB12s', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM,
 												Version.UPPER, Version.LOWER,
 												0, #account status
@@ -633,17 +619,17 @@ class CLoginServer(object):
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.WRONGPASS:
-			print "(!) Wrong password: Account[ %s ] - Correct Password[ %s ] - Password received[ %s ]" % (Packet.AccountName, OK[2], OK[1])
+			PutLogList( "(!) Wrong password: Account[ %s ] - Correct Password[ %s ] - Password received[ %s ]" % (Packet.AccountName, OK[2], OK[1]), Logfile.ERROR)
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.NOTEXISTS:
-			print "(!) Account does not exists: %s" % Packet.AccountName
+			PutLogList("(!) Account does not exists: %s" % Packet.AccountName, Logfile.ERROR)
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT)
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.BLOCKED:
-			print "(!) Account %s blocked until %d-%d-%d and tries to login!" % (Read['AccountName'], OK[1], OK[2], OK[3])
+			PutLogList("(!) Account %s blocked until %d-%d-%d and tries to login!" % (Read['AccountName'], OK[1], OK[2], OK[3]), Logfile.ERROR)
 			SendData = struct.pack('<Lh3i', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_REJECT, 
 												OK[1], OK[2], OK[3], #Y-m-d
 												0) #Account Status
@@ -665,7 +651,7 @@ class CLoginServer(object):
 		OK = self.Database.CheckAccountLogin(Packet.Login, Packet.Password)
 		
 		if Packet.NewPass1 != Packet.NewPass2 or len(Packet.NewPass1) < 8 or len(Packet.NewPass2) < 8:
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password confirmation)" % (Packet.Login, Packet.Password, Packet.NewPass1)
+			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (Password confirmation)" % (Packet.Login, Packet.Password, Packet.NewPass1))
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
 			return
@@ -673,23 +659,23 @@ class CLoginServer(object):
 		if OK[0] == Account.WRONGPASS:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (Password mismatch)" % (Packet.Login, Packet.Password, Packet.NewPass1)
+			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (Password mismatch)" % (Packet.Login, Packet.Password, Packet.NewPass1))
 			return
 			
 		if OK[0] != Account.OK:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (%s)" % (Packet.Login, Packet.Password, Packet.NewPass1, Account.reverse_lookup_without_mask(OK[0]))
+			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (%s)" % (Packet.Login, Packet.Password, Packet.NewPass1, Account.reverse_lookup_without_mask(OK[0])))
 			return
 			
 		if self.Database.ChangePassword(Packet.Login, Packet.Password, Packet.NewPass1):
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGESUCCESS)
 			self.SendMsgToClient(sender, SendData)
-			print "(*) Password changed on account %s (%s -> %s) SUCCESS!" % (Packet.Login, Packet.Password, Packet.NewPass1)
+			PutLogList("(*) Password changed on account %s (%s -> %s) SUCCESS!" % (Packet.Login, Packet.Password, Packet.NewPass1))
 		else:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Password changed on account %s (%s -> %s) FAIL! (Database failed)" % (Packet.Login, Packet.Password, Packet.NewPass1)
+			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (Database failed)" % (Packet.Login, Packet.Password, Packet.NewPass1))
 	
 	def CreateNewCharacter(self, sender, buffer):
 		global packet_format
@@ -708,13 +694,13 @@ class CLoginServer(object):
 		if OK[0] != Account.OK or Packet.PlayerName == "" or Packet.WS != self.WorldServerName:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create new character -> Wrong account data on creating new character!"
+			PutLogList("(!) Create new character -> Wrong account data on creating new character!", Logfile.HACK)
 			return
 			
 		if self.Database.CharacterExists(Packet.PlayerName):
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGCHARACTER)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create new character -> Character %s already exists." % Packet.PlayerName
+			PutLogList("(!) Create new character -> Character %s already exists." % Packet.PlayerName, Logfile.HACK)
 			return
 			
 		CharList = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
@@ -723,31 +709,31 @@ class CLoginServer(object):
 		if filter(lambda x: x not in [10,11,12,13,14], Stat) < 6: #test if requested Stats are not in valid values
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create new character -> Stat values not in [10, 11, 12, 13, 14]"
+			PutLogList("(!) Create new character -> Stat values not in [10, 11, 12, 13, 14]", Logfile.HACK)
 			return
 		
 		if reduce(lambda a,b: a+b, Stat) != 70: #if stats count does not compare 70
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create new character -> Stat values %d/70!" % (reduce(lambda a,b: a+b, Stat))
+			PutLogList("(!) Create new character -> Stat values %d/70!" % (reduce(lambda a,b: a+b, Stat)), Logfile.HACK)
 			return
 			
 		if len(CharList) > 4: #more than 4 chars?
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create new character -> Account tries make to more than 4 characters"
+			PutLogList("(!) Create new character -> Account %s tries make to more than 4 characters!" % Packet.AccountName, Logfile.HACK)
 			return
 		
 		if not self.Database.CreateNewCharacter(Packet):
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create new character -> Create new character failed at CreateNewCharacter!"
+			PutLogList("(!) Create new character -> Create new character failed at CreateNewCharacter!", Logfile.HACK)
 		else:
 			SendData = struct.pack('<Lh10s',Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERCREATED,
 											Packet.PlayerName)
 			SendData += self.GetCharList(Packet.AccountName, Packet.AccountPassword)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create new character -> Create new character success on account %s [CharName: %s ]!" % (Packet.AccountName, Packet.PlayerName)
+			PutLogList("(!) Create new character -> Create new character success on account %s [CharName: %s ]!" % (Packet.AccountName, Packet.PlayerName))
 
 	def GetCharList(self, account_name, account_password):
 		global fillzeros
@@ -777,7 +763,6 @@ class CLoginServer(object):
 			s = map(packet_format, struct.unpack(format, buffer))
 			Packet = namedtuple('Packet', 'MsgType CharName AccountName AccountPassword WS')._make(s)
 		except:
-			print "Exception"
 			SendData = struct.pack('Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
 			self.SendMsgToClient(sender, SendData)
 			return
@@ -786,7 +771,7 @@ class CLoginServer(object):
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
 			self.SendMsgToClient(sender, SendData)
 			return
-
+		PutLogList("Character deleted success! [ %s ] Account[%s]" % (Packet.CharName, Packet.AccountName))
 		SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_CHARACTERDELETED, 1)
 		SendData += self.GetCharList(Packet.AccountName, Packet.AccountPassword)
 		self.SendMsgToClient(sender, SendData)
@@ -801,6 +786,7 @@ class CLoginServer(object):
 			s = map(packet_format, struct.unpack(format, buffer))
 			Packet = namedtuple('Packet', 'MsgType AccountName AccountPassword Mail Gender AccountAge Unk1 Unk2 Unk3 AccountCountry AccountSSN AccountQuiz AccountAnswer CmdLine')._make(s)
 		except:
+			print "Exception CreateNewAccount CLoginServer"
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
 			self.SendMsgToClient(sender, SendData)
 			return
@@ -809,22 +795,21 @@ class CLoginServer(object):
 		if OK == Account.OK:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED)
 			self.SendMsgToClient(sender, SendData)
-			print "(*) Create account success [ %s/%s ]." % (Packet.AccountName, Packet.Mail)
+			PutLogList("(*) Create account success [ %s/%s ]." % (Packet.AccountName, Packet.Mail))
 		elif OK == Account.FAIL:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create account fails [ %s ]. Unknown error occured!" % Packet.AccountName
+			PutLogList("(!) Create account fails [ %s ]. Unknown error occured!" % Packet.AccountName, Logfile.HACK)
 		elif OK == Account.EXISTS:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT)
 			self.SendMsgToClient(sender, SendData)
-			print "(!) Create account fails [ %s ]. Account already exists" % Packet.AccountName
+			PutLogList("(!) Create account fails [ %s ]. Account already exists" % Packet.AccountName, Logfile.HACK)
 
 	def ProcessClientRequestEnterGame(self, sender, buffer):
 		try:
 			global packet_format
 			format = '<h10s10s10s10si30s120s'
 			if len(buffer) != struct.calcsize(format):
-				print "%d/%d" % (len(buffer), struct.calcsize(format))
 				raise Exception
 			s = map(packet_format, struct.unpack(format, buffer))
 			Packet = namedtuple('Packet', 'MsgType PlayerName MapName AccountName AccountPassword Level WS CmdLine')._make(s)
@@ -834,7 +819,7 @@ class CLoginServer(object):
 			return
 		
 		if Packet.WS != self.WorldServerName:
-			print "(!) Player tries to enter game with unknown World Server : %s" % Packet.WS
+			PutLogList("(!) Player tries to enter game with unknown World Server : %s" % Packet.WS)
 			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
 			self.SendMsgToClient(sender, SendData)
 			return
@@ -853,7 +838,7 @@ class CLoginServer(object):
 		if Found:
 			GS = self.IsMapAvailable(Packet.MapName)
 			if GS == False:
-				print "(!) Player %s is stuck at %s !" % (Packet.PlayerName, Packet.MapName)
+				PutLogList("(!) Player %s is stuck at %s !" % (Packet.PlayerName, Packet.MapName))
 				SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_GAMESERVERNOTONLINE)
 				self.SendMsgToClient(sender, SendData)
 			else:
@@ -872,7 +857,7 @@ class CLoginServer(object):
 					SendData = struct.pack('<Lh16sh20s', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_CONFIRM, 
 															GS['IP'], GS['Port'],
 															"") #ServerName?
-					print "Client enter game : %s" % Packet.PlayerName
+					PutLogList("Client enter game : %s" % Packet.PlayerName)
 					self.SendMsgToClient(sender, SendData)
 					
 		else:
@@ -914,7 +899,7 @@ class CLoginServer(object):
 					break
 				
 		if not Found:
-			print "(!) HG server is requesting not logged player! HACK!"
+			PutLogList("(!) HG server is requesting not logged player! HACK!", Logfile.HACK)
 			SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_PLAYERDATA, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
 			self.SendMsgToGS(GS, SendData)
 		else:
@@ -927,7 +912,6 @@ class CLoginServer(object):
 		if OK == False:
 			"OK == False"
 			return
-		print "GetCharacterInfo..."
 		Ch = OK['Content']
 		
 		Data = struct.pack('<10s2B10s2h5B20sBih7Bi100s',
@@ -1072,15 +1056,15 @@ class CLoginServer(object):
 						#self.Clients.remove(i) - do not delete client here! - sloppy disconnect code in aryes loginserv
 						ok = True
 				if not ok:
-					print "(!!!) Unknown player disconnected [%s] !" % Packet.PlayerName
+					PutLogList("(!!!) Unknown player disconnected [%s] !" % Packet.PlayerName)
 				else:
-					print "(!!!) Character[%s] disconnected from game server [ %s ]." % (Packet.PlayerName, GS.Data['ServerName'])
+					PutLogList("(!!!) Character[%s] disconnected from game server [ %s ]." % (Packet.PlayerName, GS.Data['ServerName']))
 					
 			elif ID == Packets.GSM_REQUEST_FINDCHARACTER:
 				SendBuffer = buffer[:25]
 				buffer = buffer[25:]
 				InternalID = ord(SendBuffer[-1])
-				print "(***) GSM_REQUEST_FINDCHARACTER InternalID=%d" % (InternalID)
+				PutLogList("(***) GSM_REQUEST_FINDCHARACTER InternalID=%d" % (InternalID))
 				SendData=struct.pack('<Lh25s', MSGID_SERVERSTOCKMSG, DEF_MSGTYPE_CONFIRM, buffer)
 				ok = False
 				for i in self.GameServer.keys():
@@ -1089,8 +1073,6 @@ class CLoginServer(object):
 						ok = True
 				if not ok:
 					print "NOT OK."
-#			else:
-#				print "%04X" % ID
 
 	def SavePlayerData(self, buffer, GS):
 		global packet_format
@@ -1100,9 +1082,9 @@ class CLoginServer(object):
 		buffer = buffer[struct.calcsize(fmt)+1:]
 		Data = self.DecodeSavePlayerDataContents(buffer)
 		if self.Database.SavePlayerContents(Header.CharName, Header.AccountName, Header.AccountPassword, Data):
-			print "(!) Player [ %s ] data contents saved !" % Header.CharName
+			PutLogList("(!) Player [ %s ] data contents saved !" % Header.CharName)
 		else:
-			print "(!!!) Player [ %s ] data contents not saved !" % Header.CharName
+			PutLogList("(!!!) Player [ %s ] data contents not saved !" % Header.CharName)
 
 	def DecodeSavePlayerDataContents(self, buffer):
 		global packet_format
@@ -1165,13 +1147,11 @@ class CLoginServer(object):
 			global packet_format
 			format = '<h10s10s10s16si'
 			if len(buffer) != struct.calcsize(format):
-				print "(!) RequestPlayerData size mismatch!"
 				raise Exception				
 			s = map(packet_format, struct.unpack(format, buffer))
 			Packet = namedtuple('Packet', 'MsgType AccountName AccountPassword ServerName IP Level')._make(s)
 		except:
 			#TODO: Force logout player ?
-			print "(!) Error reading packet in EnterGameConfirm"
 			return
 			
 		ok = False
@@ -1182,7 +1162,7 @@ class CLoginServer(object):
 				GSID = id
 				
 		if not ok:
-			print "(!!!) Wrong data: Game server ID: [ %s ] ClientIP[%s] not found!" % (Packet.ServerName, Packet.IP)
+			PutLogList("(!!!) Wrong data: Game server ID: [ %s ] ClientIP[%s] not found!" % (Packet.ServerName, Packet.IP), Logfile.HACK)
 			return
 		
 		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
@@ -1191,7 +1171,7 @@ class CLoginServer(object):
 			Client = self.Clients[ID]
 			if Client['Level'] == Packet.Level and Client['AccountName'] == Packet.AccountName:
 				if Client['AccountPassword'] != Packet.AccountPassword or Client['Level'] != Packet.Level:
-					print "(!!!) Wrong data: Account(%s) pwd[%s/%s] Level[%d/%d] IP[%s/%s] Char[%s] GSID[%d/%d]" % (
+					PutLogList("(!!!) Wrong data: Account(%s) pwd[%s/%s] Level[%d/%d] IP[%s/%s] Char[%s] GSID[%d/%d]" % (
 									Packet.AccountName,
 									Packet.AccountPassword,
 									Client['AccountPassword'],
@@ -1201,63 +1181,35 @@ class CLoginServer(object):
 									Packet.IP,
 									Client['ClientIP'],
 									GSID,
-									Client['ID'])
+									Client['ID']), Logfile.HACK)
 					return #REJECT
 				if Client['ClientIP'] != "127.0.0.1" and Packet.IP != Client['ClientIP']:
-					print "(!!!) Client IP mismatch: Account(%s) IP[%s/%s]" % (
+					PutLogList("(!!!) Client IP mismatch: Account(%s) IP[%s/%s]" % (
 									Packet.AccountName,
 									Packet.IP,
-									Client['ClientIP'])
+									Client['ClientIP']), Logfile.HACK)
 					return #REJECT
 				self.Clients[ID]['IsPlaying'] = True
 				self.Clients[ID]['Time'] = time.localtime()
-				print "(!) Set character(%s) Account[%s] status: playing." % (Client['CharName'], Client['AccountName'])
+				PutLogList("(!) Set character(%s) Account[%s] status: playing." % (Client['CharName'], Client['AccountName']))
 
 			else:
-				print "Unknown data 1"
+				PutLogList("Unknown data 1", Logfile.HACK)
 				print Packet
 		else:
-			print "Unknown data 2"
+			PutLogList("Unknown data 2", Logfile.HACK)
 			print Packet
-
-	def PutLogFileList(self, buffer, sLogName, bIsPacket = False):
-		if bIsPacket:
-			global packet_format
-			fmt = "<h"
-			s=map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
-			Header = namedtuple("Header", "MsgType")._make(s)
-			buffer = buffer[struct.calcsize(fmt):]
-			if len(buffer) > DEF.MAXLOGLINESIZE or len(buffer) == 0:
-				return
-
-		if not os.path.isdir(Logfile.BASE):
-			os.mkdir(Logfile.BASE)
-		if sLogName in [Logfile.GM, Logfile.ITEM, Logfile.CRUSADE]:
-			sDirPath = "%s%s" % (Logfile.BASE, sLogName)
-			if not os.path.isdir(sDirPath):
-				os.mkdir(sDirPath)
-
-		sFileName = ''
-		if sLogName == Logfile.GM:
-			sFileName = '%s/%s/GM-Event-%s.txt' % (Logfile.BASE, Logfile.GM, time.strftime("%Y-%m-%d"))
-		if sLogName == Logfile.ITEM:
-			sFileName = '%s/%s/Item-Event-%s.txt' % (Logfile.BASE, Logfile.ITEM, time.strftime("%Y-%m-%d"))
-		if sLogName == Logfile.CRUSADE:
-			sFileName = '%s/%s/Crusade-Event-%s.txt' % (Logfile.BASE, Logfile.CRUSADE, time.strftime("%Y-%m-%d"))
-		if sFileName == '':
-			sFileName = '%s/%s' % (Logfile.BASE, sLogName)
-
-		FileHandle = open(sFileName, 'a')
-		FileHandle.write("%s - %s\n" % (time.strftime("%Y:%m:%d:%H:%M"), buffer))
-		FileHandle.close()
 
 	def ProcessClientLogout(self, buffer, GS, bSave):
 		global packet_format
-		fmt = "<h10s10s10sc"
-		s=map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
-		Packet = namedtuple('Packet', 'MsgType PlayerName AccountName AccountPassword CountLogout')._make(s)
-		buffer = buffer[struct.calcsize(fmt):]
-
+		try:
+			fmt = "<h10s10s10sc"
+			s=map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
+			Packet = namedtuple('Packet', 'MsgType PlayerName AccountName AccountPassword CountLogout')._make(s)
+			buffer = buffer[struct.calcsize(fmt):]
+		except:
+			PutLogFileList("(!) [GameServer IP: %s] Unable to save player data. Packet mismatch!" % GS.socket.address, Logfile.HACK)
+			return
 		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
 		if InUse:
 			Client = self.Clients[ID]
@@ -1265,14 +1217,14 @@ class CLoginServer(object):
 				if bSave:
 					Data = self.DecodeSavePlayerDataContents(buffer)
 					if self.Database.SavePlayerContents(Packet.PlayerName, Packet.AccountName, Packet.AccountPassword, Data):
-						print "(*) Player [ %s ] Account [ %s ] data saved properly." % (Packet.PlayerName, Packet.AccountName)
+						PutLogList("(*) Player [ %s ] Account [ %s ] data saved properly." % (Packet.PlayerName, Packet.AccountName))
 					else:
-						print "(!) Player [ %s ] data contents not saved !" % Packet.PlayerName
+						PutLogList("(!) Player [ %s ] data contents not saved !" % Packet.PlayerName)
 				else:
-					print "(*) Player [ %s ] Account [ %s ] logout with no save." % (Packet.PlayerName, Packet.AccountName)
+					PutLogList("(*) Player [ %s ] Account [ %s ] logout with no save." % (Packet.PlayerName, Packet.AccountName))
 
 				if Packet.CountLogout:
-					print "(*) CountLogout flag true -> client removed"
+					PutLogList("(*) CountLogout flag true -> client removed")
 					self.Clients.remove(self.Clients[ID])
 				else:
 					self.Clients[ID]['IsOnServerChange'] = True
@@ -1280,13 +1232,13 @@ class CLoginServer(object):
 					SendData = struct.pack('L10h', Packets.MSGID_RESPONSE_SAVEPLAYERDATA_REPLY, Packet.PlayerName)
 					self.SendMsgToGS(GS, SendData)
 			else:
-				print "(!) Server change data-error for Character[ %s ]" % Packet.PlayerName
-				print "(!) Wrong data: Character[ %s/%s ] AcctName[ %s/%s ] AcctPwd[ %s/%s ]" % (
+				PutLogList("(!) Server change data-error for Character[ %s ]" % Packet.PlayerName, Logfile.HACK)
+				PutLogList("(!) Wrong data: Character[ %s/%s ] AcctName[ %s/%s ] AcctPwd[ %s/%s ]" % (
 								Packet.PlayerName,
 								Client['CharName'],
 								Packet.AccountName,
 								Client['AccountName'],
 								Packet.AccountPassword,
-								Client['AccountPassword'])
+								Client['AccountPassword']), Logfile.HACK)
 		else:
-			print "(!) Server change data-error for Character[ %s ] - Account not in use!" % Packet.PlayerName
+			PutLogList("(!) Server change data-error for Character[ %s ] - Account not in use!" % Packet.PlayerName, Logfile.HACK)
