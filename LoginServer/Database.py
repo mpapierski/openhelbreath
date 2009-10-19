@@ -1,5 +1,5 @@
 import MySQLdb, _mysql_exceptions, time, random, os, re
-from Helpers import PutLogFileList
+from Helpers import PutLogFileList, PutLogList
 from GlobalDef import Account, DEF, Logfile
 from threading import Semaphore, BoundedSemaphore
 
@@ -399,6 +399,7 @@ class DatabaseDriver(object):
 		if not self.ExecuteSQL("DELETE FROM `item` WHERE CharID='%d'", CharID):
 			return False
 		for item in Data['Items']:
+			self.CheckDupeItem(item.m_cName, item.m_sTouchEffectValue1, item.m_sTouchEffectValue2, item.m_sTouchEffectValue3)
 			Query = "INSERT INTO `item` (`CharID`,`ItemName`,`ItemID`,`Count`,`ItemType`,`ID1`,`ID2`,`ID3`,`Color`,`Effect1`,`Effect2`,`Effect3`,`LifeSpan`,`Attribute`,`ItemEquip`,`ItemPosX`,`ItemPosY`) "+\
 					"VALUES('%d','%s','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d')"
 			if not self.ExecuteSQL(Query, CharID, 
@@ -419,6 +420,7 @@ class DatabaseDriver(object):
 		if not self.ExecuteSQL("DELETE FROM `bank_item` WHERE CharID='%d'", CharID):
 			return False
 		for item in Data["BankItems"]:
+			self.CheckDupeItem(item.m_cName, item.m_sTouchEffectValue1, item.m_sTouchEffectValue2, item.m_sTouchEffectValue3)
 			Query = "INSERT INTO `bank_item` (`CharID`, `ItemName`,`ItemID`,`Count`,`ItemType`,`ID1`,`ID2`,`ID3`,`Color`,`Effect1`,`Effect2`,`Effect3`,`LifeSpan`,`Attribute`)" + \
 						"VALUES('%d', '%s','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d')"
 			if not self.ExecuteSQL(Query, CharID,
@@ -489,3 +491,24 @@ class DatabaseDriver(object):
 		finally:
 			fin.close()
 		return {'host' : sHost, 'port': int(iPort), 'user': sUser, 'passwd': sPass, 'db': sDB}
+
+	def CheckDupeItem(self, sName, sID1, sID2, sID3):
+		if sID1 == 0 and sID2 == 0 and sID3 == 0:
+			return
+
+		QueryConsult = "SELECT `ItemName` FROM `item` WHERE `ItemName` = '%s' AND `ID1` = '%s' AND `ID2` = '%s' AND `ID3` = '%s';"
+		self.ExecuteSQL(QueryConsult, sName, sID1, sID2, sID3)
+		r = self.db.store_result()
+		if r.num_rows() >= 1:
+			PutLogList("(!) Item [ %s ] with duplicate ID in `item` database! ID1 [ %s ] ID2 [ %s ] ID3 [ %s ]" % (sName, sID1, sID2, sID3), Logfile.HACK)
+			return
+
+		QueryConsult = "SELECT `ItemName` FROM `bank_item` WHERE `ItemName` = '%s' AND `ID1` = '%s' AND `ID2` = '%s' AND `ID3` = '%s';"
+		self.ExecuteSQL(QueryConsult, sName, sID1, sID2, sID3)
+		r = self.db.store_result()
+		ItemInBank = r.num_rows()
+		if r.num_rows() >= 1:
+			PutLogList("(!) Item [ %s ] with duplicate ID in `bank_item` database! ID1 [ %s ] ID2 [ %s ] ID3 [ %s ]" % (sName, sID1, sID2, sID3), Logfile.HACK)
+			return
+
+		return
