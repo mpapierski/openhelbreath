@@ -99,6 +99,15 @@ class CLoginServer(object):
 				for i in self.Clients:
 					print i
 				return
+		elif tok[0].lower() == "update":
+			self.SendUpdatedConfigToAllServers()
+			return
+		elif tok[0].lower() == "help":
+			print "usage: [command] [argument]"
+			print "help\t\t: Print this help message"
+			print "list arg\t: Show current clients or gameservers initialized (gameservers, clients)"
+			print "update\t\t: Send updated configuration files to all servers"
+			return
 		print "(***) Unknown command: %s" % tok[0].upper()
 		
 	def DoInitialSetup(self):
@@ -260,7 +269,6 @@ class CLoginServer(object):
 		"""
 		if not self.bReadAllConfig():
 			return False
-		PutLogList("(*) Done!")
 		
 		GateServerCB = {'onConnected': self.GateServer_OnConnect,
 						'onDisconnected': self.GateServer_OnDisconnected,
@@ -339,8 +347,9 @@ class CLoginServer(object):
 					PutLogList("(*) Gate Server port : %d" % (self.GateServerPort))
 					
 				if token[0] == "permitted-address":
-					self.PermittedAddress += [token[1]]
-					PutLogList("(*) IP [%s] added to permitted addresses list!" % (token[1]))
+					if token[1] not in self.PermittedAddress:
+						self.PermittedAddress += [token[1]]
+						PutLogList("(*) IP [%s] added to permitted addresses list!" % (token[1]))
 					if self.ListenToAllAddresses:
 						self.ListenToAllAddresses = False
 						
@@ -1330,3 +1339,15 @@ class CLoginServer(object):
 		self.SendMsgToGS(GS, SendData)
 		if (Client['ForceDisconnRequestTime'] == 0):
 			self.Clients[ID]['ForceDisconnRequestTime'] = time.localtime()
+
+	def SendUpdatedConfigToAllServers(self):
+		PutLogList("(*) Updating configuration files...")
+		if not self.bReadAllConfig():
+			PutLogList("(!) Could not read configuration files!")
+		else:
+			PutLogList("(*) Sending updated configuration files to all servers...")
+			for i in self.GameServer:
+				SendData = struct.pack('L', Packets.MSGID_UPDATECONFIGFILES)
+				self.SendMsgToGS(self.GameServer[i], SendData)
+				self.SendConfigToGS(self.GameServer[i])
+			PutLogList("(*) All server configs are updated!")

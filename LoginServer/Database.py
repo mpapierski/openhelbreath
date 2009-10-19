@@ -1,4 +1,4 @@
-import MySQLdb, _mysql_exceptions, time, random
+import MySQLdb, _mysql_exceptions, time, random, os, re
 from Helpers import PutLogFileList
 from GlobalDef import Account, DEF, Logfile
 from threading import Semaphore, BoundedSemaphore
@@ -8,6 +8,7 @@ MySQL_Auth = {'host' : 'localhost', 'port': 3307, 'user': 'root', 'passwd': '', 
 class DatabaseDriver(object):
 	def __init__(self):
 		global MySQL_Auth
+		MySQL_Auth = self.ReadDatabaseConfigFile('LServer.cfg')
 		Default = {'host' : 'localhost', 'port': 3306, 'user': 'root', 'passwd': '', 'db': 'playerdb'}
 		for k in Default.keys():
 			if k not in MySQL_Auth:
@@ -444,3 +445,43 @@ class DatabaseDriver(object):
 		"VALUES('%d','%s','%d','%d','%d','%d')"
 		if not self.ExecuteSQL(Query, CharID, Name, Count, LifeSpan, PosX, PosY):
 			return False
+		
+	def ReadDatabaseConfigFile(self, cFn):
+		"""
+			Parse database configuration file
+		"""
+		if not os.path.exists(cFn) and not os.path.isfile(cFn):
+			PutLogList("(!) Cannot open database configuration file.")
+			return False
+
+		sHost = 'localhost'; iPort = 3306; sUser = 'root'; sPass = ''; sDB = 'playerdb'
+		reg = re.compile('[a-zA-Z]')
+		fin = open(cFn, 'r')
+		try:
+			for line in fin:
+				if reg.match(line) == None:
+					continue
+					
+				token = filter(lambda l: True if type(l) == int else (l.strip() != ""), map(lambda x: (lambda y: int(y) if y.isdigit() else y)(x.strip().replace('\t',' ').replace('\r', '').replace('\n','')), line.split('=')))
+				
+				if len(token)<2:
+					continue
+					
+				if token[0] == "mysql-server-host":
+					sHost = token[1]
+					
+				if token[0] == "mysql-server-port":
+					iPort = token[1]
+					
+				if token[0] == "mysql-username":
+					sUser = token[1]
+					
+				if token[0] == "mysql-password":
+					sPass = token[1]
+						
+				if token[0] == "mysql-database":
+					sDB = token[1]
+					
+		finally:
+			fin.close()
+		return {'host' : sHost, 'port': int(iPort), 'user': sUser, 'passwd': sPass, 'db': sDB}
