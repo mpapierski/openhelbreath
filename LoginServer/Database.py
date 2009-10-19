@@ -454,7 +454,11 @@ class DatabaseDriver(object):
 			PutLogList("(!) Cannot open database configuration file.")
 			return False
 
-		sHost = 'localhost'; iPort = 3306; sUser = 'root'; sPass = ''; sDB = 'playerdb'
+		sHost = MySQL_Auth['host']
+		iPort = MySQL_Auth['port']
+		sUser = MySQL_Auth['user']
+		sPass = MySQL_Auth['passwd']
+		sDB   = MySQL_Auth['db']
 		reg = re.compile('[a-zA-Z]')
 		fin = open(cFn, 'r')
 		try:

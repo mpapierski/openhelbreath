@@ -71,6 +71,7 @@ class CLoginServer(object):
 		self.MaxTotalUsers = 1000
 		self.WorldServerName = "WS1"
 		self.Clients = []
+		self.ServersBeingShutdown = False
 		PutLogFileList("", Logfile.EVENTS)
 		PutLogFileList("Starting new events...", Logfile.EVENTS)
 		
@@ -102,10 +103,14 @@ class CLoginServer(object):
 		elif tok[0].lower() == "update":
 			self.SendUpdatedConfigToAllServers()
 			return
+		elif tok[0].lower() == "shutdown":
+			self.ProcessShutdown(self.ServersBeingShutdown)
+			return
 		elif tok[0].lower() == "help":
 			print "usage: [command] [argument]"
 			print "help\t\t: Print this help message"
 			print "list arg\t: Show current clients or gameservers initialized (gameservers, clients)"
+			print "shutdown\t: Send server shutdown announcement"
 			print "update\t\t: Send updated configuration files to all servers"
 			return
 		print "(***) Unknown command: %s" % tok[0].upper()
@@ -142,7 +147,7 @@ class CLoginServer(object):
 		for i in self.GameServer.values():
 			for j in i.GameServerSocket:
 				if j == sender:
-					PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d] (!)" % (i.Data['ServerName'],i.GSID), Logfile.ERROR)
+					PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d]" % (i.Data['ServerName'],i.GSID), Logfile.ERROR)
 					i.GameServerSocket.remove(sender)
 					return
 		GS = self.SockToGS(sender)
@@ -150,6 +155,11 @@ class CLoginServer(object):
 			PutLogList("(*) GateServer %s -> Lost connection" % (GS.Data['ServerName']), Logfile.ERROR)
 		else:
 			PutLogList("Lost unknown connection on GateServer (not registered? hack attempt?)", Logfile.ERROR)
+
+		for id in self.GameServer:
+			if self.GameServer[id] == GS:
+				del self.GameServer[id]
+				break
 		
 	def GateServer_OnListen(self, sender):
 		"""
@@ -209,47 +219,54 @@ class CLoginServer(object):
 			
 		elif MsgID == Packets.MSGID_GAMESERVERALIVE:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				self.GameServerAliveHandler(GS, buffer)
 				
 		elif MsgID == Packets.MSGID_REQUEST_PLAYERDATA:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				self.ProcessRequestPlayerData(sender, buffer, GS)
 
 		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				self.ServerStockMsgHandler(GS, buffer);
 
 		elif MsgID in [Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT, Packets.MSGID_REQUEST_SAVEPLAYERDATA_REPLY]:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				self.ProcessClientLogout(buffer, GS, True)
 				
 		elif MsgID == Packets.MSGID_REQUEST_NOSAVELOGOUT:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				self.ProcessClientLogout(buffer, GS, False)
 
 		elif MsgID == Packets.MSGID_ENTERGAMECONFIRM:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				self.EnterGameConfirm(buffer, GS)
 
 		elif MsgID == Packets.MSGID_GAMEMASTERLOG:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				PutLogFileList(buffer, Logfile.GM, True)
+
 		elif MsgID in [Packets.MSGID_GAMEITEMLOG, Packets.MSGID_ITEMLOG]:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				PutLogFileList(buffer, Logfile.ITEM, True)
+
 		elif MsgID == Packets.MSGID_GAMECRUSADELOG:
 			GS = self.SockToGS(sender)
-			if GS != None:
+			if GS != None and GS.IsRegistered != False:
 				PutLogFileList(buffer, Logfile.CRUSADE, True)
-				
+
+		elif MsgID == Packets.MSGID_REQUEST_SETACCOUNTWAITSTATUS:
+			GS = self.SockToGS(sender)
+			if GS != None and GS.IsRegistered != False:
+				self.SetAccountServerChangeStatus(buffer, True)
+
 		else:
 			if MsgID in Packets:
 				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
@@ -923,6 +940,8 @@ class CLoginServer(object):
 			
 	def IsMapAvailable(self, MapName):
 		for GS in self.GameServer.values():
+			if not GS.IsRegistered:
+				return False
 			if MapName in GS.MapName:
 				return {'IP':GS.Data['ServerIP'], 'Port': GS.Data['ServerPort'], 'GSID': GS.GSID}
 		return False
@@ -1309,7 +1328,6 @@ class CLoginServer(object):
 					PutLogList("(*) Player [ %s ] Account [ %s ] logout with no save." % (Packet.PlayerName, Packet.AccountName))
 
 				if Packet.CountLogout:
-					PutLogList("(*) CountLogout flag true -> client removed")
 					self.Clients.remove(self.Clients[ID])
 				else:
 					self.Clients[ID]['IsOnServerChange'] = True
@@ -1346,8 +1364,36 @@ class CLoginServer(object):
 			PutLogList("(!) Could not read configuration files!")
 		else:
 			PutLogList("(*) Sending updated configuration files to all servers...")
+			SendData = struct.pack('L', Packets.MSGID_UPDATECONFIGFILES)
 			for i in self.GameServer:
-				SendData = struct.pack('L', Packets.MSGID_UPDATECONFIGFILES)
 				self.SendMsgToGS(self.GameServer[i], SendData)
 				self.SendConfigToGS(self.GameServer[i])
 			PutLogList("(*) All server configs are updated!")
+
+	def SetAccountServerChangeStatus(self, buffer, bIsOnServerChange):
+		global packet_format
+		try:
+			fmt = "<h10s"
+			if len(buffer) != struct.calcsize(fmt):
+				raise Exception
+			s = map(packet_format, struct.unpack(fmt, buffer))
+			Packet = namedtuple('Packet', 'MsgType AccountName')._make(s)
+		except:
+			return
+		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
+		if InUse:
+			self.Clients[ID]['IsOnServerChange'] = bIsOnServerChange
+
+	def ProcessShutdown(self, bAlreadyBeganShutdown):
+		if bAlreadyBeganShutdown == False:
+			PutLogList("(!) Sending server shutdown announcement!")
+			SendData = struct.pack('Lhh', Packets.MSGID_SENDSERVERSHUTDOWNMSG, 0, 1)
+			self.ServersBeingShutdown = True
+			PutLogList("(*) To complete shutdown process send command 'shutdown' again")
+		else:
+			PutLogList("(!) Shutting down all the servers!")
+			SendData = struct.pack('L', Packets.MSGID_GAMESERVERSHUTDOWNED)
+			
+		for i in self.GameServer:
+			if self.GameServer[i].IsRegistered:
+				self.SendMsgToGS(self.GameServer[i], SendData)
