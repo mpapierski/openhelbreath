@@ -217,6 +217,7 @@ class CLoginServer(object):
 			GS = self.SockToGS(sender)
 			if GS != None:
 				self.ProcessClientLogout(buffer, GS, True)
+				
 		elif MsgID == Packets.MSGID_REQUEST_NOSAVELOGOUT:
 			GS = self.SockToGS(sender)
 			if GS != None:
@@ -376,20 +377,19 @@ class CLoginServer(object):
 		"""
 		(ok, GSID, GS) = self.TryRegisterGameServer(sender, data)
 		PacketID = Packets.DEF_MSGTYPE_REJECT if ok == False else Packets.DEF_MSGTYPE_CONFIRM
-		SendData = struct.pack('L2h', Packets.MSGID_RESPONSE_REGISTERGAMESERVER, PacketID, GSID)
-		self.SendMsgToGS(GS, SendData)
-		PutLogList("(*) Game Server registered at ID[%u]-[%u]. Maps: %s" % (GSID, GS.Data['InternalID'], ", ".join(GS.MapName)))
+		SendData = struct.pack('<BhL2h', 0, 11, Packets.MSGID_RESPONSE_REGISTERGAMESERVER, PacketID, GSID) #cKey -> 0, dwSize = 1* 4b int + 2* 2b word
+		sender.client.send(SendData)
+		if GS != None:
+			PutLogList("(*) Game Server registered at ID[%u]-[%u]. Maps: %s" % (GSID, GS.Data['InternalID'], ", ".join(GS.MapName)))
+		else:
+			PutLogList("(!) Game Server registration rejected! IP[%s]" % sender.address, Logfile.HACK)
 		
 	def FindNewGSID(self):
 		"""
 			Finding new GameServer
 			TODO: Convert to lambda
 		"""
-		m = 1
-		for i in self.GameServer:
-			if i > m:
-				m = i
-		return m
+		return len(self.GameServer.keys())+1
 		
 	def TryRegisterGameServer(self, sender, data):
 		"""
@@ -411,10 +411,17 @@ class CLoginServer(object):
 		Read['NumberOfMaps'] = ord(data[29])
 		if Read['NumberOfMaps'] == 0:
 			return (False, -1, None)
+
 		Read['InternalID'] = struct.unpack('h', data[30:32])[0] #ord(data[30])
 		
 		if sender.address not in self.PermittedAddress and not self.ListenToAllAddresses:
 			PutLogList("(!) %s is not in permitted address list and tries to register Game Server!" % sender.address, Logfile.HACK)
+			return (False, -1, None)
+			
+		if (lambda gs_name: [] != filter(lambda x:x, map(lambda y: y.Data.get('ServerName','') == gs_name, self.GameServer.values())))(Read['ServerName']):
+			IP = filter(lambda x: x.Data['ServerName'] == Read['ServerName'], self.GameServer.values())
+			IP = IP[0].socket.address
+			PutLogList("(!) %s tries to login already registered server named %s [Registered from IP: %s] !" % (Read['ServerIP'], Read['ServerName'], ""), Logfile.HACK)
 			return (False, -1, None)
 		
 		NGSID = self.FindNewGSID()
@@ -835,6 +842,7 @@ class CLoginServer(object):
 		for C in Ch:
 			if C['char_name'] == Packet.PlayerName:
 				Found = True
+		
 		if Found:
 
 			GS = self.IsMapAvailable(Packet.MapName)
@@ -943,7 +951,7 @@ class CLoginServer(object):
 								Client['AccountPassword'],
 								Packet.CharName,
 								Client['CharName']), Logfile.HACK)
-			elif Client['ClientIP'] == "127.0.0.1" or Client['ClientIP'] != Packet.Address:
+			elif Client['ClientIP'] != "127.0.0.1" and Client['ClientIP'] != Packet.Address:
 				PutLogList("(!) IP mismatch: Account(%s) IP[%s/%s]" % (
 								Packet.AccountName,
 								Packet.Address,
@@ -1297,7 +1305,7 @@ class CLoginServer(object):
 				else:
 					self.Clients[ID]['IsOnServerChange'] = True
 					self.Clients[ID]['Time'] = time.localtime()
-					SendData = struct.pack('L10s', Packets.MSGID_RESPONSE_SAVEPLAYERDATA_REPLY, Packet.PlayerName)
+					SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_SAVEPLAYERDATA_REPLY, 0, Packet.PlayerName)
 					self.SendMsgToGS(GS, SendData)
 			else:
 				PutLogList("(!) Server change data-error for Character[ %s ]" % Packet.PlayerName, Logfile.HACK)
