@@ -37,6 +37,7 @@ from Helpers import Callbacks, PutLogFileList, PutLogList
 from Sockets import ServerSocket
 from Database import DatabaseDriver
 from collections import namedtuple
+from Timer import TimerManager
 
 nozeros = lambda x: x[0:x.find('\x00')] if x.find('\x00')>-1 else x
 fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
@@ -71,9 +72,11 @@ class CLoginServer(object):
 		self.MaxTotalUsers = 1000
 		self.WorldServerName = "WS1"
 		self.Clients = []
-		self.ServersBeingShutdown = False
+		self.ServerShutdownCount = 0
+		self.Timers = TimerManager()
+		self.Timers.register_timer(self.__gameserver_alive, 'gameserver_alive', 5.0, True)
 		PutLogFileList("", Logfile.EVENTS)
-		PutLogFileList("Starting new events...", Logfile.EVENTS)
+		PutLogFileList("Starting new session...", Logfile.EVENTS)
 		
 	def CommandHandler(self, command):
 		tok = command.split(" ")
@@ -104,7 +107,7 @@ class CLoginServer(object):
 			self.SendUpdatedConfigToAllServers()
 			return
 		elif tok[0].lower() == "shutdown":
-			self.ProcessShutdown(self.ServersBeingShutdown)
+			self.ProcessShutdown()
 			return
 		elif tok[0].lower() == "help":
 			print "usage: [command] [argument]"
@@ -1383,17 +1386,35 @@ class CLoginServer(object):
 		(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
 		if InUse:
 			self.Clients[ID]['IsOnServerChange'] = bIsOnServerChange
+			
+	def ProcessShutdown(self):
+		PutLogList("(!) Server shutdown process started...")
+		self.ServerShutdownCount = 0
+		self.Timers.register_timer(self.__shutdown_timer, 'shutdown_timer', 10.0, True)
 
-	def ProcessShutdown(self, bAlreadyBeganShutdown):
-		if bAlreadyBeganShutdown == False:
-			PutLogList("(!) Sending server shutdown announcement!")
-			SendData = struct.pack('Lhh', Packets.MSGID_SENDSERVERSHUTDOWNMSG, 0, 1)
-			self.ServersBeingShutdown = True
-			PutLogList("(*) To complete shutdown process send command 'shutdown' again")
+	def __shutdown_timer(self):
+		self.ServerShutdownCount += 1
+		if self.ServerShutdownCount < 6:
+			SendData = struct.pack('<Lhh', Packets.MSGID_SENDSERVERSHUTDOWNMSG, 0, 1)
+			PutLogList("(!) Sending server shutdown announcement - %d!" % self.ServerShutdownCount)
 		else:
-			PutLogList("(!) Shutting down all the servers!")
 			SendData = struct.pack('L', Packets.MSGID_GAMESERVERSHUTDOWNED)
+			PutLogList("(!) Shutting down all the servers!")
 			
 		for i in self.GameServer:
 			if self.GameServer[i].IsRegistered:
 				self.SendMsgToGS(self.GameServer[i], SendData)
+				
+		if self.ServerShutdownCount == 6:
+			return False
+		return True
+		
+	def __gameserver_alive(self):
+		print "Total servers connected: %d" % (len(self.GameServer.values()))
+		for v in self.GameServer.values():
+			if v.AliveResponseTime - time.time() > 10000:
+				PutLogList("(*) Game Server : %s@%s:%d (%d maps) is not responding!" % (v.Data['ServerName'], v.Data['ServerIP'], v.Data['ServerPort'], len(v.MapName)))
+				for SL in v.GameServerSocket:
+					SL.disconnect()
+				v.socket.disconnect()
+				self.GameServer.remove(v)
