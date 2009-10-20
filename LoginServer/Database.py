@@ -15,6 +15,7 @@ class DatabaseDriver(object):
 				MySQL_Auth[k] = Default[k]
 		self.Ready = False
 		self.Access = Semaphore() #change if server is laggy
+		self.Logout = []
 		
 	def Initialize(self):
 		if self.Ready:
@@ -38,6 +39,18 @@ class DatabaseDriver(object):
 
 		print "(*) Connection to MySQL database was successfully established!"
 
+		return True
+		
+	def ReadyToLoad(self, char_name, timeout = 7): #7 sec timeout
+		if char_name not in self.Logout:
+			return True
+			
+		start = time.time()
+		while True:
+			if time.time() - start > timeout:
+				return False
+			if char_name not in self.Logout:
+				break
 		return True
 		
 	def __querybuilder(self, Query, *Args):
@@ -293,6 +306,15 @@ class DatabaseDriver(object):
 		return Account.OK
 		
 	def GetCharacter(self, account_name, account_password, char_name):
+		if self.ReadyToLoad(char_name):
+			self.Logout += [char_name]
+			ok = self.TryGetCharacter(account_name, account_password, char_name)
+			self.Logout.remove(char_name)
+			return ok
+			
+		return False
+		
+	def TryGetCharacter(self, account_name, account_password, char_name):
 		QueryConsult = "SELECT chr.* FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
 		if not self.ExecuteSQL(QueryConsult, account_name, account_password, char_name):
 			return False
@@ -340,7 +362,16 @@ class DatabaseDriver(object):
 		return Character
 		
 	def SavePlayerContents(self, char_name, account_name, account_password, Data):
+		if self.ReadyToLoad(char_name):
+			self.Logout += [char_name]
+			ok = self.TrySavePlayerContents(char_name, account_name, account_password, Data)
+			self.Logout.remove(char_name)
+			return ok
+		return False
+		
+	def TrySavePlayerContents(self, char_name, account_name, account_password, Data):
 		QueryConsult = "SELECT chr.* FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
+
 		if not self.ExecuteSQL(QueryConsult, account_name, account_password, char_name):
 			return False
 		r = self.db.store_result()
