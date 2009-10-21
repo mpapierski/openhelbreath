@@ -212,6 +212,7 @@ class CLoginServer(object):
 			buffer = Decode(buffer, Header.dwSize-3, Header.cKey)
 				
 		MsgID = struct.unpack('<L', buffer[:4])[0]
+		RawBuffer = buffer
 		buffer = buffer[4:]
 		
 		if MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVER:
@@ -233,7 +234,7 @@ class CLoginServer(object):
 		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
 			GS = self.SockToGS(sender)
 			if GS != None and GS.IsRegistered:
-				self.ServerStockMsgHandler(GS, buffer);
+				self.ServerStockMsgHandler(GS, RawBuffer);
 
 		elif MsgID in [Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT, Packets.MSGID_REQUEST_SAVEPLAYERDATA_REPLY]:
 			GS = self.SockToGS(sender)
@@ -1141,42 +1142,32 @@ class CLoginServer(object):
 		return Data
 		
 	def ServerStockMsgHandler(self, GS, buffer):
-		"""
-			Write rest of GSM's (only GSM_DISCONNECT now)
-		"""
-		buffer = buffer[2:]
 		global packet_format
-		while len(buffer)>0:
-			ID = ord(buffer[0])
-			buffer = buffer[1:]
-			if ID == Packets.GSM_DISCONNECT:
-				s=map(packet_format, struct.unpack('<10s', buffer[:10]))
-				buffer=buffer[10:]
-				Packet = namedtuple('Packet', 'PlayerName')._make(s)
-				ok = False
-				for i in self.Clients:
-					if i['CharName'] == Packet.PlayerName:
-						self.Clients[self.Clients.index(i)]['IsPlaying'] = False
-						#self.Clients.remove(i) - do not delete client here! - sloppy disconnect code in aryes loginserv
-						ok = True
-				if not ok:
-					PutLogList("(!!!) Unknown player disconnected [%s] !" % Packet.PlayerName)
-				else:
-					PutLogList("(!!!) Character[%s] disconnected from game server [ %s ]." % (Packet.PlayerName, GS.Data['ServerName']))
-					
-			elif ID == Packets.GSM_REQUEST_FINDCHARACTER:
-				SendBuffer = buffer[:25]
-				buffer = buffer[25:]
-				InternalID = ord(SendBuffer[-1])
-				PutLogList("(***) GSM_REQUEST_FINDCHARACTER InternalID=%d" % (InternalID))
-				SendData=struct.pack('<Lh25s', MSGID_SERVERSTOCKMSG, DEF_MSGTYPE_CONFIRM, buffer)
-				ok = False
-				for i in self.GameServer.keys():
-					if i == InternalID:
-						self.SendMsgToGS(self.GameServer[i], SendData)
-						ok = True
-				if not ok:
-					print "NOT OK."
+		SendBuffer = buffer
+		buffer = buffer[6:]
+		ID = ord(buffer[0])
+		buffer = buffer[1:]
+
+		if ID == Packets.GSM_DISCONNECT:
+			PlayerName = struct.unpack('<10s', buffer[:10])
+			ok = False
+			for i in self.Clients:
+				if i['CharName'] == PlayerName:
+					self.Clients[self.Clients.index(i)]['IsPlaying'] = False
+					ok = True
+			if not ok:
+				PutLogList("(!) Unknown player disconnected [%s] !" % PlayerName)
+			else:
+				PutLogList("(!) Character[%s] disconnected from game server [ %s ]." % (PlayerName, GS.Data['ServerName']))
+		elif ID in [Packets.GSM_REQUEST_FINDCHARACTER, Packets.GSM_RESPONSE_FINDCHARACTER, Packets.GSM_RESPONSE_SHUTUPPLAYER]:
+			InternalID = struct.unpack('<h', buffer[:2])
+			for i in self.GameServer.keys():
+				if self.GameServer[i].IsRegistered and self.GameServer[i].Data['InternalID'] != InternalID:
+					self.SendMsgToGS(self.GameServer[i], SendBuffer)
+		else:
+			for i in self.GameServer.keys():
+				if self.GameServer[i].IsRegistered and self.GameServer[i] != GS:
+					self.SendMsgToGS(self.GameServer[i], SendBuffer)
 
 	def SavePlayerData(self, buffer, GS):
 		global packet_format
