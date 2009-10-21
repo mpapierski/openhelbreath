@@ -222,54 +222,62 @@ class CLoginServer(object):
 			
 		elif MsgID == Packets.MSGID_GAMESERVERALIVE:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				self.GameServerAliveHandler(GS, buffer)
 				
 		elif MsgID == Packets.MSGID_REQUEST_PLAYERDATA:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				self.ProcessRequestPlayerData(sender, buffer, GS)
 
 		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				self.ServerStockMsgHandler(GS, buffer);
 
 		elif MsgID in [Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT, Packets.MSGID_REQUEST_SAVEPLAYERDATA_REPLY]:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				self.ProcessClientLogout(buffer, GS, True)
 				
 		elif MsgID == Packets.MSGID_REQUEST_NOSAVELOGOUT:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				self.ProcessClientLogout(buffer, GS, False)
 
 		elif MsgID == Packets.MSGID_ENTERGAMECONFIRM:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				self.EnterGameConfirm(buffer, GS)
 
 		elif MsgID == Packets.MSGID_GAMEMASTERLOG:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				PutLogFileList(buffer, Logfile.GM, True)
 
 		elif MsgID in [Packets.MSGID_GAMEITEMLOG, Packets.MSGID_ITEMLOG]:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				PutLogFileList(buffer, Logfile.ITEM, True)
 
 		elif MsgID == Packets.MSGID_GAMECRUSADELOG:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				PutLogFileList(buffer, Logfile.CRUSADE, True)
 
 		elif MsgID == Packets.MSGID_REQUEST_SETACCOUNTWAITSTATUS:
 			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered != False:
+			if GS != None and GS.IsRegistered:
 				self.SetAccountServerChangeStatus(buffer, True)
-
+				
+		elif MsgID in [Packets.MSGID_REQUEST_CREATENEWGUILD, 
+						Packets.MSGID_REQUEST_DISBANDGUILD,
+						Packets.MSGID_REQUEST_UPDATEGUILDINFO_NEWGUILDSMAN,
+						Packets.MSGID_REQUEST_UPDATEGUILDINFO_DELGUILDSMAN]:
+			GS = self.SockToGS(sender)
+			if GS != None and GS.IsRegistered:
+				self.GuildHandler(MsgID, buffer, GS)
+				
 		else:
 			if MsgID in Packets:
 				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
@@ -1010,10 +1018,10 @@ class CLoginServer(object):
 			return
 		Ch = OK['Content']
 		
-		Data = struct.pack('<10s2B10s2h5B20sBih7Bi100s',
+		Data = struct.pack('<10s2b10s2h5B20sbih7Bi100s',
 									CharName,
 									0, #Account Status - outdated
-									0, #Guild Status - outdated
+									Ch['GuildID'], #Guild Status - outdated
 									Ch['MapLoc'],
 									Ch['LocX'], Ch['LocY'],
 									Ch['Gender'],
@@ -1022,7 +1030,7 @@ class CLoginServer(object):
 									Ch['HairColor'],
 									Ch['Underwear'],
 									Ch['GuildName'],
-									Ch['GuildRank'] & 255,
+									Ch['GuildRank'],
 									Ch['HP'],
 									Ch['Level'],
 									Ch['Strength'],
@@ -1418,3 +1426,34 @@ class CLoginServer(object):
 					SL.disconnect()
 				v.socket.disconnect()
 				self.GameServer.remove(v)
+
+	def GuildHandler(self, MsgID, buffer, GS):
+		MsgType = struct.unpack('h', buffer[:2])
+		buffer = buffer[2:]
+		
+		global packet_format
+		Packet = None
+		if MsgID == Packets.MSGID_REQUEST_CREATENEWGUILD:
+			fmt = '<10s10s10s20s10s5x' #HG makes 60b packet, but I get 65. wtf?
+			Data = map(packet_format, struct.unpack(fmt, buffer))
+			Packet = namedtuple('Packet', 'CharName AccountName AccountPassword GuildName GuildLoc')._make(Data)
+			(OK, GUID) = self.Database.CreateNewGuild(*Data)
+			print (OK, GUID)
+			if OK:
+				SendData = struct.pack('<Lh10sI', Packets.MSGID_RESPONSE_CREATENEWGUILD, Packets.DEF_LOGRESMSGTYPE_CONFIRM, Packet.CharName, GUID)
+			else:
+				SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_CREATENEWGUILD, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
+			self.SendMsgToGS(GS, SendData)
+			
+		elif MsgID == Packets.MSGID_REQUEST_DISBANDGUILD:
+			fmt = '<10s10s10s20s'
+			Data = map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
+			Packet = namedtuple('Packet', 'CharName AccountName AccountPassword GuildName')._make(Data)
+			if self.Database.DisbandGuild(*Data):
+				SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_DISBANDGUILD, Packets.DEF_LOGRESMSGTYPE_CONFIRM, Packet.CharName)
+			else:
+				SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_DISBANDGUILD, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
+			self.SendMsgToGS(GS, SendData)
+			
+		if Packet != None:
+			print Packet

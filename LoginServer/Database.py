@@ -543,3 +543,77 @@ class DatabaseDriver(object):
 			return
 
 		return
+		
+	def GuildExists(self, GuildName, get_sql_result = False):
+		QueryConsult = "SELECT `GuildID` FROM `guild` WHERE BINARY GuildName = '%s' LIMIT 1"
+		try:
+			if not self.ExecuteSQL(QueryConsult, GuildName):
+				raise Exception()
+			r = self.db.store_result()
+			if r.num_rows() > 0:
+				return True if get_sql_result == False else (True, r)
+		except:
+			return False if get_sql_result == False else (False, None)
+		
+	def CreateNewGuild(self, CharName, AccountName, AccountPassword, GuildName, GuildLoc):
+		GUID = -1
+		try:
+			QueryConsult = "SELECT chr.CharID FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
+			if not self.ExecuteSQL(QueryConsult, AccountName, AccountPassword, CharName):
+				raise Exception()
+			r = self.db.store_result()
+			
+			if r.num_rows() == 0:
+				PutLogList("(!) Fake user tries to register Guild! Rejected!", Logfile.ERROR)
+				exit()
+				
+			if self.GuildExists(GuildName):
+				PutLogList("(!) Can not create new guild Guild[ %s ] Character [ %s@%s ]. Guild already exists!" % (GuildName, CharName, AccountName),Logfile.ERROR)
+				raise Exception()
+				
+			QueryConsult = "INSERT INTO `guild` (`GuildName`, `MasterName`, `Nation`, `CreateDate`) " + \
+							"VALUES ('%s', '%s', '%s', NOW())"
+
+			if not self.ExecuteSQL(QueryConsult,
+									GuildName,
+									CharName,
+									GuildLoc):
+				raise Exception()
+			GUID = self.db.insert_id()
+			
+			QueryConsult = "INSERT INTO `guild_member` (`GuildID`, `MemberName`, `JoinDate`)" + \
+							"VALUES ('%d', '%s', NOW())"
+							
+			if not self.ExecuteSQL(QueryConsult, GUID, CharName):
+				raise Exception()
+			
+			return (True, GUID)
+		except:
+			self.ExecuteSQL("DELETE FROM `guild` WHERE BINARY GuildName = '%s' AND BINARY MasterName = '%s'", GuildName, CharName)
+			self.ExecuteSQL("DELETE FROM `guild_member` WHERE MemberName = '%s'", CharName)
+			return (False, -1)
+			
+	def DisbandGuild(self, CharName, AccountName, AccountPassword, GuildName):
+		try:
+			QueryConsult = "SELECT chr.CharID FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
+			if not self.ExecuteSQL(QueryConsult, AccountName, AccountPassword, CharName):
+				raise Exception()
+			r = self.db.store_result()
+			
+			if r.num_rows() == 0:
+				PutLogList("(!) Fake user tries to disband guild!", Logfile.ERROR)
+				exit()
+			
+			(OK, Res) = self.GuildExists(GuildName, True)
+			
+			if not OK:
+				PutLogList("(!) Can not disband guild [ %s ] by %s@%s. Guild does not exists!" % (GuildName, CharName, AccountName),Logfile.ERROR)
+				raise Exception()
+			GUID = int(Res.fetch_row()[0][0])
+			if not self.ExecuteSQL("DELETE FROM `guild_member` WHERE GuildID = '%d'", GUID):
+				raise Exception()
+			if not self.ExecuteSQL("DELETE FROM `guild` WHERE BINARY GuildName = '%s'", GuildName):
+				raise Exception()
+			return True
+		except:
+			return False
