@@ -27,7 +27,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import os, time, struct
+import os, time, struct, sys
 from GlobalDef import DEF, Logfile
 
 class Callbacks(object):
@@ -105,7 +105,7 @@ def PutLogFileList(buffer, sLogName, bIsPacket = False):
 
 def PutLogList(text, sLogName = '', Echo = True):
 	if Echo:
-		print text
+		sys.stdout.write(text + "\n")
 		PutLogFileList(text, Logfile.EVENTS, False)
 	if sLogName != '':
 		PutLogFileList(text, sLogName)

@@ -19,26 +19,25 @@ class DatabaseDriver(object):
 		
 	def Initialize(self):
 		if self.Ready:
-			print "(!) MySQL Driver already initialized!"
+			PutLogList("(!) MySQL Driver already initialized!")
 			return False
 		global MySQL_Auth
-		print "(*) Connecting to MySQL database..."
+		PutLogList("(*) Connecting to MySQL database...")
 		try:
 			self.db = MySQLdb.connect(**MySQL_Auth)
 		except _mysql_exceptions.OperationalError as (E_No, E_Str):
-			print "(!!!) MySQL ERROR #%d - %s!" % (E_No, E_Str)
+			PutLogList("(!!!) MySQL ERROR #%d - %s!" % (E_No, E_Str), Logfile.MYSQL)
 			return False
 		except:
-			print "(!!!) Unhandled MySQL error (!!!)"
+			PutLogList("(!!!) Unhandled MySQL error (!!!)", Logfile.MYSQL)
 			return False
 		
 		self.Ready = True
 		if not self.CheckDatabase():
-			print "(!) Database tables are corrupted!"
+			PutLogList("(!) Database tables are corrupted!", Logfile.MYSQL)
 			return False
 
-		print "(*) Connection to MySQL database was successfully established!"
-
+		PutLogList("(*) Connection to MySQL database was successfully established!")
 		return True
 		
 	def ReadyToLoad(self, char_name, timeout = 7): #7 sec timeout
@@ -102,7 +101,7 @@ class DatabaseDriver(object):
 			return False
 			
 		r = self.db.store_result()
-		Tables = ('account_database', 'bank_item', 'char_database', 'guild', 'guild_member', 'ipblocked', 'item', 'setup', 'skill')
+		Tables = ('account_database', 'bank_item', 'char_database', 'guild', 'guild_member', 'item', 'skill')
 		PlayerDB = []
 		while True:
 			row = r.fetch_row()
@@ -154,7 +153,7 @@ class DatabaseDriver(object):
 				try:
 					tm = time.strptime(BlockDate, "%Y-%m-%d %H:%M:%S")
 				except:
-					print "(WTF) Account invalid BlockDate value %s (Acc: %s)" % (row[2], LoginName)
+					PutLogList("(WTF) Account invalid BlockDate value %s (Acc: %s)" % (row[2], LoginName), Logfile.ERROR)
 					return (Account.BLOCKED, 0, 0, 0)
 				if tm > time.localtime():
 					return (Account.BLOCKED, tm.tm_year, tm.tm_mon, tm.tm_mday)
@@ -240,7 +239,7 @@ class DatabaseDriver(object):
 				if Packet.Gender == 2:# Female
 					self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shirt(W)")
 					self.CreateNewItem(Char_ID, 50, 40, 1, 1, "KneeTrousers(W)")
-				print "Itemki"
+
 				for s in range(DEF.MAXSKILLS):
 					if s in [4, 5, 7]:
 						SkillMastery = 20
@@ -253,7 +252,7 @@ class DatabaseDriver(object):
 					if not self.ExecuteSQL(QueryConsult, Char_ID, s, SkillMastery, 0):
 						raise Exception('This is only for sure. Propably will not ever appear.')
 			except:
-				print "(MySQL) Exception in CreateCharacter! Deleting char %s..." % Packet.PlayerName
+				PutLogList("(MySQL) Exception in CreateCharacter! Deleting char %s..." % Packet.PlayerName, Logfile.ERROR)
 				self.DeleteCharacter(Packet.AccountName, Packet.AccountPassword, Packet.PlayerName)
 				return False
 		return True
@@ -627,7 +626,6 @@ class DatabaseDriver(object):
 		try:
 			(OK, Res) = self.GuildExists(GuildName, True)
 			if not OK:
-				print "%s does not exists" % GuildName
 				raise Exception()
 			else:
 				GUID = int(Res.fetch_row()[0][0])
