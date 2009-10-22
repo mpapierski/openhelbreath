@@ -1,8 +1,9 @@
--- ----------------------------
--- OpenHelbreath MySQL Dump
--- ----------------------------
+-- --------------------------------------------------------- --
+-- OpenHelbreath MySQL Dump                                  --
+-- Run this script ONLY to install empty database structure. --
+-- --------------------------------------------------------- --
 
-DROP DATABASE `playerdb`;
+DROP DATABASE IF EXISTS `playerdb`;
 CREATE DATABASE `playerdb` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 USE `playerdb`;
 
@@ -13,7 +14,7 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `account_database`;
 CREATE TABLE `account_database` (
   `name` varchar(10) character set utf8 collate utf8_bin NOT NULL default '',
-  `password` varchar(40) NOT NULL default '',
+  `password` varchar(10) NOT NULL default '',
   `AccountID` int(11) unsigned NOT NULL auto_increment,
   `RealName` varchar(30) NOT NULL default '',
   `Gender` char(1) NOT NULL default '',
@@ -31,7 +32,7 @@ CREATE TABLE `account_database` (
   `LoginCount` int(11) NOT NULL default '0',
   PRIMARY KEY  (`name`),
   UNIQUE KEY `AccountID` (`AccountID`)
-) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 PACK_KEYS=0;
+) DEFAULT CHARSET=utf8 PACK_KEYS=0;
 
 -- ----------------------------
 -- Table structure for bank_item
@@ -139,21 +140,19 @@ CREATE TABLE `char_database` (
   PRIMARY KEY  (`char_name`),
   UNIQUE KEY `CharID` (`CharID`),
   KEY `account_name` (`account_name`)
-) ENGINE=MyISAM AUTO_INCREMENT=17 DEFAULT CHARSET=utf8 PACK_KEYS=0;
+) DEFAULT CHARSET=utf8 PACK_KEYS=0;
 
 -- ----------------------------
 -- Table structure for guild
 -- ----------------------------
 DROP TABLE IF EXISTS `guild`;
 CREATE TABLE `guild` (
-  `GuildName` varchar(20) NOT NULL default '',
   `GuildID` int(11) unsigned NOT NULL auto_increment,
+  `GuildName` varchar(20) NOT NULL default '',
   `MasterName` varchar(10) NOT NULL default '',
   `Nation` varchar(10) NOT NULL default '',
-  `NumberOfMembers` smallint(6) unsigned NOT NULL default '0',
   `CreateDate` datetime NOT NULL default '0000-00-00 00:00:00',
-  `BaseScore` bigint(20) unsigned NOT NULL default '0',
-  `TotalScore` bigint(20) unsigned NOT NULL default '0',
+  PRIMARY KEY  (`GuildID`),
   UNIQUE KEY `GuildID` (`GuildID`),
   KEY `GuildName` (`GuildName`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 PACK_KEYS=0;
@@ -163,21 +162,10 @@ CREATE TABLE `guild` (
 -- ----------------------------
 DROP TABLE IF EXISTS `guild_member`;
 CREATE TABLE `guild_member` (
-  `GuildName` varchar(20) NOT NULL default '',
+  `GuildID` int(11) NOT NULL,
   `MemberName` varchar(10) NOT NULL default '',
   `JoinDate` datetime NOT NULL default '0000-00-00 00:00:00',
-  KEY `GuildName` (`GuildName`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
--- ----------------------------
--- Table structure for ipblocked
--- ----------------------------
-DROP TABLE IF EXISTS `ipblocked`;
-CREATE TABLE `ipblocked` (
-  `ipaddress` varchar(20) NOT NULL default '',
-  PRIMARY KEY  (`ipaddress`),
-  UNIQUE KEY `ipaddress` (`ipaddress`),
-  KEY `ipaddress_2` (`ipaddress`)
+  KEY `GuildName` (`GuildID`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- ----------------------------
@@ -207,37 +195,6 @@ CREATE TABLE `item` (
   KEY `Index` (`CharID`),
   KEY `ItemName` (`ItemName`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 PACK_KEYS=0;
-
--- ----------------------------
--- Table structure for setup
--- ----------------------------
-DROP TABLE IF EXISTS `setup`;
-CREATE TABLE `setup` (
-  `name` varchar(20) NOT NULL default '',
-  `primary-drop-rate` int(10) unsigned NOT NULL default '6500',
-  `secondary-drop-rate` int(10) unsigned NOT NULL default '9000',
-  `enemy-kill-mode` varchar(10) NOT NULL default '',
-  `enemy-kill-adjust` smallint(5) unsigned NOT NULL default '0',
-  `admin-security` char(3) NOT NULL default '',
-  `monday-raid-time` int(10) unsigned NOT NULL default '0',
-  `tuesday-raid-time` int(10) unsigned NOT NULL default '0',
-  `wednesday-raid-time` int(10) unsigned NOT NULL default '0',
-  `thursday-raid-time` int(10) unsigned NOT NULL default '0',
-  `friday-raid-time` int(10) unsigned NOT NULL default '0',
-  `saturday-raid-time` int(10) unsigned NOT NULL default '0',
-  `sunday-raid-time` int(10) unsigned NOT NULL default '0',
-  `log-chat-settings` varchar(10) NOT NULL default '',
-  `summonguild-cost` bigint(20) unsigned NOT NULL default '0',
-  `slate-success-rate` tinyint(3) unsigned NOT NULL default '0',
-  `character-stat-limit` int(10) unsigned NOT NULL default '0',
-  `character-skill-limit` mediumint(8) unsigned NOT NULL default '0',
-  `rep-drop-modifier` smallint(5) unsigned NOT NULL default '0',
-  `admin-security-code` varchar(20) NOT NULL default '',
-  `max-player-level` mediumint(8) unsigned NOT NULL default '0',
-  `createguild-cost` bigint(20) unsigned NOT NULL default '0',
-  UNIQUE KEY `name` (`name`),
-  UNIQUE KEY `name_2` (`name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- ----------------------------
 -- Table structure for skill
