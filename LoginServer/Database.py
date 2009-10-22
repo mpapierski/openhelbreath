@@ -311,7 +311,8 @@ class DatabaseDriver(object):
 			ok = self.TryGetCharacter(account_name, account_password, char_name)
 			self.Logout.remove(char_name)
 			return ok
-			
+		if char_name in self.Logout:
+			self.Logout.remove(char_name)
 		return False
 		
 	def TryGetCharacter(self, account_name, account_password, char_name):
@@ -367,6 +368,10 @@ class DatabaseDriver(object):
 			ok = self.TrySavePlayerContents(char_name, account_name, account_password, Data)
 			self.Logout.remove(char_name)
 			return ok
+			
+		if char_name in self.Logout:
+			self.Logout.remove(char_name)
+			
 		return False
 		
 	def TrySavePlayerContents(self, char_name, account_name, account_password, Data):
@@ -617,3 +622,28 @@ class DatabaseDriver(object):
 			return True
 		except:
 			return False
+			
+	def AddGuildMember(self, CharName, GuildName):
+		try:
+			(OK, Res) = self.GuildExists(GuildName, True)
+			if not OK:
+				print "%s does not exists" % GuildName
+				raise Exception()
+			else:
+				GUID = int(Res.fetch_row()[0][0])
+				QueryConsult="INSERT INTO `guild_member` (`GuildID`, `MemberName`, `JoinDate`)" + \
+								"VALUES ('%d', '%s', NOW())"
+				if not self.ExecuteSQL(QueryConsult,GUID, CharName):
+					raise Exception()
+				return True
+		except:
+			return False
+			
+	def DeleteGuildMember(self, CharName, GuildName):
+		(OK, Res) = self.GuildExists(GuildName, True)
+		if OK:
+			GUID = int(Res.fetch_row()[0][0])
+			QueryConsult = "DELETE FROM `guild_member` WHERE `GuildID` = '%d' AND BINARY `MemberName` = '%s'"
+			if self.ExecuteSQL(QueryConsult, GUID, CharName):
+				return True
+		return False

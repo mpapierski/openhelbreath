@@ -28,7 +28,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import socket, os, sys, select, struct, time, re, random
+import socket, os, sys, select, struct, time, re, random, operator
 from Enum import Enum
 from threading import Thread, Semaphore, Event
 from NetMessages import Packets
@@ -54,6 +54,7 @@ class CGameServer(object):
 		self.Config = {}
 		self.IsRegistered = False
 		self.Database = None
+		self.TotalPlayers = 0
 
 class CLoginServer(object):
 	def __init__(self):
@@ -75,6 +76,7 @@ class CLoginServer(object):
 		self.ServerShutdownCount = 0
 		self.Timers = TimerManager()
 		self.Timers.register_timer(self.__gameserver_alive, 'gameserver_alive', 5.0, True)
+		self.Timers.register_timer(self.__sendtotalplayers, 'sendtotalplayers', 10.0, True)
 		PutLogFileList("", Logfile.EVENTS)
 		PutLogFileList("Starting new session...", Logfile.EVENTS)
 		
@@ -542,9 +544,10 @@ class CLoginServer(object):
 		if len(data)<4:
 			PutLogList("GameServerAliveHandler: Size mismatch!")
 			return	
-		(MsgType, TotalPlayers) = struct.unpack('hh', data[:4])
+		(MsgType, TotalPlayers) = struct.unpack('<hh', data[:4])
 		if MsgType == Packets.DEF_MSGTYPE_CONFIRM:
 			GS.AliveResponseTime = time.time()
+			GS.TotalPlayers = TotalPlayers
 			
 	def MainSocket_OnConnect(self, sender):
 		PutLogList("(*) MainSocket-> Client accepted [%s]" % sender.address)
@@ -1409,7 +1412,6 @@ class CLoginServer(object):
 		return True
 		
 	def __gameserver_alive(self):
-		print "Total servers connected: %d" % (len(self.GameServer.values()))
 		for v in self.GameServer.values():
 			if v.AliveResponseTime - time.time() > 10000:
 				PutLogList("(*) Game Server : %s@%s:%d (%d maps) is not responding!" % (v.Data['ServerName'], v.Data['ServerIP'], v.Data['ServerPort'], len(v.MapName)))
@@ -1417,11 +1419,23 @@ class CLoginServer(object):
 					SL.disconnect()
 				v.socket.disconnect()
 				self.GameServer.remove(v)
-
-	def GuildHandler(self, MsgID, buffer, GS):
-		MsgType = struct.unpack('h', buffer[:2])
-		buffer = buffer[2:]
+		return True
 		
+	def __sendtotalplayers(self):
+		#Here counting players obtained by MSGID_GAMESERVERALIVE
+		#Unfortunately, Login Server tells Game Servers how much players are connected
+		#This should be totally reimplemented!
+		#total_players = (lambda totals: reduce(operator.add, totals) if len(totals) > 0 else 0)(map(lambda x: x.TotalPlayers, filter(lambda x: x.IsRegistered, self.GameServer.values())))
+		total_players = len(filter(lambda x: x['IsPlaying'], self.Clients))
+		for v in self.GameServer.values():
+			if v.IsRegistered:
+				SendData = struct.pack('<L2h', Packets.MSGID_TOTALCLIENTS, 0, total_players)
+				self.SendMsgToGS(v, SendData)
+		return True
+				
+	def GuildHandler(self, MsgID, buffer, GS):
+		MsgType = struct.unpack('h', buffer[:2])[0]
+		buffer = buffer[2:]
 		global packet_format
 		Packet = None
 		if MsgID == Packets.MSGID_REQUEST_CREATENEWGUILD:
@@ -1431,8 +1445,10 @@ class CLoginServer(object):
 			(OK, GUID) = self.Database.CreateNewGuild(*Data)
 			print (OK, GUID)
 			if OK:
+				PutLogList("(O) Guild[ %s ] registration success. Player[ %s ]" % (Packet.GuildName, Packet.CharName))
 				SendData = struct.pack('<Lh10sI', Packets.MSGID_RESPONSE_CREATENEWGUILD, Packets.DEF_LOGRESMSGTYPE_CONFIRM, Packet.CharName, GUID)
 			else:
+				PutLogList("(O) Guild[ %s ] registration failed. Player[ %s ]" % (Packet.GuildName, Packet.CharName))
 				SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_CREATENEWGUILD, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
 			self.SendMsgToGS(GS, SendData)
 			
@@ -1441,10 +1457,27 @@ class CLoginServer(object):
 			Data = map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
 			Packet = namedtuple('Packet', 'CharName AccountName AccountPassword GuildName')._make(Data)
 			if self.Database.DisbandGuild(*Data):
+				PutLogList("(O) Guild [ %s ] was removed by player %s !" % (Packet.GuildName, Packet.CharName))
 				SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_DISBANDGUILD, Packets.DEF_LOGRESMSGTYPE_CONFIRM, Packet.CharName)
 			else:
+				PutLogList("(O) Could not remove guild [ %s ] by player %s !" % (Packet.GuildName, Packet.CharName), Logfile.ERROR)
 				SendData = struct.pack('<Lh10s', Packets.MSGID_RESPONSE_DISBANDGUILD, Packets.DEF_LOGRESMSGTYPE_REJECT, Packet.CharName)
 			self.SendMsgToGS(GS, SendData)
 			
-		if Packet != None:
-			print Packet
+		elif MsgID == Packets.MSGID_REQUEST_UPDATEGUILDINFO_NEWGUILDSMAN:
+			fmt = '<10s20s'
+			Data = map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
+			Packet = namedtuple('Packet','CharName GuildName')._make(Data)
+			if self.Database.AddGuildMember(*Data):
+				PutLogList("(O) New guild member success! Guild[ %s ] Player[ %s ]" % (Packet.GuildName, Packet.CharName))
+			else:
+				PutLogList("(O) New guild member fail! Guild[ %s ] Player[ %s ]" % (Packet.GuildName, Packet.CharName), Logfile.ERROR)
+				
+		elif MsgID == Packets.MSGID_REQUEST_UPDATEGUILDINFO_DELGUILDSMAN:
+			fmt = '<10s20s'
+			Data = map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
+			Packet = namedtuple('Packet','CharName GuildName')._make(Data)
+			if self.Database.DeleteGuildMember(*Data):
+				PutLogList("(O) Deleting guild member [ %s ] of guild [ %s ] success!" % (Packet.CharName, Packet.GuildName))
+			else:
+				PutLogList("(O) Deleting guild member [ %s ] of guild [ %s ] failed!" % (Packet.CharName, Packet.GuildName), Logfile.ERROR)
