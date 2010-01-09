@@ -1,6 +1,7 @@
 #ifndef INIFILE_H_
 #define INIFILE_H_
 #include <stdlib.h>
+#include <stdio.h>
 #include <string>
 #include <vector>
 #include <map>

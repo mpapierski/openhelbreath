@@ -2,7 +2,7 @@
 #define GAMESERVER_H_
 #include <string>
 #include <vector>
-
+#include <stdio.h>
 #include "Map.h"
 
 using namespace std;

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <vector>
+
 #include "GameServer.h"
 #include "IniFile.h"
 #include "GlobalDef.h"
