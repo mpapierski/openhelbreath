@@ -45,4 +45,7 @@
 #define RELEASE_NOTES "beta"
 
 #define DEF_MAINCONFIG "gserver.cfg"
+
+#define DEF_MAXSUBLOGSOCK 4
+
 #endif /*GLOBALDEF_H_*/

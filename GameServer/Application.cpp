@@ -4,8 +4,6 @@
 #include "Application.h"
 #include "GameServer.h"
 #include "GlobalDef.h"
-//Here we are initializing Game Server class
-//Here goes main config loading etc.
 
 CApplication::CApplication(int argc, char * argv[])
 {
@@ -72,7 +70,7 @@ bool CApplication::ParseCommandLine()
 					return true;
 					break;
 				case 'v':
-					if (bWas['c'] == true)
+					if (bWas[(int)'c'] == true)
 						continue;
 					printf("v%d.%d %s\n", 
 									DEF_LOWERVERSION,
@@ -95,5 +93,15 @@ void CApplication::Run()
 	m_pGameServer = new CGameServer(m_sMainConfig);
 	if (!m_pGameServer->bInit()) {
 		printf("(!) STOPPED\n");
+		return;
+	}
+	else
+	{
+		printf("(*) Game server initialization done.\n");
+	}
+	if (!m_pGameServer->bRegisterGameServer())
+	{
+		printf("(!) Game server registration error!\n");
+		return;
 	}
 }

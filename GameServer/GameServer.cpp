@@ -13,21 +13,32 @@ CGameServer::CGameServer(string cConfigFile)
 CGameServer::~CGameServer()
 {
 	//CGameServer destructor
+	for (int i = 0; i < DEF_MAXSUBLOGSOCK; i++)
+	{
+		delete m_pSubLogSocket[i];
+	}
 }
 
-bool CGameServer::bInit()
+bool
+CGameServer::bInit()
 {
 	printf("(!) INITIALIZING GAME SERVER...\n");
+#ifdef WINDOWS
+	InitWinsock();
+	puts("Winsock ok.");
+#endif
 	if (!bReadProgramConfigFile(m_sConfigFile)) {
 		printf("\n");
 		printf("(!!!) CRITICAL ERROR! Cannot execute server! %s file contents error!\n", m_sConfigFile.c_str());
 		return false;	
 	}
 	return true;
+
 }
 
 
-bool CGameServer::bReadProgramConfigFile(string sFileName)
+bool
+CGameServer::bReadProgramConfigFile(string sFileName)
 {
 	
 	CIniFile * cfg;
@@ -57,6 +68,7 @@ bool CGameServer::bReadProgramConfigFile(string sFileName)
 		printf("(*) You must specify at least one bind address for game server!\n");
 		return false;
 	}
+
 	for (unsigned int i = 0;i<m_sGameServerAddr.size(); ++i)
 		printf("(*) Game server bind address : %s\n", m_sGameServerAddr[i].c_str());
 	
@@ -87,7 +99,7 @@ bool CGameServer::bReadProgramConfigFile(string sFileName)
 			printf("(!!!) Data file loading fail!\n");
 			return false;
 		}
-		const CMap & pLoaded = pGetMapByName(sMapList[i]);
+		const CMap & pLoaded = m_pMapList[iGetMapIndex(sMapList[i])];
 		printf("(*) Data file loading success. Map:%s Width:%d Height:%d\n", pLoaded.m_sMapName.c_str(), pLoaded.m_iSizeX, pLoaded.m_iSizeY);
 	}
 	
@@ -95,20 +107,88 @@ bool CGameServer::bReadProgramConfigFile(string sFileName)
 	return true;
 }
 
-
-bool CGameServer::_bRegisterMap(string sMapName)
+bool
+CGameServer::_bRegisterMap(string sMapName)
 {
 	CMap pMapFile(sMapName);
 	if (!pMapFile.bReadMapFile())
 		return false;
-		
 	m_pMapList.push_back(pMapFile);
 	return true;
 }
 
-CMap & CGameServer::pGetMapByName(string sMapName)
+int
+CGameServer::iGetMapIndex(string sMapName)
 {
-	for (unsigned int i = 0; i < m_pMapList.size(); ++i)
+	for (unsigned int i = 0; i < m_pMapList.size(); i++)
+	{
 		if (m_pMapList[i].m_sMapName == sMapName)
-			return m_pMapList[i];		
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+bool
+CGameServer::bRegisterGameServer()
+{
+	puts("Registering...");
+	m_iSubLogSockIndex = 0;
+	SubLogSockInit(0);
+	return true;
+}
+
+void
+CGameServer::SubLogSockInit(int iIndex)
+{
+
+	m_pSubLogSocket[iIndex] = new TcpClient(m_sLogServerAddr.c_str(), m_iGateServerPort);
+
+	m_pSubLogSocket[iIndex]->cbConnect = new CallBack<SocketCallbacks, void, void*>(this, &SocketCallbacks::Connected);
+	m_pSubLogSocket[iIndex]->cbDisconnect = new CallBack<SocketCallbacks, void, void*>(this, &SocketCallbacks::Disconnected);
+	
+	m_pSubLogSocket[iIndex]->start();
+
+	//m_pSubLogSocket[iIndex]->join();
+
+}
+
+
+void
+CGameServer::Connected(void * pSocket)
+{
+	//printf("Connected to %s\n", (TcpClient)pSocket->m_sAddress.c_str());
+	printf("Connected sub log %d...", m_iSubLogSockIndex);
+	if (m_iSubLogSockIndex < DEF_MAXSUBLOGSOCK)
+	{
+		SubLogSockInit(++m_iSubLogSockIndex);
+		printf("Init new sub-log-socket (%d)...\n", m_iSubLogSockIndex);
+
+
+	}
+	else
+	{
+		printf("Done\n");
+	}
+}
+
+void
+CGameServer::Wait()
+{
+	for (int i = 0; i < DEF_MAXSUBLOGSOCK; i++)
+	{
+		if (m_pSubLogSocket[i] != NULL)
+		{
+			m_pSubLogSocket[i]->join();
+		}
+	}
+}
+
+void
+CGameServer::Disconnected(void* pSocket)
+{
+	//printf("Not connected... (%d)\n", m_iSubLogSockIndex);
+	//TcpClient * asdf = static_cast<TcpClient*>(&pSocket);
+
 }
