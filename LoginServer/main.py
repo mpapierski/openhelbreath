@@ -29,10 +29,10 @@
 """
 
 from LoginServer import CLoginServer
-import Version
+
 def main():
-	print "OpenHelbreath Login Server %d.%d.%d.%d" % Version.Server
-	print "Copyright (C) 2009 by Drajwer"
+	print "OpenHelbreath Login Server rev. 60" # Last stable revision
+	print "Copyright (C) 2009-2010 by Drajwer"
 	print "This program comes with ABSOLUTELY NO WARRANTY."
 	print "This is free software, and you are welcome to redistribute it under certain conditions."
 	print
