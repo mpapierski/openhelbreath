@@ -1,5 +1,5 @@
-#ifndef MAP_H_
-#define MAP_H_
+#ifndef MAP_H
+#define MAP_H
 #include <string>
 #include <vector>
 using namespace std;
@@ -28,4 +28,4 @@ public:
 	bool bReadMapFile();
 };
 
-#endif /*MAP_H_*/
+#endif

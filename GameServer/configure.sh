@@ -21,9 +21,9 @@ fi
 echo "SOURCES=	$sources" >> $file_name
 echo 'OBJECTS=$(SOURCES:.cpp=.o)' >> $file_name
 if [[ "$PLATFORM" == 'Windows' ]]; then
-	echo 'EXECUTABLE=GameServer.exe' >> $file_name
+	echo 'EXECUTABLE=Release/GameServer.exe' >> $file_name
 else
-	echo 'EXECUTABLE=GameServer' >> $file_name
+	echo 'EXECUTABLE=Release/GameServer' >> $file_name
 fi
 
 echo 'all: $(SOURCES) $(EXECUTABLE)' >> $file_name

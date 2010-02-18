@@ -1,49 +1,39 @@
 #include <stdlib.h>
-#include <vector>
+#include <stdio.h>
 
 #include "GameServer.h"
-#include "IniFile.h"
-#include "GlobalDef.h"
 
-CGameServer::CGameServer(string cConfigFile)
+void GameServer::Initialize()
 {
-	m_sConfigFile = DEF_MAINCONFIG;
-}
 
-CGameServer::~CGameServer()
-{
-	//CGameServer destructor
-	for (int i = 0; i < DEF_MAXSUBLOGSOCK; i++)
+	puts("openhelbreath Game Server beta");
+	puts("");
+
+	if (!bReadMainConfig())
+		exit(EXIT_FAILURE);
+
+#ifdef WIN32
+	WSADATA wsdat;
+	memset(&wsdat,0,sizeof(wsdat));
+	if(WSAStartup(0x0101,&wsdat))
 	{
-		delete m_pSubLogSocket[i];
+    		throw "WSAStartup() failed.";
+    		return;
+		exit(EXIT_FAILURE);
 	}
-}
-
-bool
-CGameServer::bInit()
-{
-	printf("(!) INITIALIZING GAME SERVER...\n");
-#ifdef WINDOWS
-	InitWinsock();
-	puts("Winsock ok.");
 #endif
-	if (!bReadProgramConfigFile(m_sConfigFile)) {
-		printf("\n");
-		printf("(!!!) CRITICAL ERROR! Cannot execute server! %s file contents error!\n", m_sConfigFile.c_str());
-		return false;	
-	}
-	return true;
 
+	m_pGateConnector = new CGateConnector();
+	puts("(*) Gate connector thread start...");
+	m_pGateConnector->start();
 }
 
-
 bool
-CGameServer::bReadProgramConfigFile(string sFileName)
+GameServer::bReadMainConfig()
 {
-	
 	CIniFile * cfg;
 	
-	cfg = new CIniFile(sFileName);
+	cfg = new CIniFile(DEF_MAINCONFIGFILE);
 	if (!cfg->bLoadIni())
 	{
 		printf("(!) Cannot open configuration file.\n");
@@ -79,11 +69,11 @@ CGameServer::bReadProgramConfigFile(string sFileName)
 	printf("(*) Game server port : %d\n", m_iGameServerPort);
 	
 	
-	m_sLogServerAddr = cfg->sGetValue("CONFIG", "log-server-address", "");
-	if (m_sLogServerAddr == "")
+	m_sGateServerAddr = cfg->sGetValue("CONFIG", "gate-server-address", "");
+	if (m_sGateServerAddr == "")
 		return false;
 		
-	printf("(*) Log server address : %s\n", m_sLogServerAddr.c_str());
+	printf("(*) Gate server address : %s\n", m_sGateServerAddr.c_str());
 
 	m_iGateServerPort = cfg->iGetValue("CONFIG", "gate-server-port", -1);
 	if ( (m_iGateServerPort < 0) || (m_iGateServerPort > 65535) )
@@ -94,7 +84,7 @@ CGameServer::bReadProgramConfigFile(string sFileName)
 	for (unsigned int i = 0; i < sMapList.size(); i++)
 	{
 		printf("(*) Add map (%s) - Loading map info files...\n", sMapList[i].c_str());
-		if (!_bRegisterMap(sMapList[i]))
+		if (!bRegisterMap(sMapList[i]))
 		{
 			printf("(!!!) Data file loading fail!\n");
 			return false;
@@ -108,7 +98,7 @@ CGameServer::bReadProgramConfigFile(string sFileName)
 }
 
 bool
-CGameServer::_bRegisterMap(string sMapName)
+GameServer::bRegisterMap(string sMapName)
 {
 	CMap pMapFile(sMapName);
 	if (!pMapFile.bReadMapFile())
@@ -118,7 +108,7 @@ CGameServer::_bRegisterMap(string sMapName)
 }
 
 int
-CGameServer::iGetMapIndex(string sMapName)
+GameServer::iGetMapIndex(string sMapName)
 {
 	for (unsigned int i = 0; i < m_pMapList.size(); i++)
 	{
@@ -130,65 +120,3 @@ CGameServer::iGetMapIndex(string sMapName)
 	return -1;
 }
 
-bool
-CGameServer::bRegisterGameServer()
-{
-	puts("Registering...");
-	m_iSubLogSockIndex = 0;
-	SubLogSockInit(0);
-	return true;
-}
-
-void
-CGameServer::SubLogSockInit(int iIndex)
-{
-
-	m_pSubLogSocket[iIndex] = new TcpClient(m_sLogServerAddr.c_str(), m_iGateServerPort);
-
-	m_pSubLogSocket[iIndex]->cbConnect = new CallBack<SocketCallbacks, void, void*>(this, &SocketCallbacks::Connected);
-	m_pSubLogSocket[iIndex]->cbDisconnect = new CallBack<SocketCallbacks, void, void*>(this, &SocketCallbacks::Disconnected);
-	
-	m_pSubLogSocket[iIndex]->start();
-
-	//m_pSubLogSocket[iIndex]->join();
-
-}
-
-
-void
-CGameServer::Connected(void * pSocket)
-{
-	//printf("Connected to %s\n", (TcpClient)pSocket->m_sAddress.c_str());
-	printf("Connected sub log %d...", m_iSubLogSockIndex);
-	if (m_iSubLogSockIndex < DEF_MAXSUBLOGSOCK)
-	{
-		SubLogSockInit(++m_iSubLogSockIndex);
-		printf("Init new sub-log-socket (%d)...\n", m_iSubLogSockIndex);
-
-
-	}
-	else
-	{
-		printf("Done\n");
-	}
-}
-
-void
-CGameServer::Wait()
-{
-	for (int i = 0; i < DEF_MAXSUBLOGSOCK; i++)
-	{
-		if (m_pSubLogSocket[i] != NULL)
-		{
-			m_pSubLogSocket[i]->join();
-		}
-	}
-}
-
-void
-CGameServer::Disconnected(void* pSocket)
-{
-	//printf("Not connected... (%d)\n", m_iSubLogSockIndex);
-	//TcpClient * asdf = static_cast<TcpClient*>(&pSocket);
-
-}

@@ -1,19 +1,15 @@
-/***********************************************************************
- *                                                                     *
- *                      openhelbreath GameServer                       *
- *                            26-11-2009                               *
- *                                                                     *
- *                 http://code.google.com/p/openhelbreath/             *
- ***********************************************************************/
+#include <stdlib.h>
+#include <stdio.h>
+#include <string>
 
-#include "Application.h"
-#include "GlobalDef.h"
+#include "Misc.h"
+#include "GameServer.h"
 
 int main (int argc, char *argv[])
 {
-	CApplication * App;
-	App = new CApplication(argc, argv);
-	App->Run();
-	delete App;
+	
+	GameServer::getInstance().Initialize();
+	GameServer::getInstance().m_pGateConnector->join();
+	puts("Bye.");	
 	return 0;
 }

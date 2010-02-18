@@ -46,6 +46,8 @@ bool CIniFile::bLoadIni()
 				line.push_back(c);
 		}
 	}
+	if (line != "")
+		lines.push_back(line);
 	fclose(fin);
 	return true;
 }
@@ -54,10 +56,11 @@ bool is_number(string & str)
 {
 	if (str.length() == 0)
 		return false;
-	for (unsigned int i = 0; i < str.length(); ++i)
+
+	for (unsigned int i = 0; i < str.length(); i++)
 	{
-    	if (!isdigit(str[i]))
-    		return false;
+    		if (!isdigit(str[i]))
+    			return false;
 	}
 	return true;
 }
@@ -84,7 +87,7 @@ v_string CIniFile::pGetValuesByName(string sSectionName, string sKeyName)
 	for (unsigned i = 0; i < lines.size(); ++i)
 		if (lines[i] == string("[" + sSectionName + "]"))
 		{
-			for (unsigned j = i+1; j < lines.size(); ++j)
+			for (unsigned j = i+1; j < lines.size(); j++)
 			{
 				index=lines[j].find('=');
 				if (index != string::npos)

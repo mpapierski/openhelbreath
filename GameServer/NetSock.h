@@ -45,7 +45,7 @@ private:
   unsigned int    bindport;
 
   int   mode;
-  int   socket;
+
   char  str_ip[16], str_bindip[16];
 
   bool  isUDP;
@@ -53,7 +53,7 @@ private:
 public:
   NetSock();
   ~NetSock();
-
+  int   socket;
   static const int SYNCHRONIC;
   static const int ASYNCHRONIC;
 

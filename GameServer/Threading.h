@@ -1,3 +1,6 @@
+#ifndef THREADING_H
+#define THREADING_H
+
 #ifdef WIN32
 #	include <windows.h>
 #	include <process.h>
@@ -84,7 +87,9 @@ class Semaphore
 		int m_iValue;
 	public:
 		Semaphore(const int iValue = 1);
-		~Semaphore();
+		~Semaphore() {};
 		void acquire();
 		void release();
 };
+#endif
+

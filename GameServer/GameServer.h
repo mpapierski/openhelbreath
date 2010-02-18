@@ -1,50 +1,38 @@
-#ifndef GAMESERVER_H_
-#define GAMESERVER_H_
-#include <string>
-#include <vector>
-#include <stdio.h>
-#include "GlobalDef.h"
+#ifndef GAMESERVER_H
+#define GAMESERVER_H
+
+#include "GateSocket.h"
+#include "Threading.h"
+#include "IniFile.h"
 #include "Map.h"
-#include "Socket.h"
+#include "GlobalDef.h"
 
-//#include "Callback.h"
-
-using namespace std;
-
-class CGameServer : public SocketCallbacks
+class GameServer
 {
-private:
-	string m_sConfigFile; // stores main configuration file (default gserver.cfg, could be changed by command line)
-	string m_sServerName; // server name, it is sent to gate server
-	vector<string> m_sGameServerAddr; // bind address list
-	int m_iGameServerPort; // bind address port (ports?)
-	string m_sLogServerAddr; // login server address
-	int m_iGateServerPort; // gate server port
-	TcpClient * m_pSubLogSocket[DEF_MAXSUBLOGSOCK]; //array of gate server sockets
-	
- //current sub log socket which is trying to register
-public:
-	int m_iSubLogSockIndex;
-	CGameServer(string cConfigFile);
-	virtual ~CGameServer();
-	bool bInit();
-	bool bReadProgramConfigFile(string sFileName);
-	bool _bRegisterMap(string sMapName);
-	
-	vector<CMap> m_pMapList;
+	private:
+		GameServer() { }
+		GameServer(const GameServer &);
+		GameServer& operator=(const GameServer&);
+	public:
+		static GameServer& getInstance()
+		{
+			static GameServer instance;
+			return instance;
+		}
 
-	int iGetMapIndex(string sMapName);
-	
-	bool bRegisterGameServer();
-	void SubLogSockInit(int iIndex);
-	
-	void Wait();
+		CGateConnector * m_pGateConnector;	
+		string m_sServerName; // server name, it is sent to gate server
+		vector<string> m_sGameServerAddr; // bind address list
+		int m_iGameServerPort; // bind address port (ports?)
+		string m_sGateServerAddr; // login server address
+		int m_iGateServerPort; // gate server port
+		vector<CMap> m_pMapList;
 
-	void Connected(void*);
-	void Disconnected(void*);
-	void Received(void*, char*) {};
-	
-	
+		void Initialize();
+
+		bool bReadMainConfig();
+		bool bRegisterMap(string sMapName);
+		int iGetMapIndex(string sMapName);
+
 };
-
-#endif /*GAMESERVER_H_*/
+#endif
