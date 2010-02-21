@@ -52,16 +52,13 @@ GameServer::bReadMainConfig()
 	
 	printf("(*) Game server name : %s\n", m_sServerName.c_str());
 	
-	m_sGameServerAddr = cfg->pGetValuesByName("CONFIG","game-server-address");
-	if (m_sGameServerAddr.size() == 0)
+	m_sGameServerAddr = cfg->sGetValue("CONFIG","game-server-address", "");
+	if (m_sGameServerAddr == "")
 	{
-		printf("(*) You must specify at least one bind address for game server!\n");
+		printf("(*) You must specify game server bind address!\n");
 		return false;
 	}
 
-	for (unsigned int i = 0;i<m_sGameServerAddr.size(); ++i)
-		printf("(*) Game server bind address : %s\n", m_sGameServerAddr[i].c_str());
-	
 	m_iGameServerPort = cfg->iGetValue("CONFIG", "game-server-port", -1);
 	if ( (m_iGameServerPort < 0) || (m_iGameServerPort > 65535) )
 		return false;

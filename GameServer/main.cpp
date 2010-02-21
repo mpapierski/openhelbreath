@@ -9,7 +9,14 @@ int main (int argc, char *argv[])
 {
 	
 	GameServer::getInstance().Initialize();
-	GameServer::getInstance().m_pGateConnector->join();
-	puts("Bye.");	
+	
+	while (true)
+	{
+		for (int i = 0; i < DEF_MAXGATESOCKET; i++)
+		{
+			printf("Sock-%d buffer size: %d.\n", i, GameServer::getInstance().m_pGateConnector->m_pBuffer[i]->size());
+		}
+		sleep(5);
+	}
 	return 0;
 }

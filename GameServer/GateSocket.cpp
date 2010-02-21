@@ -5,6 +5,11 @@ CGateConnector::CGateConnector()
 {
 	//
 	puts("CGateConnector constructor...");
+	for (int i = 0; i < DEF_MAXGATESOCKET;i++)
+	{
+		m_pBuffer[i] = new Buffer(DEF_BUFFERSIZE);
+	}
+
 }
 
 
@@ -16,6 +21,7 @@ CGateConnector::~CGateConnector()
 		if (m_pSocket[i])
 		{
 			delete m_pSocket[i];
+			delete m_pBuffer[i];
 		}
 }
 
@@ -55,10 +61,21 @@ CGateConnector::__Connect()
 void
 CGateConnector::__Connected(int iSockIndex)
 {
-	
-	char asdf[100];
-	sprintf(asdf,"Hello from %d socket!\n", iSockIndex);
-	m_pSocket[iSockIndex]->Write((unsigned char*)&asdf, strlen(asdf));
+	if (iSockIndex == 0)
+	{
+		printf("(!) Try to register game server(%s)\n", GameServer::getInstance().m_sServerName.c_str());
+		Packet p(MSGID_REQUEST_REGISTERGAMESERVER, DEF_MSGTYPE_CONFIRM);
+		p.push<char>(GameServer::getInstance().m_sServerName.c_str(), 10);
+		p.push<char>(GameServer::getInstance().m_sGameServerAddr.c_str(), 16);
+		p.push<unsigned short>(GameServer::getInstance().m_iGameServerPort);
+		p.push<bool>(false); //Do I have configs?
+		int iTotalMaps = GameServer::getInstance().m_pMapList.size();
+		p.push<unsigned char>(iTotalMaps);
+		p.push<unsigned short>(123); //Server ID; TODO : Send process ID ?
+		for (int i = 0; i < iTotalMaps; i++)
+			p.push<char>(GameServer::getInstance().m_pMapList[i].m_sMapName.c_str(), 11);
+		m_pSocket[iSockIndex]->Write((unsigned char*)p.data(), p.size());
+	} 
 }
 
 void
@@ -67,7 +84,6 @@ CGateConnector::run()
 	__Connect();
 	
 	m_bIsConnected = false;
-	
 	while (true)
 	{
 		timeout.tv_sec = 1;
@@ -86,31 +102,48 @@ CGateConnector::run()
 			puts("(!!!) CRITICAL ERROR. SELECT() == -1!\n");
 			break;
 		} else {
-			unsigned char Buffer[DEF_BUFFERSIZE];
 			for (int i = 0; i< DEF_MAXGATESOCKET;i++)
 			{
 				if (FD_ISSET(m_pSocket[i]->socket, &socks_r) && (m_pSocket[i] != NULL))
 				{
-					memset(Buffer, 0, DEF_BUFFERSIZE);
-					int iResult = m_pSocket[i]->Read(Buffer, sizeof(Buffer));
-					if (iResult <= 0)
-					{
-						delete m_pSocket[i];		
-						__Disconnected(i);
-						continue;
-					} else {
-						__Reader(i, Buffer);
-					}
+					__DataAvail(i);
 				}
 			}
 		}
 	}
 }
-
 void
-CGateConnector::__Reader(int iSockIndex, unsigned char *pBuffer)
+CGateConnector::_RegisterSockets()
 {
-	printf("Sock-%d: %s\n", iSockIndex, (char*)pBuffer);
+	Packet p(MSGID_REQUEST_REGISTERGAMESERVERSOCKET, m_wGSID);
+	for (int i = 1; i < DEF_MAXGATESOCKET; i++)
+	{
+		printf("(!) Try to register game server socket(%d) on ID[%d]\n", i, m_wGSID);
+		m_pSocket[i]->Write((unsigned char*)p.data(), p.size());
+	}
+}
+void
+CGateConnector::__Reader(int iSockIndex)
+{
+	unsigned int dwMsgID = m_pBuffer[iSockIndex]->next<int>();
+	unsigned short wMsgType = m_pBuffer[iSockIndex]->next<unsigned short>();
+
+	switch (dwMsgID)
+	{
+		case MSGID_RESPONSE_REGISTERGAMESERVER:
+			switch (wMsgType)
+			{
+				case DEF_MSGTYPE_CONFIRM:
+					m_wGSID = m_pBuffer[iSockIndex]->next<unsigned short>();
+					printf("(!) Game Server registration to Log Server - Success! GSID[%d]\n", m_wGSID);
+					_RegisterSockets();
+					break;
+				case DEF_MSGTYPE_REJECT:
+					puts("(!) Game Server registration to Log Server - Fail!");
+					break;
+			}
+			break;
+	}
 }
 
 void
@@ -118,4 +151,49 @@ CGateConnector::__Disconnected(int iSockIndex)
 {
 	//Reconnecting
 	printf("(!!!) Lost connection to login server on socket-%d.\n", iSockIndex);
+}
+
+void
+CGateConnector::__DataAvail(int iSockIdx)
+{
+	int iReadCount = m_pSocket[iSockIdx]->Read((unsigned char*)m_pBuffer[iSockIdx]->writeptr(), m_pBuffer[iSockIdx]->spaceAvailable());
+
+	if (iReadCount > 0)
+	{
+		m_pBuffer[iSockIdx]->_written(iReadCount);
+	} else
+	{
+		__Disconnected(iSockIdx);
+		delete m_pSocket[iSockIdx];
+		return;
+	}
+	
+	unsigned short packetSize;
+	
+	while(true)
+	{	
+		memcpy(&packetSize, m_pBuffer[iSockIdx]->data() + 1, 2);
+		if (packetSize <= m_pBuffer[iSockIdx]->size())
+		{
+			int _before = m_pBuffer[iSockIdx]->pos();
+			unsigned char cKey = m_pBuffer[iSockIdx]->next<unsigned char>();
+			unsigned short dwSize = m_pBuffer[iSockIdx]->next<unsigned short>();
+			
+			if (cKey > 0)
+			{
+				char * buf = m_pBuffer[iSockIdx]->data();
+				for (int i = 0; i < dwSize-3; i++)
+				{
+					buf[i] = (char)(buf[i] ^ (cKey ^ (char)(dwSize - i)));
+					buf[i] -= (char)((char)i ^ cKey);
+				}
+			}
+			__Reader(iSockIdx);
+			
+			int _readcount = _before - m_pBuffer[iSockIdx]->pos();
+			m_pBuffer[iSockIdx]->seek(dwSize-_readcount);
+		}
+		else
+			break;
+	}
 }

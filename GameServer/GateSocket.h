@@ -6,6 +6,7 @@
 #include "NetSock.h"
 #include "GlobalDef.h"
 #include "NetMessages.h"
+#include "Buffers.h"
 
 class CGateConnector : public CThread
 {
@@ -18,13 +19,17 @@ class CGateConnector : public CThread
 		int __BuildList();
 	public:
 		NetSock * m_pSocket[DEF_MAXGATESOCKET];
+		Buffer * m_pBuffer[DEF_MAXGATESOCKET];
 		CGateConnector();
 		~CGateConnector();
 		bool m_bIsConnected;
-		void __Reader(int iSockIndex, unsigned char *pBuffer);
+		unsigned short m_wGSID;
+		void __Reader(int iSockIndex);
 		void __Connect();
 		void __Connected(int iSockIndex);
 		void __Disconnected(int iSockIndex);
+		void __DataAvail(int iSockIdx);
+		void _RegisterSockets();
 		void run();
 };
 #endif

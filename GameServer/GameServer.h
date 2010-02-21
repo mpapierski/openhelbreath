@@ -22,7 +22,7 @@ class GameServer
 
 		CGateConnector * m_pGateConnector;	
 		string m_sServerName; // server name, it is sent to gate server
-		vector<string> m_sGameServerAddr; // bind address list
+		string m_sGameServerAddr; // bind address list
 		int m_iGameServerPort; // bind address port (ports?)
 		string m_sGateServerAddr; // login server address
 		int m_iGateServerPort; // gate server port
