@@ -25,7 +25,7 @@ class CGateConnector : public CThread
 		bool m_bIsConnected;
 		unsigned short m_wGSID;
 		void __Reader(int iSockIndex);
-		void __Connect();
+		bool bConnect();
 		void __Connected(int iSockIndex);
 		void __Disconnected(int iSockIndex);
 		void __DataAvail(int iSockIdx);

@@ -6,6 +6,7 @@
 #	include <process.h>
 #else
 #	include <pthread.h>
+#	include <signal.h>
 #endif
 
 class Mutex
@@ -30,7 +31,6 @@ class CThread
 public:
 	CThread();
 	virtual ~CThread();
-
 	bool create(unsigned int stackSize = 0);
 	unsigned int threadId() const;
 	void start();
@@ -39,19 +39,19 @@ public:
 	void resume();
 	void suspend();
 	void shutdown();
+	void kill();
 
 protected:
 	bool canRun();
 	virtual void run() = 0;
-
 private:
 	static unsigned int __stdcall threadFunc(void *args);
-
 	HANDLE m_hThread;
 	unsigned int m_threadId;
 	volatile bool m_canRun;
 	volatile bool m_suspended;
 	Mutex m_mutex;
+	bool m_bRunning;
 };
 #else
 //POSIX implementation
@@ -68,6 +68,7 @@ class CThread {
 		void start();
 		void shutdown();
 		void * join();
+		void kill();
 };
 
 #endif

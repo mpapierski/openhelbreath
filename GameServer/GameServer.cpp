@@ -3,29 +3,29 @@
 
 #include "GameServer.h"
 
-void GameServer::Initialize()
+bool
+GameServer::bInitialize()
 {
-
 	puts("openhelbreath Game Server beta");
 	puts("");
 
 	if (!bReadMainConfig())
-		exit(EXIT_FAILURE);
+		return false;
 
 #ifdef WIN32
 	WSADATA wsdat;
 	memset(&wsdat,0,sizeof(wsdat));
 	if(WSAStartup(0x0101,&wsdat))
 	{
-    		throw "WSAStartup() failed.";
-    		return;
-		exit(EXIT_FAILURE);
+		puts("WSAStartup() failed.");
+		return false;
 	}
 #endif
 
 	m_pGateConnector = new CGateConnector();
 	puts("(*) Gate connector thread start...");
 	m_pGateConnector->start();
+	return true;
 }
 
 bool
@@ -117,3 +117,37 @@ GameServer::iGetMapIndex(string sMapName)
 	return -1;
 }
 
+void
+GameServer::Execute()
+{
+	int iRegisterTimeout = 0;
+	while (true)
+	{
+		if (m_pGateConnector && m_pGateConnector->m_bIsConnected)
+		{
+			puts("(***) Game Server activated!");
+			break;
+		}
+		if (iRegisterTimeout == DEF_REGISTERTIMEOUT)
+		{
+			puts("(!!!) Game Server is not activated!");
+		}
+		else if (iRegisterTimeout == DEF_REGISTERTIMEOUT + 1)
+		{
+			exit(EXIT_FAILURE);
+		}
+		sleep(1);
+		iRegisterTimeout += 1;
+	}
+	TimerLoop();
+}
+	
+void
+GameServer::TimerLoop()
+{
+	while (true)
+	{
+		//TODO : Timer support
+		sleep(1);
+	}
+}

@@ -9,7 +9,7 @@ CGateConnector::CGateConnector()
 	{
 		m_pBuffer[i] = new Buffer(DEF_BUFFERSIZE);
 	}
-
+	m_bIsConnected = false;
 }
 
 
@@ -18,7 +18,7 @@ CGateConnector::~CGateConnector()
 	//
 	puts("CGateConnector destructor...");
 	for (int i = 0; i < DEF_MAXGATESOCKET; i++)
-		if (m_pSocket[i])
+		if (m_pSocket[i] != NULL)
 		{
 			delete m_pSocket[i];
 			delete m_pBuffer[i];
@@ -42,20 +42,24 @@ CGateConnector::__BuildList()
 	return c;
 }
 
-void
-CGateConnector::__Connect()
+bool
+CGateConnector::bConnect()
 {
+	int iRet = 0;
 	for (int i = 0; i < DEF_MAXGATESOCKET; i++)
 	{
 		m_pSocket[i] = new NetSock;
 		if (m_pSocket[i]->Connect(GameServer::getInstance().m_sGateServerAddr.c_str(), GameServer::getInstance().m_iGateServerPort))
 		{
 			printf("(*) Connection-%d established!\n", i);
+			iRet += 1;
 			__Connected(i);
 		} else {
 			printf("(!) Failed on connection-%d\n", i);
+			delete m_pSocket[i];
 		}	
 	}
+	return iRet == DEF_MAXGATESOCKET;
 }
 
 void
@@ -71,7 +75,7 @@ CGateConnector::__Connected(int iSockIndex)
 		p.push<bool>(false); //Do I have configs?
 		int iTotalMaps = GameServer::getInstance().m_pMapList.size();
 		p.push<unsigned char>(iTotalMaps);
-		p.push<unsigned short>(123); //Server ID; TODO : Send process ID ?
+		p.push<unsigned short>(getpid()); //Server ID
 		for (int i = 0; i < iTotalMaps; i++)
 			p.push<char>(GameServer::getInstance().m_pMapList[i].m_sMapName.c_str(), 11);
 		m_pSocket[iSockIndex]->Write((unsigned char*)p.data(), p.size());
@@ -81,9 +85,14 @@ CGateConnector::__Connected(int iSockIndex)
 void
 CGateConnector::run()
 {
-	__Connect();
-	
 	m_bIsConnected = false;
+	
+	if (!bConnect())
+	{
+		puts("(!!!) Could not connect to gate server.");
+		return;
+	}
+
 	while (true)
 	{
 		timeout.tv_sec = 1;
@@ -110,7 +119,7 @@ CGateConnector::run()
 				}
 			}
 		}
-	}
+	}	
 }
 void
 CGateConnector::_RegisterSockets()
@@ -121,6 +130,7 @@ CGateConnector::_RegisterSockets()
 		printf("(!) Try to register game server socket(%d) on ID[%d]\n", i, m_wGSID);
 		m_pSocket[i]->Write((unsigned char*)p.data(), p.size());
 	}
+	m_bIsConnected = true;
 }
 void
 CGateConnector::__Reader(int iSockIndex)

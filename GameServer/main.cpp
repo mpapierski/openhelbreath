@@ -7,16 +7,11 @@
 
 int main (int argc, char *argv[])
 {
-	
-	GameServer::getInstance().Initialize();
-	
-	while (true)
+	if (!GameServer::getInstance().bInitialize())
 	{
-		for (int i = 0; i < DEF_MAXGATESOCKET; i++)
-		{
-			printf("Sock-%d buffer size: %d.\n", i, GameServer::getInstance().m_pGateConnector->m_pBuffer[i]->size());
-		}
-		sleep(5);
+		puts("(!!!) Game Server initialization failed!");
+		exit(EXIT_FAILURE);
 	}
+	GameServer::getInstance().Execute();
 	return 0;
 }

@@ -37,11 +37,13 @@ void Mutex::release() {
 #ifdef WIN32
 
 CThread::CThread()
+
 {
 	m_hThread = 0;
 	m_threadId = 0;
 	m_canRun = true;
 	m_suspended = true;
+	m_bRunning = false;
 	create();
 }
 
@@ -49,6 +51,10 @@ CThread::~CThread()
 {
 	if (m_hThread)
 	{
+		if (m_bRunning)
+		{
+			kill();
+		}
 		CloseHandle(m_hThread);
 	}
 }
@@ -135,21 +141,28 @@ unsigned int __stdcall CThread::threadFunc(void *args)
 		pThread->run();
 		pThread->m_suspended = true;
 	}
+
 	_endthreadex(0);
-	
 	return 0;
 }
+
+void CThread::kill()
+{
+	TerminateThread(&m_threadId, 0);
+	CloseHandle(m_hThread);
+}
+
 #else
 
 //POSIX
- void* CThread::execute(void*p)
+void* CThread::execute(void*p)
 {
 	static_cast<CThread*>(p)->run();
 	return NULL;
 }
 
 CThread::CThread() {}
-CThread::~CThread() {}
+CThread::~CThread() { kill(); }
 
 void CThread::start()
 {
@@ -165,6 +178,10 @@ void * CThread::join()
 	if (pthread_join(tid, &ret))
 		return NULL;
 	return ret;
+}
+void CThread::kill()
+{
+	pthread_cancel(tid);	
 }
 #endif
 

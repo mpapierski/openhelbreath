@@ -6,6 +6,7 @@
 #include "IniFile.h"
 #include "Map.h"
 #include "GlobalDef.h"
+#include "Misc.h"
 
 class GameServer
 {
@@ -28,11 +29,13 @@ class GameServer
 		int m_iGateServerPort; // gate server port
 		vector<CMap> m_pMapList;
 
-		void Initialize();
+		bool bInitialize();
 
 		bool bReadMainConfig();
 		bool bRegisterMap(string sMapName);
 		int iGetMapIndex(string sMapName);
+		void Execute();
+		void TimerLoop();
 
 };
 #endif
