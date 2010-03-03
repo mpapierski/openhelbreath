@@ -28,7 +28,9 @@ class GameServer
 		int m_iGameServerPort; // bind address port (ports?)
 		string m_sGateServerAddr; // login server address
 		int m_iGateServerPort; // gate server port
+
 		vector<CMap> m_pMapList;
+		vector<CItem> m_pItemConfig;
 
 		bool bInitialize();
 

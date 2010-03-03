@@ -2,6 +2,7 @@ import MySQLdb, _mysql_exceptions, time, random, os, re
 from Helpers import PutLogFileList, PutLogList
 from GlobalDef import Account, DEF, Logfile
 from threading import Semaphore, BoundedSemaphore
+from NetMessages import Packets
 
 MySQL_Auth = {'host' : 'localhost', 'port': 3307, 'user': 'root', 'passwd': '', 'db': 'playerdb'}
 
@@ -101,7 +102,9 @@ class DatabaseDriver(object):
 			return False
 			
 		r = self.db.store_result()
-		Tables = ('account_database', 'bank_item', 'char_database', 'guild', 'guild_member', 'item', 'skill')
+		Tables = ('account_database', 'bank_item', 'char_database',
+					'guild', 'guild_member', 'item', 'skill', 
+					'item_config')
 		PlayerDB = []
 		while True:
 			row = r.fetch_row()
@@ -185,7 +188,6 @@ class DatabaseDriver(object):
 				return []
 			rows = []	
 			while True:
-				#row = r.fetch_row()
 				row = self.fetch_array(r)
 				if row == {}:
 					break
@@ -645,3 +647,19 @@ class DatabaseDriver(object):
 			if self.ExecuteSQL(QueryConsult, GUID, CharName):
 				return True
 		return False
+		
+	def __fetch_table(self, table_name):
+		QueryConsult = "SELECT * FROM `%s`"
+		if not self.ExecuteSQL(QueryConsult, table_name):
+			return []
+		r = self.db.store_result()
+		out = []
+		while True:
+			data = r.fetch_row()
+			if data == ():
+				break
+			out += data
+		return out
+		
+	def ReadConfig(self, idx):
+		return self.__fetch_table({Packets.MSGID_ITEMCONFIGURATIONCONTENTS: 'item_config'}[idx])

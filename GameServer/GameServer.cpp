@@ -134,13 +134,16 @@ GameServer::Execute()
 			PutLog("(***) Game Server activated!");
 			break;
 		}
-		if (iRegisterTimeout == DEF_REGISTERTIMEOUT)
+		if (!m_pGateConnector->m_bIsConnected)
 		{
-			PutLog("(!!!) Game Server is not activated!");
-		}
-		else if (iRegisterTimeout == DEF_REGISTERTIMEOUT + 1)
-		{
-			exit(EXIT_FAILURE);
+			if (iRegisterTimeout == DEF_REGISTERTIMEOUT)
+			{
+				PutLog("(!!!) Game Server is not activated!");
+			}
+			else if (iRegisterTimeout == DEF_REGISTERTIMEOUT + 1)
+			{
+				exit(EXIT_FAILURE);
+			}
 		}
 		sleep(1);
 		iRegisterTimeout += 1;

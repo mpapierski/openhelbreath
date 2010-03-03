@@ -157,8 +157,24 @@ CGateConnector::__Reader(int iSockIndex)
 					break;
 			}
 			break;
+		case MSGID_ITEMCONFIGURATIONCONTENTS:
+			GameServer::getInstance().PutLog("(!) ITEM configuration contents received. Now decoding...");
+			int iCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iCount; i++)
+			{
+				// Copy record one by one from buffer
+				CItem _item;
+				memcpy(&_item, m_pBuffer[iSockIndex]->data(), sizeof(CItem));
+				// Move buffer +sizeof(CItem) bytes
+				m_pBuffer[iSockIndex]->seek(sizeof(CItem));
+				// Push item to m_pItemConfig list
+				GameServer::getInstance().m_pItemConfig.push_back(_item);
+			}
+			memset(_buf, 0, sizeof(_buf));
+			sprintf(_buf,"(!) ITEM(Total:%d) configuration - success!", iCount);
+			GameServer::getInstance().PutLog(_buf);
+			break;
 	}
-
 }
 
 void
@@ -206,7 +222,6 @@ CGateConnector::__DataAvail(int iSockIdx)
 				}
 			}
 			__Reader(iSockIdx);
-			
 			int _readcount = _before - m_pBuffer[iSockIdx]->pos();
 			m_pBuffer[iSockIdx]->seek(dwSize-_readcount);
 		}

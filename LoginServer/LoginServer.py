@@ -44,6 +44,9 @@ fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
 packet_format = lambda x: nozeros(x) if type(x) != int else x
 
 class CGameServer(object):
+	
+	GS_Lock = Semaphore()
+	
 	def __init__(self, id, sock):
 		self.AliveResponseTime = time.time()
 		self.GSID = id
@@ -117,6 +120,10 @@ class CLoginServer(object):
 			print "list arg\t: Show current clients or gameservers initialized (gameservers, clients)"
 			print "shutdown\t: Send server shutdown announcement"
 			print "update\t\t: Send updated configuration files to all servers"
+			print "exit\t\t: Instant quit"
+			return
+		elif tok[0].lower() == "exit":
+			sys.exit(1)
 			return
 		print "(***) Unknown command: %s" % tok[0].upper()
 		
@@ -184,8 +191,7 @@ class CLoginServer(object):
 		for i in self.GameServer.values():
 			for j in i.GameServerSocket:
 				if j == sender:
-					return i
-		
+					return i		
 				
 	def GateServer_OnReceive(self, sender, size):
 		"""
@@ -280,13 +286,12 @@ class CLoginServer(object):
 			GS = self.SockToGS(sender)
 			if GS != None and GS.IsRegistered:
 				self.GuildHandler(MsgID, buffer, GS)
-				
 		else:
 			if MsgID in Packets:
 				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
 			else:
 				PutLogFileList("MsgID: 0x%08X %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
-				
+		
 	def GateServer_OnClose(self, sender, size):
 		"""
 			Triggered when Gate Server thread is closed
@@ -328,19 +333,24 @@ class CLoginServer(object):
 		PutLogList("(*) Login server sucessfully started!")
 		
 		return True
-			
+		
+	def __serialize(self, data, fmt):
+		_out = struct.pack('<i', len(data))
+		for l in data:
+			l = map(lambda x: int(x) if str(x).isdigit() else x, l)
+			_out += struct.pack(fmt, *l)
+		return _out		
+		
 	def bReadAllConfig(self):
 		"""
-			Reading HG cfgs in order
+			Last modified: 03-03-2010 by Drajwer
+			Ask Database to load config files, and store it as serialized data
 		"""
-		Files = ["Item.cfg", "Item2.cfg", "Item3.cfg", "Item4.cfg", "BuildItem.cfg",
-				"DupItemID.cfg", "Magic.cfg", "noticement.txt", 
-				"NPC.cfg", "Potion.cfg", "Quest.cfg", "Skill.cfg",
-				"AdminSettings.cfg", "Settings.cfg"]
+		config_list = (('Item',	'<i30sbbbbbbbbbhbbbihbhhbhhbbb', Packets.MSGID_ITEMCONFIGURATIONCONTENTS), )
 		self.Config = {}
-		for n in Files:
-			if not self.ReadConfig("Config/%s" % n):
-				return False
+		for (name, fmt, config) in config_list:
+			self.Config[config] = self.__serialize(self.Database.ReadConfig(config), fmt)
+			PutLogList("(*) Loading %s configuration data... %d total." % (name, len(self.Config[config])))
 		return True
 		
 	def ReadProgramConfigFile(self, cFn):
@@ -394,27 +404,12 @@ class CLoginServer(object):
 		finally:
 			fin.close()
 		return True
-			
-	def ReadConfig(self, FileName):
-		"""
-			Read contents of file to Config dict
-		"""
-		if not os.path.exists(FileName) and not os.path.isfile(FileName):
-			PutLogList("(!) Cannot open configuration file [%s]." % FileName)
-			return False
-		key = FileName.split('/')[-1].split(".")[0]
-		fin = open(FileName,'r')
-		PutLogList("(*) Reading configuration file [%s] -> {'%s'}..." % (FileName, key))
-		try:
-			self.Config[key] = fin.read()
-		finally:
-			fin.close()
-		return True
 		
 	def RegisterGameServer(self, sender, data):
 		"""
 			Registering new Game Server
 		"""
+		CGameServer.GS_Lock.acquire()
 		(ok, GSID, GS) = self.TryRegisterGameServer(sender, data)
 		PacketID = Packets.DEF_MSGTYPE_REJECT if ok == False else Packets.DEF_MSGTYPE_CONFIRM
 		SendData = struct.pack('<BhL2h', 0, 11, Packets.MSGID_RESPONSE_REGISTERGAMESERVER, PacketID, GSID) #cKey -> 0, dwSize = 1* 4b int + 2* 2b word
@@ -423,6 +418,7 @@ class CLoginServer(object):
 			PutLogList("(*) Game Server registered at ID[%u]-[%u]. Maps: %s" % (GSID, GS.Data['InternalID'], ", ".join(GS.MapName)))
 		else:
 			PutLogList("(!) Game Server registration rejected! IP[%s]" % sender.address, Logfile.HACK)
+		CGameServer.GS_Lock.release()
 		
 	def FindNewGSID(self):
 		"""
@@ -437,6 +433,7 @@ class CLoginServer(object):
 			TODO: Detect more security vuln
 			Returns: Tuple ( OK/Fail, GS_ID/-1, CGameServer instance/None)
 		"""
+		
 		global nozeros
 		Read = {}
 		Request = struct.unpack('h', data[:2])[0]
@@ -482,50 +479,33 @@ class CLoginServer(object):
 			Sending data to Game Server
 		"""
 		cKey = 0
+		
 		dwSize = len(data)+3
-		Buffer = chr(cKey) + struct.pack('h', dwSize) + data
+		Buffer = chr(cKey) + struct.pack('<H', dwSize) + data
+		
 		if cKey > 0:
 			for i in range(dwSize):
 				Buffer[3+i] = chr(ord(Buffer[3+i]) + (i ^ cKey))
 				Buffer[3+i] = chr(ord(Buffer[3+i]) ^ (cKey ^ (dwSize - i)))
 		GS.socket.client.send(Buffer)
-		
+			
 	def SendConfigToGS(self, GS):
 		"""
 			Send config to Game Server. Much shorter than in Arye's src!
 		"""
-		Order = (
-					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item'),
-					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item2'),
-					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item3'),
-					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item4'),
-					(Packets.MSGID_BUILDITEMCONFIGURATIONCONTENTS, 'BuildItem'),
-					(Packets.MSGID_DUPITEMIDFILECONTENTS, 'DupItemID'),
-					(Packets.MSGID_MAGICCONFIGURATIONCONTENTS, 'Magic'),
-					(Packets.MSGID_NOTICEMENTFILECONTENTS, 'noticement'),
-					(Packets.MSGID_NPCCONFIGURATIONCONTENTS, 'NPC'),
-					(Packets.MSGID_PORTIONCONFIGURATIONCONTENTS, 'Potion'),
-					(Packets.MSGID_QUESTCONFIGURATIONCONTENTS, 'Quest'),
-					(Packets.MSGID_SKILLCONFIGURATIONCONTENTS, 'Skill'), 
-					(Packets.MSGID_ADMINSETTINGSCONFIGURATIONCONTENTS, 'AdminSettings'),
-					(Packets.MSGID_SETTINGSCONFIGURATIONCONTENTS, 'Settings')
-				)
-				
-		for packet_id, key in Order:
-			if not key in self.Config:
-				PutLogList("%s config not loaded!" % key, Logfile.ERROR)
-				break
-			SendCfgData = struct.pack('Lh', packet_id, 0) + self.Config[key]
+		for (id, data) in self.Config.items():
+			SendCfgData = struct.pack('<Lh', id, 0) + data#self.__serialize(data)
 			self.SendMsgToGS(GS, SendCfgData)
 
 	def RegisterGameServerSocket(self, sender, data):
 		"""
 			Here we are adding socket to Game Server
 		"""
+		CGameServer.GS_Lock.acquire()
 		GSID = ord(data[0])
 		PutLogList("(*) Trying to register socket on GS[%d]." % GSID)
 		if not GSID in self.GameServer:
-			print "(!) GSID is not registered!"
+			PutLogList("(!) GSID is not registered!")
 			return False
 		self.GameServer[GSID].GameServerSocket += [sender]
 		PutLogList("(*) Registered Socket(%d) GSID(%d) ServerName(%s)" % (len(self.GameServer[GSID].GameServerSocket), GSID, self.GameServer[GSID].Data['ServerName']))
@@ -533,6 +513,7 @@ class CLoginServer(object):
 			self.GameServer[GSID].IsRegistered = True
 			PutLogList("(*) Gameserver(%s) registered!" % (self.GameServer[GSID].Data['ServerName']))
 			PutLogList("")
+		CGameServer.GS_Lock.release()
 			
 	def GameServerAliveHandler(self, GS, data):
 		"""
@@ -611,7 +592,7 @@ class CLoginServer(object):
 		"""
 			Sending data to Client
 		"""
-		dwSize = len(data)+3
+		dwSize = len(data) + 3
 		buffer = data[:]
 		if cKey == -1:
 			cKey = random.randint(0, 255)

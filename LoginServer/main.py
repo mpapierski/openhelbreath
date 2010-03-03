@@ -27,12 +27,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+import sys
 from LoginServer import CLoginServer
 
 def main():
-	print "OpenHelbreath Login Server rev. 60" # Last stable revision
-	print "Copyright (C) 2009-2010 by Drajwer"
+	print "OpenHelbreath Login Server experimental" # Last stable revision
+	print "Copyright (C) 2009-2010 by openhelbreath team"
 	print "This program comes with ABSOLUTELY NO WARRANTY."
 	print "This is free software, and you are welcome to redistribute it under certain conditions."
 	print
@@ -48,7 +48,10 @@ def main():
 		return False
 		
 	while True:
-		q = raw_input(">>> ")
+		try:
+			q = raw_input(">>> ")
+		except:
+			sys.exit(1)
 		if q != "":
 			Server.CommandHandler(q)
 	
