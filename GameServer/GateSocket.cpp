@@ -3,20 +3,17 @@
 
 CGateConnector::CGateConnector()
 {
-	//
-	puts("CGateConnector constructor...");
 	for (int i = 0; i < DEF_MAXGATESOCKET;i++)
 	{
 		m_pBuffer[i] = new Buffer(DEF_BUFFERSIZE);
 	}
 	m_bIsConnected = false;
+	__currsocket = 0;
 }
 
 
 CGateConnector::~CGateConnector()
 {
-	//
-	puts("CGateConnector destructor...");
 	for (int i = 0; i < DEF_MAXGATESOCKET; i++)
 		if (m_pSocket[i] != NULL)
 		{
@@ -46,16 +43,20 @@ bool
 CGateConnector::bConnect()
 {
 	int iRet = 0;
+	char _buf[100];
 	for (int i = 0; i < DEF_MAXGATESOCKET; i++)
 	{
 		m_pSocket[i] = new NetSock;
+		memset(_buf, 0, sizeof(_buf));
 		if (m_pSocket[i]->Connect(GameServer::getInstance().m_sGateServerAddr.c_str(), GameServer::getInstance().m_iGateServerPort))
 		{
-			printf("(*) Connection-%d established!\n", i);
+			sprintf(_buf, "(*) Connection-%d established!", i);
+			GameServer::getInstance().PutLog(_buf);
 			iRet += 1;
 			__Connected(i);
 		} else {
-			printf("(!) Failed on connection-%d\n", i);
+			sprintf(_buf, "(!) Failed on connection-%d", i);
+			GameServer::getInstance().PutLog(_buf);
 			delete m_pSocket[i];
 		}	
 	}
@@ -67,7 +68,7 @@ CGateConnector::__Connected(int iSockIndex)
 {
 	if (iSockIndex == 0)
 	{
-		printf("(!) Try to register game server(%s)\n", GameServer::getInstance().m_sServerName.c_str());
+		GameServer::getInstance().PutLog("(!) Try to register game server(" + GameServer::getInstance().m_sServerName + ")");
 		Packet p(MSGID_REQUEST_REGISTERGAMESERVER, DEF_MSGTYPE_CONFIRM);
 		p.push<char>(GameServer::getInstance().m_sServerName.c_str(), 10);
 		p.push<char>(GameServer::getInstance().m_sGameServerAddr.c_str(), 16);
@@ -89,7 +90,7 @@ CGateConnector::run()
 	
 	if (!bConnect())
 	{
-		puts("(!!!) Could not connect to gate server.");
+		GameServer::getInstance().PutLog("(!!!) Could not connect to gate server.");
 		return;
 	}
 
@@ -100,7 +101,7 @@ CGateConnector::run()
 		
 		if (__BuildList() == 0)
 		{
-			puts("(!!!) Lost connection to Login Server!\n");
+			GameServer::getInstance().PutLog("(!!!) Lost connection to Login Server!");
 			break;
 		}
 		
@@ -108,7 +109,7 @@ CGateConnector::run()
 		
 		if (readsocks == -1)
 		{
-			puts("(!!!) CRITICAL ERROR. SELECT() == -1!\n");
+			GameServer::getInstance().PutLog("(!!!) CRITICAL ERROR. SELECT() == -1!");
 			break;
 		} else {
 			for (int i = 0; i< DEF_MAXGATESOCKET;i++)
@@ -127,7 +128,9 @@ CGateConnector::_RegisterSockets()
 	Packet p(MSGID_REQUEST_REGISTERGAMESERVERSOCKET, m_wGSID);
 	for (int i = 1; i < DEF_MAXGATESOCKET; i++)
 	{
-		printf("(!) Try to register game server socket(%d) on ID[%d]\n", i, m_wGSID);
+		char _buf[100];
+		sprintf(_buf, "(!) Try to register game server socket(%d) on ID[%d]", i, m_wGSID);
+		GameServer::getInstance().PutLog(_buf);
 		m_pSocket[i]->Write((unsigned char*)p.data(), p.size());
 	}
 	m_bIsConnected = true;
@@ -137,7 +140,7 @@ CGateConnector::__Reader(int iSockIndex)
 {
 	unsigned int dwMsgID = m_pBuffer[iSockIndex]->next<int>();
 	unsigned short wMsgType = m_pBuffer[iSockIndex]->next<unsigned short>();
-
+	char _buf[100];
 	switch (dwMsgID)
 	{
 		case MSGID_RESPONSE_REGISTERGAMESERVER:
@@ -145,22 +148,26 @@ CGateConnector::__Reader(int iSockIndex)
 			{
 				case DEF_MSGTYPE_CONFIRM:
 					m_wGSID = m_pBuffer[iSockIndex]->next<unsigned short>();
-					printf("(!) Game Server registration to Log Server - Success! GSID[%d]\n", m_wGSID);
+					sprintf(_buf, "(!) Game Server registration to Log Server - Success! GSID[%d]", m_wGSID);
+					GameServer::getInstance().PutLog(_buf);
 					_RegisterSockets();
 					break;
 				case DEF_MSGTYPE_REJECT:
-					puts("(!) Game Server registration to Log Server - Fail!");
+					GameServer::getInstance().PutLog("(!) Game Server registration to Log Server - Fail!");
 					break;
 			}
 			break;
 	}
+
 }
 
 void
 CGateConnector::__Disconnected(int iSockIndex)
 {
 	//Reconnecting
-	printf("(!!!) Lost connection to login server on socket-%d.\n", iSockIndex);
+	char _buf[100];
+	sprintf(_buf, "(!!!) Lost connection to login server on socket-%d.", iSockIndex);
+	GameServer::getInstance().PutLog(_buf);
 }
 
 void
@@ -206,4 +213,14 @@ CGateConnector::__DataAvail(int iSockIdx)
 		else
 			break;
 	}
+}
+
+NetSock*
+CGateConnector::pGetSock()
+{
+	int idx = __currsocket;
+	__currsocket += 1;
+	if (__currsocket > DEF_MAXGATESOCKET)
+		__currsocket = 0;
+	return m_pSocket[idx];
 }

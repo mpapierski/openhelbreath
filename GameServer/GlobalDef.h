@@ -4,4 +4,9 @@
 #	define DEF_BUFFERSIZE 128 * 1024 // 128kb
 #	define DEF_MAINCONFIGFILE "gserver.cfg"
 #	define DEF_REGISTERTIMEOUT 10 // in sec
+
+#	define LOGTYPE_GAMEMASTER 0x0010
+#	define LOGTYPE_ITEM 0x0020
+#	define LOGTYPE_CRUSADE 0x0030
+#	define LOGTYPE_LOCAL 0x0040
 #endif

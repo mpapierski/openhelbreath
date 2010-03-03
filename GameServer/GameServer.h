@@ -1,5 +1,6 @@
 #ifndef GAMESERVER_H
 #define GAMESERVER_H
+#include <time.h>
 
 #include "GateSocket.h"
 #include "Threading.h"
@@ -36,6 +37,6 @@ class GameServer
 		int iGetMapIndex(string sMapName);
 		void Execute();
 		void TimerLoop();
-
+		void PutLog(string sMessage, int iLogType = LOGTYPE_LOCAL);
 };
 #endif

@@ -17,11 +17,16 @@ class CGateConnector : public CThread
 		int readsocks;
 		int highsock;
 		int __BuildList();
+
+		int __currsocket;
 	public:
 		NetSock * m_pSocket[DEF_MAXGATESOCKET];
 		Buffer * m_pBuffer[DEF_MAXGATESOCKET];
 		CGateConnector();
 		~CGateConnector();
+		
+		NetSock * pGetSock();
+
 		bool m_bIsConnected;
 		unsigned short m_wGSID;
 		void __Reader(int iSockIndex);
