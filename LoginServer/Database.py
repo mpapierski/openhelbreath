@@ -101,10 +101,22 @@ class DatabaseDriver(object):
 		if not self.ExecuteSQL("SHOW TABLES"):
 			return False
 			
-		r = self.db.store_result()
-		Tables = ('account_database', 'bank_item', 'char_database',
-					'guild', 'guild_member', 'item', 'skill', 
-					'item_config')
+		r = self.db.store_result()		
+		Tables = ('account_database',
+					'bank_item',
+					'char_database',
+					'guild',
+					'guild_member',
+					'item',
+					'skill',
+					'builditem_config',
+					'skill_config',
+					'item_config',
+					'magic_config',
+					'npc_config',
+					'potion_config',
+					'quest_config')
+
 		PlayerDB = []
 		while True:
 			row = r.fetch_row()
@@ -662,4 +674,11 @@ class DatabaseDriver(object):
 		return out
 		
 	def ReadConfig(self, idx):
-		return self.__fetch_table({Packets.MSGID_ITEMCONFIGURATIONCONTENTS: 'item_config'}[idx])
+		_search = {Packets.MSGID_ITEMCONFIGURATIONCONTENTS: 'item_config',
+					Packets.MSGID_NPCCONFIGURATIONCONTENTS: 'npc_config',
+					Packets.MSGID_MAGICCONFIGURATIONCONTENTS: 'magic_config',
+					Packets.MSGID_QUESTCONFIGURATIONCONTENTS: 'quest_config',
+					Packets.MSGID_SKILLCONFIGURATIONCONTENTS: 'skill_config',
+					Packets.MSGID_BUILDITEMCONFIGURATIONCONTENTS: 'builditem_config',
+					Packets.MSGID_PORTIONCONFIGURATIONCONTENTS: 'potion_config'}
+		return self.__fetch_table(_search[idx])

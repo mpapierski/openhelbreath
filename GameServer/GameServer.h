@@ -12,7 +12,15 @@
 class GameServer
 {
 	private:
-		GameServer() { }
+		GameServer() {
+			m_pGateConnector = NULL;
+		}
+		~GameServer()
+		{
+			if (m_pGateConnector != NULL)
+				delete m_pGateConnector;
+		}
+
 		GameServer(const GameServer &);
 		GameServer& operator=(const GameServer&);
 	public:

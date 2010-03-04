@@ -6,6 +6,7 @@ CGateConnector::CGateConnector()
 	for (int i = 0; i < DEF_MAXGATESOCKET;i++)
 	{
 		m_pBuffer[i] = new Buffer(DEF_BUFFERSIZE);
+		m_pSocket[i] = NULL;
 	}
 	m_bIsConnected = false;
 	__currsocket = 0;
@@ -15,12 +16,17 @@ CGateConnector::CGateConnector()
 CGateConnector::~CGateConnector()
 {
 	for (int i = 0; i < DEF_MAXGATESOCKET; i++)
+	{
 		if (m_pSocket[i] != NULL)
 		{
 			delete m_pSocket[i];
-			delete m_pBuffer[i];
+			m_pSocket[i] = NULL;
 		}
+		delete m_pBuffer[i];
+		m_pBuffer[i] = NULL;
+	}
 }
+
 
 int
 CGateConnector::__BuildList()
@@ -58,6 +64,7 @@ CGateConnector::bConnect()
 			sprintf(_buf, "(!) Failed on connection-%d", i);
 			GameServer::getInstance().PutLog(_buf);
 			delete m_pSocket[i];
+			m_pSocket[i] = NULL;
 		}	
 	}
 	return iRet == DEF_MAXGATESOCKET;
