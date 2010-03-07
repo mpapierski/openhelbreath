@@ -1,6 +1,5 @@
 #include "LoadScene.h"
-
-extern CGameState GameState;
+#include "App.h"
 
 CLoadScene::CLoadScene()
 {
@@ -21,7 +20,7 @@ void CLoadScene::OnLoop()
     procent++;
     if(procent > 100)
     {
-        GameState.ChangeGameState(OnMenu);
+        CApp::GetInstance().GameState = OnMenu;
     }
 }
 

@@ -1,6 +1,5 @@
 #include "LoginScene.h"
-
-extern CGameState GameState;
+#include "App.h"
 
 CLoginScene::CLoginScene()
 {
@@ -19,7 +18,7 @@ bool CLoginScene::OnLoad()
 void CLoginScene::OnRender(SDL_Surface *Surf_Dest)
 {
     CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 0, 0, 0, 0, 640, 480);
-    switch(GameState.getGameStatus())
+    switch(CApp::GetInstance().GameState)
     {
     case OnLogin:
         CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 39, 121, LoginSprite.Frame[2].x, LoginSprite.Frame[2].y, LoginSprite.Frame[2].w, LoginSprite.Frame[2].h);
@@ -62,32 +61,32 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
     switch(sym)
     {
     case SDLK_ESCAPE:
-        switch(GameState.getGameStatus())
+        switch(CApp::GetInstance().GameState)
         {
         case OnLogin:
             LoginSelection = LoginTextEdit;
-            GameState.ChangeGameState(OnMenu);
+            CApp::GetInstance().GameState = OnMenu;
             break;
         case OnSelectServer:
-            GameState.ChangeGameState(OnLogin);
+            CApp::GetInstance().GameState = OnLogin;
             LoginSelection = LoginTextEdit;
             break;
         }
         break;
     case SDLK_RETURN:
-        switch(GameState.getGameStatus())
+        switch(CApp::GetInstance().GameState)
         {
         case OnLogin:
             switch(LoginSelection)
             {
             case Cancel:
                 CSound::SoundControl.Play(0);
-                GameState.ChangeGameState(OnMenu);
+                CApp::GetInstance().GameState = OnMenu;
                 LoginSelection = LoginTextEdit;
                 break;
             case Connect:
                 CSound::SoundControl.Play(0);
-                GameState.ChangeGameState(OnConnecting);
+                CApp::GetInstance().GameState = OnConnecting;
                 LoginSelection = LoginTextEdit;
                 break;
             }
@@ -103,7 +102,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
                 break;
             case Cancel:
                 CSound::SoundControl.Play(0);
-                GameState.ChangeGameState(OnLogin);
+                CApp::GetInstance().GameState = OnLogin;
                 LoginSelection = LoginTextEdit;
                 break;
             }
@@ -112,7 +111,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
         break;
     case SDLK_TAB:
     case SDLK_DOWN:
-        switch(GameState.getGameStatus())
+        switch(CApp::GetInstance().GameState)
         {
         case OnLogin:
             switch(LoginSelection)
@@ -148,7 +147,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
         }
         break;
     case SDLK_UP:
-        switch(GameState.getGameStatus())
+        switch(CApp::GetInstance().GameState)
         {
         case OnLogin:
             switch(LoginSelection)
@@ -188,7 +187,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
 
 void CLoginScene::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, bool Right, bool Middle)
 {
-    switch(GameState.getGameStatus())
+    switch(CApp::GetInstance().GameState)
     {
     case OnLogin:
         if(mY > 282 && mY < 302)
@@ -233,7 +232,7 @@ void CLoginScene::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, boo
 
 void CLoginScene::OnLButtonDown(int X, int Y)
 {
-    switch(GameState.getGameStatus())
+    switch(CApp::GetInstance().GameState)
     {
     case OnLogin:
         if(Y > 282 && Y < 302)
@@ -243,14 +242,14 @@ void CLoginScene::OnLButtonDown(int X, int Y)
             {
                 CSound::SoundControl.Play(0);
                 LoginSelection = AbbadonServer;
-                GameState.ChangeGameState(OnConnecting);
+                CApp::GetInstance().GameState = OnConnecting;
             }
             //Cancel Button
             if(X > 256 && X < 322)
             {
                 CSound::SoundControl.Play(0);
                 LoginSelection = LoginTextEdit;
-                GameState.ChangeGameState(OnMenu);
+                CApp::GetInstance().GameState = OnMenu;
             }
         }
         break;
@@ -280,7 +279,7 @@ void CLoginScene::OnLButtonDown(int X, int Y)
             {
                 CSound::SoundControl.Play(0);
                 LoginSelection = LoginTextEdit;
-                GameState.ChangeGameState(OnLogin);
+                CApp::GetInstance().GameState = OnLogin;
             }
         }
         break;

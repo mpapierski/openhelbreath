@@ -32,7 +32,6 @@ private:
     bool cap;
 
     std::string AppName;
-    std::string TestString;
 
     CTimer fps;
     CTimer fpsCounter;
@@ -53,10 +52,21 @@ private:
     //CMessageBox MessageBox;
 
     SDL_Surface *Surf_Display;
-    SDL_Surface *Surf_Test;
+
+private:
+	CApp();
+    CApp(const CApp &);
+    CApp& operator = (const CApp&);
 
 public:
-    CApp();
+	GState GameState;
+
+public:
+    static CApp &GetInstance()
+    {
+		static CApp instance;
+		return instance;
+    }
 
     int OnExecute();
 
@@ -65,8 +75,6 @@ public:
     void OnEvent(SDL_Event *Event);
 
     void OnExit();
-
-    void OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
 
     void OnLoop();
 

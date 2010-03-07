@@ -1,6 +1,5 @@
 #include "MenuScene.h"
-
-extern CGameState GameState;
+#include "App.h"
 
 CMenuScene::CMenuScene()
 {
@@ -38,21 +37,21 @@ void CMenuScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
     switch(sym)
     {
     case SDLK_ESCAPE:
-        GameState.ChangeGameState(OnQuit);
+        CApp::GetInstance().GameState = OnQuit;
         break;
     case SDLK_RETURN:
         switch(Focus_Menu)
         {
         case Login:
             CSound::SoundControl.Play(0);
-            GameState.ChangeGameState(OnLogin);
+            CApp::GetInstance().GameState = OnLogin;
             break;
         case NewAccount:
             CSound::SoundControl.Play(0);
             break;
         case Exit:
             CSound::SoundControl.Play(0);
-            GameState.ChangeGameState(OnQuit);
+            CApp::GetInstance().GameState = OnQuit;
             break;
         }
         break;
@@ -108,7 +107,7 @@ void CMenuScene::OnLButtonDown(int X, int Y)
         if(Y > 178 && Y < 199)
         {
             CSound::SoundControl.Play(0);
-            GameState.ChangeGameState(OnLogin);
+            CApp::GetInstance().GameState = OnLogin;
         }
         if(Y > 216 && Y < 237)
         {
@@ -117,7 +116,7 @@ void CMenuScene::OnLButtonDown(int X, int Y)
         if(Y > 255 && Y < 276)
         {
             CSound::SoundControl.Play(0);
-            GameState.ChangeGameState(OnQuit);
+            CApp::GetInstance().GameState = OnQuit;
         }
     }
 }

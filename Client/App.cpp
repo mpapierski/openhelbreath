@@ -1,7 +1,5 @@
 #include "App.h"
 
-CGameState GameState;
-
 CApp::CApp()
 {
     Surf_Display = NULL;
@@ -13,7 +11,7 @@ CApp::CApp()
 
     Running = true;
 
-    GameState.ChangeGameState(OnLoad);
+    GameState = OnLoad;
 
     AppName = "HelGame";
 
@@ -44,7 +42,7 @@ int CApp::OnExecute()
             OnEvent(&Event);
             Mouse.OnEvent(&Event);
 
-            switch(GameState.getGameStatus())
+            switch(GameState)
             {
             case OnMenu:
                 MenuScene.OnEvent(&Event);
@@ -56,6 +54,9 @@ int CApp::OnExecute()
             case OnConnecting:
 //                MessageBox.OnEvent(&Event);
                 break;
+			case OnLoad:
+			case OnQuit:
+				break;
             }
         }
 
@@ -114,7 +115,7 @@ bool CApp::OnInit()
 
 void CApp::OnLoop()
 {
-    switch(GameState.getGameStatus())
+    switch(GameState)
     {
     case OnLoad:
         switch(LoadScene.procent)
@@ -122,15 +123,15 @@ void CApp::OnLoop()
         case 0:
             if(!ExitScene.OnLoad())
             {
-                GameState.ChangeGameState(OnQuit);
+                GameState = OnQuit;
             }
             if(!MenuScene.OnLoad())
             {
-                GameState.ChangeGameState(OnQuit);
+                GameState = OnQuit;
             }
             if(!LoginScene.OnLoad())
             {
-                GameState.ChangeGameState(OnQuit);
+                GameState = OnQuit;
             }
 
             /*          if(!MessageBox.OnLoad("sprites/GameDialog.pak", 3))
@@ -142,12 +143,20 @@ void CApp::OnLoop()
 
             if((CSound::SoundControl.OnLoad("sounds/E14.WAV")) == -1)
             {
-                GameState.ChangeGameState(OnQuit);
+                GameState = OnQuit;
             }
             break;
         }
         LoadScene.OnLoop();
         break;
+	case OnMenu:
+		break;
+	case OnLogin:
+		break;
+	case OnSelectServer:
+		break;
+	case OnConnecting:
+		break;
     case OnQuit:
         ExitScene.OnLoop();
         if(!quitTimer.is_started())
@@ -164,7 +173,7 @@ void CApp::OnLoop()
 
 void CApp::OnRender()
 {
-    switch(GameState.getGameStatus())
+    switch(GameState)
     {
     case OnLoad:
         LoadScene.OnRender(Surf_Display);
@@ -175,9 +184,6 @@ void CApp::OnRender()
     case OnSelectServer:
     case OnLogin:
         LoginScene.OnRender(Surf_Display);
-        //Surf_Test = Font.OnRender(TestString.c_str());
-        //CSurface::OnDraw(Surf_Display, Surf_Test, 175, 161);
-        //SDL_FreeSurface(Surf_Test);
         break;
     case OnConnecting:
 //        MessageBox.OnRender(Surf_Display);

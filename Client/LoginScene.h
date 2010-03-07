@@ -2,7 +2,6 @@
 #define LOGINSCENE_H
 
 #include "Scene.h"
-#include "GameState.h"
 #include "Sound.h"
 #include "Sprite.h"
 
