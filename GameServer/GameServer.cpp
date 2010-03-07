@@ -32,8 +32,7 @@ GameServer::bReadMainConfig()
 {
 	CIniFile * cfg;
 	cfg = new CIniFile(DEF_MAINCONFIGFILE);
-	char _buf[100];
-
+	
 	if (!cfg->bLoadIni())
 	{
 		PutLog("(!) Cannot open configuration file.");
@@ -62,9 +61,7 @@ GameServer::bReadMainConfig()
 	if ( (m_iGameServerPort < 0) || (m_iGameServerPort > 65535) )
 		return false;
 		
-	memset(_buf, 0, sizeof(_buf));
-	sprintf(_buf, "(*) Game server port : %d", m_iGameServerPort);
-	PutLog(_buf);
+	PutLog("(*) Game server port : " + toString<int>(m_iGameServerPort));
 	
 	m_sGateServerAddr = cfg->sGetValue("CONFIG", "gate-server-address", "");
 	if (m_sGateServerAddr == "")
@@ -76,9 +73,7 @@ GameServer::bReadMainConfig()
 	if ( (m_iGateServerPort < 0) || (m_iGateServerPort > 65535) )
 		return false;
 
-	memset(_buf, 0, sizeof(_buf));
-	sprintf(_buf, "(*) Gate server port : %d", m_iGateServerPort);
-	PutLog(_buf);
+	PutLog("(*) Gate server port : " + toString<int>(m_iGateServerPort));
 
 	vector<string> sMapList = cfg->pGetValuesByName("MAPS", "game-server-map");
 
@@ -91,9 +86,7 @@ GameServer::bReadMainConfig()
 			return false;
 		}
 		const CMap & pLoaded = m_pMapList[iGetMapIndex(sMapList[i])];
-		memset(_buf, 0, sizeof(_buf));
-		sprintf(_buf, "(*) Data file loading success. Map:%s Width:%d Height:%d", pLoaded.m_sMapName.c_str(), pLoaded.m_iSizeX, pLoaded.m_iSizeY);
-		PutLog(_buf);
+		PutLog("(*) Data file loading success. Map:" + pLoaded.m_sMapName + " Width:" + toString<int>(pLoaded.m_iSizeX) + " Height:" + toString<int>(pLoaded.m_iSizeY));
 	}
 	
 	delete cfg;

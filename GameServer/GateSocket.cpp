@@ -1,5 +1,5 @@
-#include "GateSocket.h"
 #include "GameServer.h"
+#include "GateSocket.h"
 
 CGateConnector::CGateConnector()
 {
@@ -49,20 +49,16 @@ bool
 CGateConnector::bConnect()
 {
 	int iRet = 0;
-	char _buf[100];
 	for (int i = 0; i < DEF_MAXGATESOCKET; i++)
 	{
 		m_pSocket[i] = new NetSock;
-		memset(_buf, 0, sizeof(_buf));
 		if (m_pSocket[i]->Connect(GameServer::getInstance().m_sGateServerAddr.c_str(), GameServer::getInstance().m_iGateServerPort))
 		{
-			sprintf(_buf, "(*) Connection-%d established!", i);
-			GameServer::getInstance().PutLog(_buf);
+			GameServer::getInstance().PutLog("(*) Connection-" + toString<int>(i) + " established!");
 			iRet += 1;
 			__Connected(i);
 		} else {
-			sprintf(_buf, "(!) Failed on connection-%d", i);
-			GameServer::getInstance().PutLog(_buf);
+			GameServer::getInstance().PutLog("(!) Failed on connection-" + toString<int>(i));
 			delete m_pSocket[i];
 			m_pSocket[i] = NULL;
 		}	
@@ -135,9 +131,7 @@ CGateConnector::_RegisterSockets()
 	Packet p(MSGID_REQUEST_REGISTERGAMESERVERSOCKET, m_wGSID);
 	for (int i = 1; i < DEF_MAXGATESOCKET; i++)
 	{
-		char _buf[100];
-		sprintf(_buf, "(!) Try to register game server socket(%d) on ID[%d]", i, m_wGSID);
-		GameServer::getInstance().PutLog(_buf);
+		GameServer::getInstance().PutLog("(!) Try to register game server socket(" + toString<int>(i) + ") on ID[" + toString<int>(m_wGSID) + "]");
 		m_pSocket[i]->Write((unsigned char*)p.data(), p.size());
 	}
 	m_bIsConnected = true;
@@ -147,7 +141,6 @@ CGateConnector::__Reader(int iSockIndex)
 {
 	unsigned int dwMsgID = m_pBuffer[iSockIndex]->next<int>();
 	unsigned short wMsgType = m_pBuffer[iSockIndex]->next<unsigned short>();
-	char _buf[100];
 	switch (dwMsgID)
 	{
 		case MSGID_RESPONSE_REGISTERGAMESERVER:
@@ -155,8 +148,7 @@ CGateConnector::__Reader(int iSockIndex)
 			{
 				case DEF_MSGTYPE_CONFIRM:
 					m_wGSID = m_pBuffer[iSockIndex]->next<unsigned short>();
-					sprintf(_buf, "(!) Game Server registration to Log Server - Success! GSID[%d]", m_wGSID);
-					GameServer::getInstance().PutLog(_buf);
+					GameServer::getInstance().PutLog("(!) Game Server registration to Log Server - Success! GSID[" + toString<int>(m_wGSID) + "]");
 					_RegisterSockets();
 					break;
 				case DEF_MSGTYPE_REJECT:
@@ -166,20 +158,66 @@ CGateConnector::__Reader(int iSockIndex)
 			break;
 		case MSGID_ITEMCONFIGURATIONCONTENTS:
 			GameServer::getInstance().PutLog("(!) ITEM configuration contents received. Now decoding...");
-			int iCount = m_pBuffer[iSockIndex]->next<int>();
-			for (int i = 0; i < iCount; i++)
+			int iItemCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iItemCount; i++)
 			{
-				// Copy record one by one from buffer
-				CItem _item;
-				memcpy(&_item, m_pBuffer[iSockIndex]->data(), sizeof(CItem));
-				// Move buffer +sizeof(CItem) bytes
-				m_pBuffer[iSockIndex]->seek(sizeof(CItem));
-				// Push item to m_pItemConfig list
-				GameServer::getInstance().m_pItemConfig.push_back(_item);
+				// Get CItem from buffer
+				CItem _item = m_pBuffer[iSockIndex]->next<CItem>();
+				// Insert item into m_pItemConfig list
+				GameServer::getInstance().m_pItemConfig.insert( pair<int, CItem>(_item.m_sIDnum, _item) );
 			}
-			memset(_buf, 0, sizeof(_buf));
-			sprintf(_buf,"(!) ITEM(Total:%d) configuration - success!", iCount);
-			GameServer::getInstance().PutLog(_buf);
+			GameServer::getInstance().PutLog("(!) ITEM(Total:" + toString<int>(iItemCount) + " configuration - success!");
+			break;
+		case MSGID_NPCCONFIGURATIONCONTENTS:
+			GameServer::getInstance().PutLog("(!) NPC configuration contents received. Now decoding...");
+			int iNpcCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iNpcCount; i++)
+			{
+				CNpc _npc = m_pBuffer[iSockIndex]->next<CNpc>();
+				GameServer::getInstance().m_pNpcConfig.push_back(_npc);
+			}
+			GameServer::getInstance().PutLog("(!) NPC(Total:" + toString<int>(iNpcCount) + ") configuration - success!");
+			break;
+		case MSGID_MAGICCONFIGURATIONCONTENTS:
+			GameServer::getInstance().PutLog("(!) MAGIC configuration contents received. Now decoding...");
+			int iMagicCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iMagicCount; i++)
+			{
+				CMagic _magic = m_pBuffer[iSockIndex]->next<CMagic>();
+				GameServer::getInstance().m_pMagicConfig.insert( pair<int, CMagic>(_magic.m_iNum, _magic) );
+			}
+			GameServer::getInstance().PutLog("(!) MAGIC(Total:" + toString<int>(iMagicCount) + ") configuration - success!");
+			break;
+		case MSGID_SKILLCONFIGURATIONCONTENTS:
+			GameServer::getInstance().PutLog("(!) SKILL configuration contents received. Now decoding...");
+			int iSkillCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iSkillCount; i++)
+			{
+				CSkill _skill = m_pBuffer[iSockIndex]->next<CSkill>();
+				GameServer::getInstance().m_pSkillConfig.insert( pair<int, CSkill>(_skill.m_iSkillID, _skill) );
+			}
+			GameServer::getInstance().PutLog("(!) SKILL(Total:" + toString<int>(iSkillCount) + ") configuration - success!");
+			break;
+		case MSGID_BUILDITEMCONFIGURATIONCONTENTS:
+			GameServer::getInstance().PutLog("(!) BUILDITEM configuration contents received. Now decoding...");
+			int iBuildItemCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iBuildItemCount; i++)
+				GameServer::getInstance().m_pBuildItemConfig.push_back( m_pBuffer[iSockIndex]->next<CBuildItem>() );
+			GameServer::getInstance().PutLog("(!) BUILDITEM(Total:" + toString<int>(iBuildItemCount) + ") configuration - success!");
+			break;
+		case MSGID_PORTIONCONFIGURATIONCONTENTS: //silly koreans...
+			GameServer::getInstance().PutLog("(!) PORTION configuration contents received. Now decoding..."); //but lets stick to the original
+			int iPortionCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iPortionCount; i++)
+				GameServer::getInstance().m_pPotionConfig.push_back( m_pBuffer[iSockIndex]->next<CPotion>() );
+			GameServer::getInstance().PutLog("(!) PORTION(Total:" + toString<int>(iPortionCount) + ") configuration - success!");
+			break;
+		case MSGID_QUESTCONFIGURATIONCONTENTS:
+			GameServer::getInstance().PutLog("(!) QUEST configuration contents received. Now decoding...");
+			int iQuestCount = m_pBuffer[iSockIndex]->next<int>();
+			for (int i = 0; i < iQuestCount; i++)
+				GameServer::getInstance().m_pQuestConfig.push_back( m_pBuffer[iSockIndex]->next<CQuest>() );
+			GameServer::getInstance().PutLog("(!) QUEST(Total:" + toString<int>(iQuestCount) + ") configuration - success!");
 			break;
 	}
 }
@@ -188,9 +226,7 @@ void
 CGateConnector::__Disconnected(int iSockIndex)
 {
 	//Reconnecting
-	char _buf[100];
-	sprintf(_buf, "(!!!) Lost connection to login server on socket-%d.", iSockIndex);
-	GameServer::getInstance().PutLog(_buf);
+	GameServer::getInstance().PutLog("(!!!) Lost connection to login server on socket-" + toString<int>(iSockIndex) + ".");
 }
 
 void

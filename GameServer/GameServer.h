@@ -8,6 +8,13 @@
 #include "Map.h"
 #include "GlobalDef.h"
 #include "Misc.h"
+#include "Item.h"
+#include "Npc.h"
+#include "Magic.h"
+#include "Skill.h"
+#include "BuildItem.h"
+#include "Potion.h"
+#include "Quest.h"
 
 class GameServer
 {
@@ -38,7 +45,13 @@ class GameServer
 		int m_iGateServerPort; // gate server port
 
 		vector<CMap> m_pMapList;
-		vector<CItem> m_pItemConfig;
+		map<int, CItem> m_pItemConfig;
+		vector<CNpc> m_pNpcConfig;
+		map<int, CMagic> m_pMagicConfig;
+		map<int, CSkill> m_pSkillConfig;
+		vector<CBuildItem> m_pBuildItemConfig;
+		vector<CPotion> m_pPotionConfig;
+		vector<CQuest> m_pQuestConfig;
 
 		bool bInitialize();
 

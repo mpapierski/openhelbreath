@@ -9,4 +9,15 @@
 #		include <unistd.h>
 #	endif
 
+#include <string>
+#include <sstream>
+
+template <class TS>
+inline string const toString(TS object)
+{
+	ostringstream os;
+	os << object;
+	return os.str();
+}
+#define itoa(x) (toString<int>(x))
 #endif

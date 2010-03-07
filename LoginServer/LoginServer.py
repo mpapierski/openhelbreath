@@ -346,7 +346,7 @@ class CLoginServer(object):
 			Last modified: 03-03-2010 by Drajwer
 			Ask Database to load config files, and store it as serialized data
 		"""
-		config_list = (('Item',	'<i30s9bh3bihb2hb2h3b', Packets.MSGID_ITEMCONFIGURATIONCONTENTS), 
+		config_list = (('Item',	'<i30s9bh3bihh2hb2h3b', Packets.MSGID_ITEMCONFIGURATIONCONTENTS), 
 						('Npc', '<30s5hi11hi6hi', Packets.MSGID_NPCCONFIGURATIONCONTENTS),
 						('Magic', '<i30s19i', Packets.MSGID_MAGICCONFIGURATIONCONTENTS),
 						('Quest', '<21i30s5i', Packets.MSGID_QUESTCONFIGURATIONCONTENTS), 

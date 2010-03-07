@@ -11,7 +11,11 @@ file_name="Makefile"
 touch "$file_name"
 echo "OSTYPE=	$PLATFORM" > $file_name
 echo 'CC=g++' >> $file_name
-echo 'CFLAGS=-c -Wall' >> $file_name
+if [[ "$1" == 'debug' ]]; then
+	echo 'CFLAGS=-c -O0 -Wall' >> $file_name
+else
+	echo 'CFLAGS=-c -O3 -Os -Wall' >> $file_name
+fi
 echo 'LDFLAGS=' >> $file_name
 if [[ "$PLATFORM" == 'Windows' ]]; then
 	echo 'LIBS=	-lws2_32' >> $file_name

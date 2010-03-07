@@ -9,7 +9,7 @@ int main (int argc, char *argv[])
 {
 	if (!GameServer::getInstance().bInitialize())
 	{
-		puts("(!!!) Game Server initialization failed!");
+		GameServer::getInstance().PutLog("(!!!) Game Server initialization failed!");
 		exit(EXIT_FAILURE);
 	}
 	GameServer::getInstance().Execute();

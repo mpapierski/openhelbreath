@@ -21,7 +21,7 @@ class CItem {
 		unsigned char m_cSpriteFrame;
 		int m_iPrice;
 		short m_sWeight;
-		unsigned char m_cApprValue;
+		short m_sApprValue;
 		short m_sSpeed;
 		short m_sLevel;
 		char m_cGender;

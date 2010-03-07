@@ -7,7 +7,6 @@
 #include "GlobalDef.h"
 #include "NetMessages.h"
 #include "Buffers.h"
-#include "Item.h"
 
 class CGateConnector : public CThread
 {
