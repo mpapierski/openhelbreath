@@ -28,8 +28,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import socket, select, sys, copy
-from threading import Thread
+from threading import Thread, Semaphore
 from Helpers import  Callbacks
+
+ClientLocker = Semaphore()
 
 class ServerSocket(Thread):
 	def __init__(self, (host, port), callbacks):
@@ -41,10 +43,12 @@ class ServerSocket(Thread):
 		self.backlog = 5
 		self.size = 8192
 		self.server = None
-		self.threads = []
-		self.callbacks = Callbacks(callbacks)
-		self.callbacks['onDisconnected'] += [self.client_disconnect] #injecting own disconnect callback
+		#self.threads = []
+		#self.callbacks = Callbacks(callbacks)
+		#self.callbacks['onDisconnected'] += [self.client_disconnect] #injecting own disconnect callback
 		self.running = False
+		self.callbacks = Callbacks(callbacks)
+		self.socket_list = []
 
 	def __del__(self):
 		self.server.close() #propably useless
@@ -69,8 +73,9 @@ class ServerSocket(Thread):
 		try:
 			self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #important!
+			#3self.server.setblocking(0)
 			self.server.bind((self.host, self.port))
-			self.server.listen(1)
+			self.server.listen(10)
 			
 		except socket.error, (value,message):
 			if self.server:
@@ -88,51 +93,57 @@ class ServerSocket(Thread):
 			self.threads.remove(which)
 		
 	def run(self):
+		global ClientLocker
+
 		self.open_socket()
-                input = [self.server]
 		self.running = True
+		
 		while self.running:
-			inputready, outputready, exceptready = select.select(input, [], [])
+			
+			ClientLocker.acquire()
+			input = [self.server]
+			input += map(lambda cs: cs.client, self.socket_list)
+			ClientLocker.release()
+			try:
+				inputready, outputready, exceptready = select.select(input, [], [])
+			except:
+				pass
 			for s in inputready:
 				if s == self.server:
-					c = ClientSocket(self.server.accept(), self)
-					c.start()
-					self.threads += [c]
+					newclient = ClientSocket(self.server.accept())
+					ClientLocker.acquire()
+					self.socket_list.append(newclient)
+					ClientLocker.release()
+					self.callbacks('onConnected', newclient)
+				else:
+					try:
+						data = s.recv(1024*32)
+					except:
+						data = ""
+						
+					if data == "":
+						ClientLocker.acquire()
+						for sl in self.socket_list:
+							if sl.client == s:
+								self.callbacks('onDisconnected', sl)
+								
+								self.socket_list.remove(sl)
+						ClientLocker.release()
+					else:
+						ClientLocker.acquire()
+						for sl in self.socket_list:
+							if sl.client == s:
+								self.callbacks('onReceive', sl, data)
+						ClientLocker.release()
 		self.server.close()
-		for c in self.threads:
-			c.join()
 
-class ClientSocket(Thread):
-	def __init__(self, (client, address), parent):
-		Thread.__init__(self)
+class ClientSocket():
+	def __init__(self, (client, address)):
 		self.client = client
 		self.address = address[0]
-		self.size = 1024*32
-		self.buffer = ""
-		self.parent = parent
-		#self.callbacks = copy.deepcopy(self.parent.callbacks)
-		CB = dict(self.parent.callbacks.items())
-		self.callbacks = Callbacks(CB)
-
-	def disconnect(self):
-		if self.running:
-			self.running = False
-			self.client.close()
-		self.callbacks('onDisconnected', self)
 		
-	def receive(self, bytes):
-		tmp=self.buffer[:bytes]
-		self.buffer = self.buffer[bytes:]
-		return tmp
-
-	def run(self):
-		self.running = True
-		self.callbacks('onConnected', self)
-		while self.running:
-			data = self.client.recv(self.size)
-			if data:
-				self.buffer += data
-				self.callbacks('onReceive', self, len(data))
-			else:
-				break
-		self.disconnect()
+	def disconnect(self):
+		global ClientLocker
+		ClientLocker.acquire()
+		self.client.close()
+		ClientLocker.release()

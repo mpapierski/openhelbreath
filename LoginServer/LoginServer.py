@@ -102,6 +102,8 @@ class CLoginServer(object):
 						print "    * %s" % s
 					print
 					print self.GameServer[id].Data
+					print
+					print self.GameServer[id].GameServerSocket
 				return
 			elif tok[1].lower() == "clients":
 				print "Client list:"
@@ -121,6 +123,15 @@ class CLoginServer(object):
 			print "shutdown\t: Send server shutdown announcement"
 			print "update\t\t: Send updated configuration files to all servers"
 			print "exit\t\t: Instant quit"
+			return
+		elif tok[0].lower() == "kill":
+			for (id, gs) in self.GameServer.items():
+				#print id
+				gs.socket.disconnect()
+				#for i in gs.GameServerSocket:
+				#	i.disconnect()
+				#del gs.socket
+				
 			return
 		elif tok[0].lower() == "exit":
 			sys.exit(1)
@@ -144,35 +155,24 @@ class CLoginServer(object):
 		"""
 			Triggered when any client connects to Gate Server. Do nothing
 		"""
-		#print "(*) GateServer -> Accepted connection"
-		pass
+		print "(*) GateServer -> Accepted connection"
 		
 	def GateServer_OnDisconnected(self, sender):
 		"""
 			Triggered when any client disconnects from Gate Server.
-			Check if Sender (ClientSocket class) is registered as sub-log-socket
-			or Gate Server Socket. Unfortunatelly we can unregister sub-log-socket from
-			registered Gate Server, but can't unload whole Game Server.
-			Because Main GS socket disconnects at first.
-			TODO: Inject Gate Server method in Sender's callbacks
-		"""
-		for i in self.GameServer.values():
-			for j in i.GameServerSocket:
-				if j == sender:
-					PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d]" % (i.Data['ServerName'],i.GSID), Logfile.ERROR)
-					i.GameServerSocket.remove(sender)
-					return
-		GS = self.SockToGS(sender)
-		if GS != None:
-			PutLogList("(*) GateServer %s -> Lost connection" % (GS.Data['ServerName']), Logfile.ERROR)
-		else:
-			PutLogList("Lost unknown connection on GateServer (not registered? hack attempt?)", Logfile.ERROR)
-
-		for id in self.GameServer:
-			if self.GameServer[id] == GS:
-				del self.GameServer[id]
-				break
-		
+		"""	
+		for (k, i) in self.GameServer.items():
+			if i.socket == sender:
+				PutLogList("(*) Game Server %s -> Lost connection" % (i.Data['ServerName']), Logfile.ERROR)
+			else:
+				for j in i.GameServerSocket:
+					if j == sender:
+						PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d]" % (i.Data['ServerName'],i.GSID), Logfile.ERROR)
+						i.GameServerSocket.remove(sender)
+						if i.GameServerSocket == []:
+							self.GameServer.pop(k)
+						return
+						
 	def GateServer_OnListen(self, sender):
 		"""
 			When socket is ready to accept connections
@@ -191,13 +191,13 @@ class CLoginServer(object):
 		for i in self.GameServer.values():
 			for j in i.GameServerSocket:
 				if j == sender:
-					return i		
+					return i    
 				
-	def GateServer_OnReceive(self, sender, size):
+	def GateServer_OnReceive(self, sender, buffer):
 		"""
 			Triggered when any data is available on Sock's buffer
 		"""
-		buffer = sender.receive(size)
+		size = len(buffer)
 		try:
 			format = '<Bh'
 			header_size = struct.calcsize(format)
@@ -494,7 +494,10 @@ class CLoginServer(object):
 			for i in range(dwSize):
 				Buffer[3+i] = chr(ord(Buffer[3+i]) + (i ^ cKey))
 				Buffer[3+i] = chr(ord(Buffer[3+i]) ^ (cKey ^ (dwSize - i)))
-		GS.socket.client.send(Buffer)
+		try:
+			GS.socket.client.send(Buffer)
+		except:
+			pass
 			
 	def SendConfigToGS(self, GS):
 		"""
@@ -546,9 +549,9 @@ class CLoginServer(object):
 	def MainSocket_OnListen(self, sender):
 		PutLogList("(*) MainSocket -> Server open")
 		
-	def MainSocket_OnReceive(self, sender, size):
+	def MainSocket_OnReceive(self, sender, buffer):
 		PutLogList("(*) MainSocket -> Received %d bytes" % size)
-		buffer = sender.receive(size)
+		size = len(buffer)
 		try:
 			format = '<Bh'
 			header_size = struct.calcsize(format)
@@ -1400,13 +1403,20 @@ class CLoginServer(object):
 		return True
 		
 	def __gameserver_alive(self):
-		for v in self.GameServer.values():
-			if v.AliveResponseTime - time.time() > 10000:
+		#print "gameserver check alive"
+		CGameServer.GS_Lock.acquire()
+		for (k, v) in self.GameServer.items():
+			if abs(v.AliveResponseTime - time.time()) >= 5:
 				PutLogList("(*) Game Server : %s@%s:%d (%d maps) is not responding!" % (v.Data['ServerName'], v.Data['ServerIP'], v.Data['ServerPort'], len(v.MapName)))
-				for SL in v.GameServerSocket:
-					SL.disconnect()
-				v.socket.disconnect()
-				self.GameServer.remove(v)
+				while v.GameServerSocket != []:
+					s = v.GameServerSocket.pop(0)
+					s.disconnect()
+				#SL.disconnect()
+				#v.GameServerSocket.remove(SL)
+				v.socket.disconnect()				
+				self.GameServer.pop(k)
+				
+		CGameServer.GS_Lock.release()
 		return True
 		
 	def __sendtotalplayers(self):

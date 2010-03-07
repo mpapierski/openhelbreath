@@ -149,8 +149,16 @@ GameServer::TimerLoop()
 {
 	while (true)
 	{
-		//TODO : Timer support
-		sleep(1);
+		//TODO: Reimplement
+		sleep(3);
+		if (!m_pGateConnector->m_bIsConnected)
+		{
+			PutLog("(!!!) No connection to Gate Server!");
+			continue;
+		}
+		Packet p(MSGID_GAMESERVERALIVE, DEF_MSGTYPE_CONFIRM);
+		p.push<short>(0); //Total Players
+		m_pGateConnector->pGetSock()->Write((unsigned char*)p.data(), p.size());
 	}
 }
 

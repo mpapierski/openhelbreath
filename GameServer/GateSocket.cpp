@@ -101,23 +101,25 @@ CGateConnector::run()
 	{
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
-		
+	
 		if (__BuildList() == 0)
 		{
 			GameServer::getInstance().PutLog("(!!!) Lost connection to Login Server!");
+			m_bIsConnected = false;
 			break;
 		}
-		
 		readsocks = select(highsock+1, &socks_r, (fd_set*)0, (fd_set*)0,&timeout);
-		
 		if (readsocks == -1)
 		{
-			GameServer::getInstance().PutLog("(!!!) CRITICAL ERROR. SELECT() == -1!");
-			break;
+			//puts(strerror(errno));
+			int error_no = errno;
+			GameServer::getInstance().PutLog("(!!!) Critical error! select() error: #" + toString<int>(error_no) + " (" + strerror(error_no) + ")");
+			break;			
 		} else {
+
 			for (int i = 0; i< DEF_MAXGATESOCKET;i++)
 			{
-				if (FD_ISSET(m_pSocket[i]->socket, &socks_r) && (m_pSocket[i] != NULL))
+				if ((m_pSocket[i] != NULL) && (FD_ISSET(m_pSocket[i]->socket, &socks_r)))
 				{
 					__DataAvail(i);
 				}
@@ -241,6 +243,7 @@ CGateConnector::__DataAvail(int iSockIdx)
 	{
 		__Disconnected(iSockIdx);
 		delete m_pSocket[iSockIdx];
+		m_pSocket[iSockIdx] = NULL;
 		return;
 	}
 	

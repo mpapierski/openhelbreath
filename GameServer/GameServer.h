@@ -19,8 +19,10 @@
 class GameServer
 {
 	private:
+		int m_iAliveCount;
 		GameServer() {
 			m_pGateConnector = NULL;
+			m_iAliveCount = 0;
 		}
 		~GameServer()
 		{
