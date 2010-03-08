@@ -11,7 +11,7 @@ class CScene : public CEvent
 public:
     CScene();
 
-    virtual bool OnLoad() = 0;
+    virtual bool OnLoad();
 
     virtual void OnLoop();
 

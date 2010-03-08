@@ -13,13 +13,6 @@ void CMessageBox::OnRender(SDL_Surface *Surf_Dest)
 
 void CMessageBox::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
 {
-    switch(sym)
-    {
-    case SDLK_ESCAPE:
-        CApp::GetInstance().GameState = OnLogin;
-        break;
-    case SDLK_RETURN:
-        CApp::GetInstance().GameState = OnSelectServer;
-        break;
-    }
+    if(sym == SDLK_ESCAPE) CApp::GetInstance().GameState = OnLogin;
+    if(sym == SDLK_RETURN) CApp::GetInstance().GameState = OnSelectServer;
 }

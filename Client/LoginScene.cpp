@@ -6,22 +6,13 @@ CLoginScene::CLoginScene()
     LoginSelection = LoginTextEdit;
 }
 
-bool CLoginScene::OnLoad()
-{
-    if(!LoginSprite.SetImage("sprites/LoginDialog.pak", 0))
-    {
-        return false;
-    }
-    return true;
-}
-
 void CLoginScene::OnRender(SDL_Surface *Surf_Dest)
 {
-    CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 0, 0, 0, 0, 640, 480);
+    CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 0, 0, 0, 0, 640, 480);
     switch(CApp::GetInstance().GameState)
     {
     case OnLogin:
-        CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 39, 121, LoginSprite.Frame[2].x, LoginSprite.Frame[2].y, LoginSprite.Frame[2].w, LoginSprite.Frame[2].h);
+        CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 39, 121, CApp::GetInstance().Sprite[3].Frame[2].x, CApp::GetInstance().Sprite[3].Frame[2].y, CApp::GetInstance().Sprite[3].Frame[2].w, CApp::GetInstance().Sprite[3].Frame[2].h);
         switch (LoginSelection)
         {
         case LoginTextEdit:
@@ -31,28 +22,31 @@ void CLoginScene::OnRender(SDL_Surface *Surf_Dest)
             //CSurface::OnDraw(Surf_Dest, Surf_Login, 385, 216, 300, 483, 163, 21);
             break;
         case Connect:
-            CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 80, 282, LoginSprite.Frame[3].x, LoginSprite.Frame[3].y, LoginSprite.Frame[3].w, LoginSprite.Frame[3].h);
+            CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 80, 282, CApp::GetInstance().Sprite[3].Frame[3].x, CApp::GetInstance().Sprite[3].Frame[3].y, CApp::GetInstance().Sprite[3].Frame[3].w, CApp::GetInstance().Sprite[3].Frame[3].h);
             break;
         case Cancel:
-            CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 256, 282, LoginSprite.Frame[4].x, LoginSprite.Frame[4].y, LoginSprite.Frame[4].w, LoginSprite.Frame[4].h);
+            CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 256, 282, CApp::GetInstance().Sprite[3].Frame[4].x, CApp::GetInstance().Sprite[3].Frame[4].y, CApp::GetInstance().Sprite[3].Frame[4].w, CApp::GetInstance().Sprite[3].Frame[4].h);
             break;
+		default: ;
         }
         break;
     case OnSelectServer:
-        CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 40, 121, LoginSprite.Frame[1].x, LoginSprite.Frame[1].y, LoginSprite.Frame[1].w, LoginSprite.Frame[1].h);
+        CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 40, 121, CApp::GetInstance().Sprite[3].Frame[1].x, CApp::GetInstance().Sprite[3].Frame[1].y, CApp::GetInstance().Sprite[3].Frame[1].w, CApp::GetInstance().Sprite[3].Frame[1].h);
         switch(LoginSelection)
         {
         case AbbadonServer:
-            CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 139, 176, LoginSprite.Frame[5].x, LoginSprite.Frame[5].y, LoginSprite.Frame[5].w, LoginSprite.Frame[5].h);
+            CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 139, 176, CApp::GetInstance().Sprite[3].Frame[5].x, CApp::GetInstance().Sprite[3].Frame[5].y, CApp::GetInstance().Sprite[3].Frame[5].w, CApp::GetInstance().Sprite[3].Frame[5].h);
             break;
         case ApocalypseServer:
-            CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 131, 204, LoginSprite.Frame[6].x, LoginSprite.Frame[6].y, LoginSprite.Frame[6].w, LoginSprite.Frame[6].h);
+            CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 131, 204, CApp::GetInstance().Sprite[3].Frame[6].x, CApp::GetInstance().Sprite[3].Frame[6].y, CApp::GetInstance().Sprite[3].Frame[6].w, CApp::GetInstance().Sprite[3].Frame[6].h);
             break;
         case Cancel:
-            CSurface::OnDraw(Surf_Dest, LoginSprite.GetImage(), 256, 282, LoginSprite.Frame[4].x, LoginSprite.Frame[4].y, LoginSprite.Frame[4].w, LoginSprite.Frame[4].h);
+            CSurface::OnDraw(Surf_Dest, CApp::GetInstance().Sprite[3].GetImage(), 256, 282, CApp::GetInstance().Sprite[3].Frame[4].x, CApp::GetInstance().Sprite[3].Frame[4].y, CApp::GetInstance().Sprite[3].Frame[4].w, CApp::GetInstance().Sprite[3].Frame[4].h);
             break;
+		default: ;
         }
         break;
+	default: ;
     }
 }
 
@@ -71,6 +65,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
             CApp::GetInstance().GameState = OnLogin;
             LoginSelection = LoginTextEdit;
             break;
+		default: ;
         }
         break;
     case SDLK_RETURN:
@@ -89,6 +84,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
                 CApp::GetInstance().GameState = OnConnecting;
                 LoginSelection = LoginTextEdit;
                 break;
+			default: ;
             }
             break;
         case OnSelectServer:
@@ -105,8 +101,10 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
                 CApp::GetInstance().GameState = OnLogin;
                 LoginSelection = LoginTextEdit;
                 break;
+			default: ;
             }
             break;
+		default: ;
         }
         break;
     case SDLK_TAB:
@@ -128,6 +126,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
             case Cancel:
                 LoginSelection = LoginTextEdit;
                 break;
+			default: ;
             }
             break;
         case OnSelectServer:
@@ -142,8 +141,10 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
             case Cancel:
                 LoginSelection =AbbadonServer;
                 break;
+			default: ;
             }
             break;
+		default: ;
         }
         break;
     case SDLK_UP:
@@ -164,6 +165,7 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
             case Cancel:
                 LoginSelection = Connect;
                 break;
+			default: ;
             }
             break;
         case OnSelectServer:
@@ -178,10 +180,13 @@ void CLoginScene::OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
             case Cancel:
                 LoginSelection = ApocalypseServer;
                 break;
+			default: ;
             }
             break;
+		default: ;
         }
         break;
+	default: ;
     }
 }
 
@@ -227,6 +232,7 @@ void CLoginScene::OnMouseMove(int mX, int mY, int relX, int relY, bool Left, boo
             }
         }
         break;
+	default: ;
     }
 }
 
@@ -283,10 +289,6 @@ void CLoginScene::OnLButtonDown(int X, int Y)
             }
         }
         break;
+	default: ;
     }
-}
-
-void CLoginScene::OnCleanup()
-{
-
 }

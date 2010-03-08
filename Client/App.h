@@ -17,14 +17,15 @@
 #include "Timer.h"
 #include "Sound.h"
 #include "Surface.h"
+#include "Sprite.h"
 
 class CApp : public CEvent
 {
 private:
-	int ScreenWidth;
-    int ScreenHeight;
-    int ScreenDepth;
-    int ScreenFlags;
+    short ScreenWidth;
+    short ScreenHeight;
+    short ScreenDepth;
+	Uint32 ScreenFlags;
     int FRAMES_PER_SECOND;
     int frame;
 
@@ -54,18 +55,20 @@ private:
     SDL_Surface *Surf_Display;
 
 private:
-	CApp();
+    CApp();
     CApp(const CApp &);
     CApp& operator = (const CApp&);
 
 public:
-	GState GameState;
+    GState GameState;
+
+    std::vector<CSprite>Sprite;
 
 public:
     static CApp &GetInstance()
     {
-		static CApp instance;
-		return instance;
+	static CApp instance;
+	return instance;
     }
 
     int OnExecute();

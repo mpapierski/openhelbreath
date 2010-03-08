@@ -2,7 +2,7 @@
 
 CSprite::CSprite()
 {
-
+    Image = NULL;
 }
 
 CSprite::CSprite(const std::string &FileName, int Number)
@@ -19,11 +19,11 @@ bool CSprite::SetImage(const std::string &FileName, int Number)
     int BmpSize;
     char *BmpFile;
 
-    pakFile = fopen(FileName.c_str(), "rb");
-
+    pakFile = fopen(FileName.c_str(), "r+b");
     if(pakFile == NULL)
     {
         printf("Unable to load: %s\n", FileName.c_str());
+        return false;
     }
 
     fseek(pakFile, (24+(Number*8)), SEEK_SET);
@@ -68,19 +68,18 @@ bool CSprite::SetImage(const std::string &FileName, int Number)
 
     fclose(pakFile);
 
-    if(Image == NULL)
-    {
-        return false;
-    }
     return true;
 }
 
 SDL_Surface *CSprite::GetImage()
 {
+    if(Image == NULL)
+    {
+        return NULL;
+    }
     return Image;
 }
 
 CSprite::~CSprite()
 {
-    SDL_FreeSurface(Image);
 }

@@ -54,9 +54,9 @@ int CApp::OnExecute()
             case OnConnecting:
 //                MessageBox.OnEvent(&Event);
                 break;
-			case OnLoad:
-			case OnQuit:
-				break;
+            case OnLoad:
+            case OnQuit:
+                break;
             }
         }
 
@@ -83,6 +83,10 @@ bool CApp::OnInit()
         return false;
     }
 
+    SDL_EnableKeyRepeat(100, 50);
+    SDL_ShowCursor(0);
+    SDL_WarpMouse(320, 240);
+
     if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
     {
         printf("Unable to init audio\n");
@@ -94,16 +98,9 @@ bool CApp::OnInit()
         return false;
     }
 
-    SDL_EnableKeyRepeat(100, 50);
-    SDL_ShowCursor(0);
-    SDL_WarpMouse(320, 240);
+    Sprite.push_back(CSprite::CSprite("sprites/New-Dialog.pak", 0));
 
     if(!Mouse.OnLoad("sprites/interface.pak"))
-    {
-        return false;
-    }
-
-    if(!LoadScene.OnLoad())
     {
         return false;
     }
@@ -121,25 +118,16 @@ void CApp::OnLoop()
         switch(LoadScene.procent)
         {
         case 0:
-            if(!ExitScene.OnLoad())
+            Sprite.push_back(CSprite::CSprite("sprites/New-Dialog.pak", 1));
+            Sprite.push_back(CSprite::CSprite("sprites/New-Dialog.pak", 2));
+            Sprite.push_back(CSprite::CSprite("sprites/LoginDialog.pak", 0));
+
+            /*if(!MessageBox.OnLoad("sprites/GameDialog.pak", 3))
             {
-                GameState = OnQuit;
-            }
-            if(!MenuScene.OnLoad())
-            {
-                GameState = OnQuit;
-            }
-            if(!LoginScene.OnLoad())
-            {
-                GameState = OnQuit;
+                GameState.ChangeGameState(OnQuit);
             }
 
-            /*          if(!MessageBox.OnLoad("sprites/GameDialog.pak", 3))
-                        {
-                            GameState.ChangeGameState(OnQuit);
-                        }
-
-                        CSurface::Transparent(MessageBox.Surf_Dialog, 0, 123, 255);*/
+            CSurface::Transparent(MessageBox.Surf_Dialog, 0, 123, 255);*/
 
             if((CSound::SoundControl.OnLoad("sounds/E14.WAV")) == -1)
             {
@@ -149,14 +137,14 @@ void CApp::OnLoop()
         }
         LoadScene.OnLoop();
         break;
-	case OnMenu:
-		break;
-	case OnLogin:
-		break;
-	case OnSelectServer:
-		break;
-	case OnConnecting:
-		break;
+    case OnMenu:
+        break;
+    case OnLogin:
+        break;
+    case OnSelectServer:
+        break;
+    case OnConnecting:
+        break;
     case OnQuit:
         ExitScene.OnLoop();
         if(!quitTimer.is_started())
@@ -200,8 +188,7 @@ void CApp::OnRender()
 
     if(fpsCounter.get_ticks() > 1000)
     {
-        printf("fps: %i\n", frame);
-
+        //printf("fps: %i\n", frame);
         fpsCounter.start();
         frame = 0;
     }
@@ -215,6 +202,11 @@ void CApp::OnRender()
 void CApp::OnCleanup()
 {
     SDL_FreeSurface(Surf_Display);
+
+    for(unsigned int i = 0; i < Sprite.size(); i++)
+    {
+        SDL_FreeSurface(Sprite[i].GetImage());
+    }
 
 //    MessageBox.OnCleanup();
     Mouse.OnCleanup();

@@ -10,8 +10,6 @@ class CLoginScene : public CScene
 public:
     CLoginScene();
 
-    bool OnLoad();
-
     void OnRender(SDL_Surface *Surf_Dest);
 
     void OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
@@ -20,11 +18,7 @@ public:
 
     void OnLButtonDown(int X, int Y);
 
-    void OnCleanup();
-
 private:
-    CSprite LoginSprite;
-
     enum Selection { LoginTextEdit = 0, PasswordTextEdit = 1, Connect = 2, Cancel = 3, AbbadonServer = 4, ApocalypseServer = 5 } LoginSelection;
 };
 

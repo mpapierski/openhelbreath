@@ -10,18 +10,11 @@ class CLoadScene : public CScene
 public:
     CLoadScene();
 
-    bool OnLoad();
-
     void OnLoop();
 
     void OnRender(SDL_Surface *Surf_Dest);
 
-    void OnCleanup();
-
     int procent;
-
-private:
-    CSprite LoadSprite;
 };
 
 #endif // LOADSCENE_H

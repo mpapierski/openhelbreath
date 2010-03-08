@@ -10,16 +10,11 @@ class CExitScene : public CScene
 public:
     CExitScene();
 
-    bool OnLoad();
-
     void OnLoop();
 
     void OnRender(SDL_Surface *Surf_Dest);
 
-    void OnCleanup();
-
 private:
-    CSprite ExitSprite;
 
     CTimer exitTimer;
 };

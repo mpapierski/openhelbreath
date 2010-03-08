@@ -13,8 +13,6 @@ class CMenuScene : public CScene
 public:
     CMenuScene();
 
-    bool OnLoad();
-
     void OnRender(SDL_Surface *Surf_Dest);
 
     void OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
@@ -26,8 +24,6 @@ public:
     void OnCleanup();
 
 private:
-    CSprite MenuSprite;
-
     enum Selection { Login = 0, NewAccount = 2, Exit = 3} Focus_Menu;
 };
 

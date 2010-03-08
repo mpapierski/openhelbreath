@@ -4,6 +4,10 @@ CScene::CScene()
 {
 
 }
+bool CScene::OnLoad()
+{
+    return true;
+}
 
 void CScene::OnLoop()
 {
