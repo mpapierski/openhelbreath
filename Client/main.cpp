@@ -1,6 +1,6 @@
-#include "App.h"
+#include "Game.h"
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
-    return CApp::GetInstance().OnExecute();
+    return Game::GetInstance().OnExecute();
 }

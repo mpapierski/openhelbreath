@@ -1,30 +1,30 @@
 #include "Surface.h"
 
-CSurface::CSurface()
+Surface::Surface()
 {
 
 }
 
-SDL_Surface *CSurface::LoadFromImage(const std::string &FileName)
+SDL_Surface *Surface::LoadFromImage(const std::string& FileName)
 {
-    SDL_Surface *Surf_Temp = NULL;
-    SDL_Surface *Surf_Return = NULL;
+    SDL_Surface *Temp = NULL;
+    SDL_Surface *Return = NULL;
 
-    if((Surf_Temp = IMG_Load(FileName.c_str())) == NULL)
+    if((Temp = IMG_Load(FileName.c_str())) == NULL)
     {
         printf("Unable to load: %s", FileName.c_str());
         return NULL;
     }
 
-    Surf_Return = SDL_DisplayFormat(Surf_Temp);
-    SDL_FreeSurface(Surf_Temp);
+    Return = SDL_DisplayFormat(Temp);
+    SDL_FreeSurface(Temp);
 
-    return Surf_Return;
+    return Return;
 }
 
-bool CSurface::OnDraw(SDL_Surface *Surf_Dest, SDL_Surface *Surf_Src, int X, int Y)
+bool Surface::Draw(SDL_Surface* Dest, SDL_Surface* Src, int X, int Y)
 {
-    if (Surf_Dest == NULL || Surf_Src == NULL)
+    if (Dest == NULL || Src == NULL)
     {
         return false;
     }
@@ -34,15 +34,15 @@ bool CSurface::OnDraw(SDL_Surface *Surf_Dest, SDL_Surface *Surf_Src, int X, int 
     DestR.x = X;
     DestR.y = Y;
 
-    SDL_BlitSurface(Surf_Src, NULL, Surf_Dest, &DestR);
-    SDL_FreeSurface(Surf_Dest);
+    SDL_BlitSurface(Src, NULL, Dest, &DestR);
+    SDL_FreeSurface(Dest);
 
     return true;
 }
 
-bool CSurface::OnDraw(SDL_Surface* Surf_Dest, SDL_Surface* Surf_Src, int X, int Y, int X2, int Y2, int W, int H)
+bool Surface::Draw(SDL_Surface* Dest, SDL_Surface* Src, int X, int Y, int X2, int Y2, int W, int H)
 {
-    if(Surf_Dest == NULL || Surf_Src == NULL)
+    if(Dest == NULL || Src == NULL)
     {
         return false;
     }
@@ -59,19 +59,19 @@ bool CSurface::OnDraw(SDL_Surface* Surf_Dest, SDL_Surface* Surf_Src, int X, int 
     SrcR.w = W;
     SrcR.h = H;
 
-    SDL_BlitSurface(Surf_Src, &SrcR, Surf_Dest, &DestR);
+    SDL_BlitSurface(Src, &SrcR, Dest, &DestR);
 
     return true;
 }
 
-bool CSurface::Transparent(SDL_Surface *Surf_Dest, int R, int G, int B)
+bool Surface::SetTransparent(SDL_Surface* Dest, int R, int G, int B)
 {
-    if(Surf_Dest == NULL)
+    if(Dest == NULL)
     {
         return false;
     }
 
-    SDL_SetColorKey(Surf_Dest, SDL_SRCCOLORKEY | SDL_RLEACCEL, SDL_MapRGB(Surf_Dest->format, R, G, B));
+    SDL_SetColorKey(Dest, SDL_SRCCOLORKEY | SDL_RLEACCEL, SDL_MapRGB(Dest->format, R, G, B));
 
     return true;
 }

@@ -1,25 +1,19 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <SDL.h>
-
 #include "Event.h"
 #include "Surface.h"
 
-class CScene : public CEvent
+class Scene : public Event
 {
 public:
-    CScene();
-
-    virtual bool OnLoad();
+    Scene();
 
     virtual void OnLoop();
 
-    virtual void OnRender(SDL_Surface *Surf_Dest);
+    virtual void Draw(SDL_Surface* Dest);
 
-    virtual void OnCleanup();
-
-    void OnEvent(SDL_Event *Event);
+    void OnEvent(SDL_Event* EventSource);
 };
 
 #endif // SCENE_H

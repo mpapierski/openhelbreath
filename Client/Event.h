@@ -3,64 +3,64 @@
 
 #include <SDL.h>
 
-class CEvent
+class Event
 {
 public:
-    CEvent();
+    Event();
 
-    virtual ~CEvent();
+    virtual ~Event();
 
-    virtual void OnEvent(SDL_Event* Event);
+    virtual void OnEvent(SDL_Event* EventSource);
 
     virtual void OnInputFocus();
 
     virtual void OnInputBlur();
 
-    virtual void OnKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
+    virtual void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
-    virtual void OnKeyUp(SDLKey sym, SDLMod mod, Uint16 unicode);
+    virtual void OnKeyUp(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
     virtual void OnMouseFocus();
 
     virtual void OnMouseBlur();
 
-    virtual void OnMouseMove(int mX, int mY, int relX, int relY, bool Left,bool Right,bool Middle);
+    virtual void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
 
     virtual void OnMouseWheel(bool Up, bool Down);  //Not implemented
 
-    virtual void OnLButtonDown(int mX, int mY);
+    virtual void OnLButtonDown(int X, int Y);
 
-    virtual void OnLButtonUp(int mX, int mY);
+    virtual void OnLButtonUp(int X, int Y);
 
-    virtual void OnRButtonDown(int mX, int mY);
+    virtual void OnRButtonDown(int X, int Y);
 
     virtual void OnRButtonUp(int mX, int mY);
 
-    virtual void OnMButtonDown(int mX, int mY);
+    virtual void OnMButtonDown(int X, int Y);
 
-    virtual void OnMButtonUp(int mX, int mY);
+    virtual void OnMButtonUp(int X, int Y);
 
-    virtual void OnJoyAxis(Uint8 which, Uint8 axis, Sint16 value);
+    virtual void OnJoyAxis(Uint8 Which, Uint8 Axis, Sint16 Value);
 
-    virtual void OnJoyButtonDown(Uint8 which, Uint8 button);
+    virtual void OnJoyButtonDown(Uint8 Which, Uint8 Button);
 
-    virtual void OnJoyButtonUp(Uint8 which, Uint8 button);
+    virtual void OnJoyButtonUp(Uint8 Which, Uint8 Button);
 
-    virtual void OnJoyHat(Uint8 which, Uint8 hat, Uint8 value);
+    virtual void OnJoyHat(Uint8 Which, Uint8 Hat, Uint8 Value);
 
-    virtual void OnJoyBall(Uint8 which, Uint8 ball, Sint16 xrel, Sint16 yrel);
+    virtual void OnJoyBall(Uint8 Which, Uint8 Ball, Sint16 RelX, Sint16 RelY);
 
     virtual void OnMinimize();
 
     virtual void OnRestore();
 
-    virtual void OnResize(int w,int h);
+    virtual void OnResize(int W, int H);
 
     virtual void OnExpose();
 
     virtual void OnExit();
 
-    virtual void OnUser(Uint8 type, int code, void* data1, void* data2);
+    virtual void OnUser(Uint8 Type, int Code, void* Data1, void* Data2);
 };
 
 #endif // EVENT_H

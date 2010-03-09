@@ -1,30 +1,20 @@
 #include "Scene.h"
 
-CScene::CScene()
+Scene::Scene()
 {
-
-}
-bool CScene::OnLoad()
-{
-    return true;
 }
 
-void CScene::OnLoop()
+void Scene::OnLoop()
 {
 
 }
 
-void CScene::OnRender(SDL_Surface *Surf_Dest)
+void Scene::Draw(SDL_Surface* Dest)
 {
 
 }
 
-void CScene::OnCleanup()
+void Scene::OnEvent(SDL_Event* EventSource)
 {
-
-}
-
-void CScene::OnEvent(SDL_Event *Event)
-{
-    CEvent::OnEvent(Event);
+    Event::OnEvent(EventSource);
 }
