@@ -5,6 +5,7 @@
 #include <string>
 
 #include "Event.h"
+#include "Timer.h"
 
 class Window : public Event
 {
@@ -13,7 +14,7 @@ public:
 
     virtual ~Window();
 
-    void Create(const std::string& Title, int Width, int Height, int Depth, int Flags);
+    void Create(const std::string &Title, int Width, int Height, int Depth, int Flags);
 
     void Close();
 
@@ -25,6 +26,8 @@ public:
 
     int GetHeight() const;
 
+    void SetFpsLimit(int Limit);
+
     void SetKeyRepeat(int Delay, int Interval);
 
     void SetCursorPos(unsigned short X, unsigned short Y);
@@ -35,6 +38,13 @@ private:
     void Initialize();
 
     SDL_Surface *WindowSurface;
+
+    bool FpsCap;
+
+    int FpsLimit;
+    int Frames;
+
+    Timer FpsTimer;
 };
 
 #endif // WINDOW_H

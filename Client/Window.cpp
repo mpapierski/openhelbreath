@@ -3,6 +3,11 @@
 Window::Window()
 {
     WindowSurface = NULL;
+
+    FpsCap = false;
+
+    FpsLimit = 1;
+    Frames = 0;
 }
 
 Window::~Window()
@@ -10,15 +15,17 @@ Window::~Window()
 
 }
 
-void Window::Create(const std::string& Title, int Width, int Height, int Depth, int Flags)
+void Window::Create(const std::string &Title, int Width, int Height, int Depth, int Flags)
 {
     Initialize();
 
     if((WindowSurface = SDL_SetVideoMode(Width, Height, Depth, Flags)) == NULL)
     {
-        printf("Unable to set video mode\n");
+        fprintf(stderr, "Unable to set video mode: %s\n", SDL_GetError());
         exit(1);
     }
+
+    FpsTimer.Start();
 
     SDL_WM_SetCaption(Title.c_str(), NULL);
 }
@@ -31,6 +38,15 @@ void Window::Close()
 void Window::Update()
 {
     SDL_Flip(WindowSurface);
+
+    Frames++;
+
+    if((FpsCap == true) && (FpsTimer.GetTicks() < 1000 / FpsLimit))
+    {
+        SDL_Delay((1000 / FpsLimit) - FpsTimer.GetTicks());
+    }
+
+    FpsTimer.Start();
 }
 
 void Window::Initialize()
@@ -55,6 +71,15 @@ int Window::GetWidth() const
 int Window::GetHeight() const
 {
     return WindowSurface->h;
+}
+
+void Window::SetFpsLimit(int Limit)
+{
+    if(Limit)
+    {
+        FpsCap = true;
+        FpsLimit = Limit;
+    }
 }
 
 void Window::SetKeyRepeat(int Delay, int Interval)

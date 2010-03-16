@@ -5,7 +5,7 @@ Surface::Surface()
 
 }
 
-SDL_Surface *Surface::LoadFromImage(const std::string& FileName)
+SDL_Surface *Surface::LoadFromImage(const std::string &FileName)
 {
     SDL_Surface *Temp = NULL;
     SDL_Surface *Return = NULL;
@@ -22,7 +22,7 @@ SDL_Surface *Surface::LoadFromImage(const std::string& FileName)
     return Return;
 }
 
-bool Surface::Draw(SDL_Surface* Dest, SDL_Surface* Src, int X, int Y)
+bool Surface::Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y)
 {
     if (Dest == NULL || Src == NULL)
     {
@@ -40,7 +40,7 @@ bool Surface::Draw(SDL_Surface* Dest, SDL_Surface* Src, int X, int Y)
     return true;
 }
 
-bool Surface::Draw(SDL_Surface* Dest, SDL_Surface* Src, int X, int Y, int X2, int Y2, int W, int H)
+bool Surface::Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y, int X2, int Y2, int W, int H)
 {
     if(Dest == NULL || Src == NULL)
     {
@@ -64,7 +64,7 @@ bool Surface::Draw(SDL_Surface* Dest, SDL_Surface* Src, int X, int Y, int X2, in
     return true;
 }
 
-bool Surface::SetTransparent(SDL_Surface* Dest, int R, int G, int B)
+bool Surface::SetTransparent(SDL_Surface *Dest, int R, int G, int B)
 {
     if(Dest == NULL)
     {

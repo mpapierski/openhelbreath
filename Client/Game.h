@@ -2,13 +2,19 @@
 #define GAME_H
 
 #include "Window.h"
+#include "Surface.h"
+#include "Sprite.h"
+#include "SpriteID.h"
+#include "Mouse.h"
 #include "Scene.h"
 #include "LoadingScene.h"
+#include "MenuScene.h"
+#include "ExitScene.h"
 
 class Game : public Event
 {
 public:
-    static Game& GetInstance()
+    static Game &GetInstance()
     {
         static Game Instance;
         return Instance;
@@ -28,16 +34,22 @@ public:
 
     void OnCleanup();
 
+	void ChangeScene(Scene *NewScene);
+
+    std::vector<Sprite> Sprites;
+
 private:
     Game();
     Game(const Game &);
     Game& operator = (const Game&);
 
-    Window MainWindow;
+	Window MainWindow;
 
-    Scene* MainScene;
+	Mouse MouseCursor;
 
-    bool Running;
+	bool Running;
+
+	Scene *CurrentScene;
 };
 
 #endif // GAME_H

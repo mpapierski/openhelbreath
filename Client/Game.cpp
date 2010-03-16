@@ -4,7 +4,7 @@ Game::Game()
 {
     Running = true;
 
-    MainScene = new LoadingScene;
+    ChangeScene(new LoadingScene);
 }
 
 int Game::OnExecute()
@@ -22,7 +22,9 @@ int Game::OnExecute()
         {
             OnEvent(&EventHandle);
 
-            MainScene->OnEvent(&EventHandle);
+            MouseCursor.OnEvent(&EventHandle);
+
+            CurrentScene->OnEvent(&EventHandle);
         }
 
         OnLoop();
@@ -41,26 +43,34 @@ bool Game::OnInitialize()
 {
     MainWindow.Create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
 
-    MainWindow.SetKeyRepeat(100, 500);
+    MainWindow.SetKeyRepeat(10, 250);
     MainWindow.SetCursorPos(320, 240);
     MainWindow.ShowCursor(false);
+    //MainWindow.SetFpsLimit(35);
+
+	Sprites.push_back(Sprite::Sprite("sprites/interface.pak", 0)); //SPRID_CURSOR 0
+	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
+
+    Sprites.push_back(Sprite::Sprite("sprites/New-Dialog.pak", 0)); //SPRID_LOADING 1
 
     return true;
 }
 
 void Game::OnLoop()
 {
-
+    CurrentScene->OnLoop();
 }
 
 void Game::OnDraw()
 {
-    MainScene->Draw(MainWindow.GetSurface());
+    CurrentScene->Draw(MainWindow.GetSurface());
+
+    MouseCursor.Draw(MainWindow.GetSurface());
 }
 
 void Game::OnEvent(SDL_Event *EventSource)
 {
-    Event::OnEvent(EventSource);
+	Event::OnEvent(EventSource);
 }
 
 void Game::OnExit()
@@ -70,5 +80,15 @@ void Game::OnExit()
 
 void Game::OnCleanup()
 {
-    MainWindow.Close();
+	for(unsigned int i = 0; i < Sprites.size(); i++)
+	{
+		SDL_FreeSurface(Sprites[i].GetSurface());
+	}
+
+	MainWindow.Close();
+}
+
+void Game::ChangeScene(Scene *NewScene)
+{
+	CurrentScene = NewScene;
 }

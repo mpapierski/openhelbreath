@@ -11,6 +11,9 @@ public:
     void OnLoop();
 
     void Draw(SDL_Surface *Dest);
+
+private:
+	int Percent;
 };
 
 #endif // LOADSCENE_H
