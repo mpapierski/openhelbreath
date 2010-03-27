@@ -10,25 +10,25 @@
 class Sprite
 {
 public:
-    Sprite();
-    ~Sprite();
+	Sprite();
+	~Sprite();
 
-    Sprite(const std::string &FileName, int Number);
+	Sprite(const std::string &FileName, int Number);
 
-    bool LoadImage(const std::string &FileName, int Number);
+	bool LoadImage(const std::string &FileName, int Number);
 
-    static bool Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int Frame);
+	static bool Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int Frame);
 
-    static bool Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int W, int H, int Frame);
+	static bool Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int W, int H, int Frame);
 
-    SDL_Surface *GetSurface() const;
+	SDL_Surface *GetSurface() const;
 
-    SDL_Rect GetFrame(int Number) const;
+	SDL_Rect GetFrame(int Number) const;
 
 private:
-    SDL_Surface *Image;
+	SDL_Surface *Image;
 
-    std::vector<SDL_Rect>Frames;
+	std::vector<SDL_Rect>Frames;
 };
 
 #endif // SPRITE_H

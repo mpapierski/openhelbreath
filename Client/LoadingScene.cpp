@@ -12,11 +12,13 @@ void LoadingScene::OnLoop()
 	case 0:
 		Game::GetInstance().Sprites.push_back(Sprite::Sprite("sprites/New-Dialog.pak", 1)); //SPRID_MENU 2
 		Game::GetInstance().Sprites.push_back(Sprite::Sprite("sprites/New-Dialog.pak", 2)); //SPRID_EXIT 3
+		Game::GetInstance().Sprites.push_back(Sprite::Sprite("sprites/LoginDialog.pak", 0)); //SPRID_LOGIN 4
 		break;
 	case 100:
 		Game::GetInstance().ChangeScene(new MenuScene);
 		break;
 	}
+	
 	if(Percent <= 100)
 	{
 		Percent++;

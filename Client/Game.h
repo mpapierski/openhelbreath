@@ -2,54 +2,54 @@
 #define GAME_H
 
 #include "Window.h"
-#include "Surface.h"
 #include "Sprite.h"
 #include "SpriteID.h"
 #include "Mouse.h"
-#include "Scene.h"
 #include "LoadingScene.h"
 #include "MenuScene.h"
 #include "ExitScene.h"
+#include "LoginScene.h"
+#include "SelectServerScene.h"
 
 class Game : public Event
 {
 public:
-    static Game &GetInstance()
-    {
-        static Game Instance;
-        return Instance;
-    }
+	static Game &GetInstance()
+	{
+		static Game Instance;
+		return Instance;
+	}
 
-    int OnExecute();
+	int OnExecute();
 
-    bool OnInitialize();
+	bool OnInitialize();
 
-    void OnLoop();
+	void OnLoop();
 
-    void OnDraw();
+	void OnDraw();
 
-    void OnEvent(SDL_Event *EventSource);
+	void OnEvent(SDL_Event *EventSource);
 
-    void OnExit();
+	void OnExit();
 
-    void OnCleanup();
+	void OnCleanup();
 
 	void ChangeScene(Scene *NewScene);
 
-    std::vector<Sprite> Sprites;
+	std::vector<Sprite> Sprites;
 
 private:
-    Game();
-    Game(const Game &);
-    Game& operator = (const Game&);
+	Game();
+	Game(const Game &);
+	Game& operator = (const Game&);
 
 	Window MainWindow;
 
 	Mouse MouseCursor;
 
-	bool Running;
-
 	Scene *CurrentScene;
+
+	bool Running;
 };
 
 #endif // GAME_H

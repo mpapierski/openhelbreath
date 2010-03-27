@@ -2,18 +2,15 @@
 #define SCENE_H
 
 #include "Event.h"
-#include "Surface.h"
 
 class Scene : public Event
 {
 public:
-    Scene();
+	Scene();
 
-    virtual void OnLoop();
+	virtual void OnLoop();
 
-    virtual void Draw(SDL_Surface* Dest);
-
-    void OnEvent(SDL_Event* EventSource);
+	virtual void Draw(SDL_Surface *Dest);
 };
 
 #endif // SCENE_H

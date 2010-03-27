@@ -5,14 +5,10 @@ MenuScene::MenuScene()
 	MenuFocus = Login;
 }
 
-void MenuScene::OnLoop()
-{
-
-}
-
 void MenuScene::Draw(SDL_Surface *Dest)
 {
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 0, 0, SPRID_MAINMENU_BACKGROUND);
+
 	switch(MenuFocus)
 	{
 	case Login:
@@ -41,14 +37,35 @@ void MenuScene::OnLButtonDown(int X, int Y)
 {
 	if(X > 385 && X < (385+164))
 	{
-		//if(Y > 178 && Y < (178+22)) Game::GetInstance().ChangeScene(new LoginScene);
-		//if(Y > 216 && Y < (216+22)) Game::GetInstance().ChangeScene();
-		if(Y > 255 && Y < (255+22)) Game::GetInstance().ChangeScene(new ExitScene);
+		if(Y > 178 && Y < (178+22)) Game::GetInstance().ChangeScene(new LoginScene); // Login Button
+		//if(Y > 216 && Y < (216+22)) Game::GetInstance().ChangeScene(); // New Account Button
+		if(Y > 255 && Y < (255+22)) Game::GetInstance().ChangeScene(new ExitScene); // Exit Button
 	}
 }
-	
+
 void MenuScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
+	if(Sym == SDLK_ESCAPE)
+	{
+		Game::GetInstance().ChangeScene(new ExitScene);
+	}
+
+	if(Sym == SDLK_RETURN)
+	{
+		switch(MenuFocus)
+		{
+		case Login:
+			Game::GetInstance().ChangeScene(new LoginScene);
+			break;
+		case NewAccount:
+			//MenuFocus = Login;
+			break;
+		case Exit:
+			Game::GetInstance().ChangeScene(new ExitScene);
+			break;
+		}
+	}
+
 	if(Sym == SDLK_UP)
 	{
 		switch(MenuFocus)
@@ -64,6 +81,7 @@ void MenuScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 			break;
 		}
 	}
+
 	if(Sym == SDLK_DOWN || Sym == SDLK_TAB)
 	{
 		switch(MenuFocus)

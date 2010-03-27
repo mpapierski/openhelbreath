@@ -2,5 +2,5 @@
 
 int main(int argc, char** argv)
 {
-    return Game::GetInstance().OnExecute();
+	return Game::GetInstance().OnExecute();
 }

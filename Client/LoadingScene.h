@@ -1,19 +1,19 @@
-#ifndef LOADSCENE_H
-#define LOADSCENE_H
+#ifndef LOADINGSCENE_H
+#define LOADINGSCENE_H
 
 #include "Scene.h"
 
 class LoadingScene : public Scene
 {
 public:
-    LoadingScene();
+	LoadingScene();
 
-    void OnLoop();
+	void OnLoop();
 
-    void Draw(SDL_Surface *Dest);
+	void Draw(SDL_Surface *Dest);
 
 private:
 	int Percent;
 };
 
-#endif // LOADSCENE_H
+#endif // LOADINGSCENE_H

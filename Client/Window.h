@@ -2,6 +2,7 @@
 #define WINDOW_H
 
 #include <SDL.h>
+#include <SDL_ttf.h>
 #include <string>
 
 #include "Event.h"
@@ -10,41 +11,43 @@
 class Window : public Event
 {
 public:
-    Window();
+	Window();
 
-    virtual ~Window();
+	virtual ~Window();
 
-    void Create(const std::string &Title, int Width, int Height, int Depth, int Flags);
+	void Create(const std::string &Title, int Width, int Height, int Depth, int Flags);
 
-    void Close();
+	void Close();
 
-    void Update();
+	void Update();
 
-    SDL_Surface *GetSurface() const;
+	SDL_Surface *GetSurface() const;
 
-    int GetWidth() const;
+	int GetWidth() const;
 
-    int GetHeight() const;
+	int GetHeight() const;
 
-    void SetFpsLimit(int Limit);
+	void SetFpsLimit(int Limit);
 
-    void SetKeyRepeat(int Delay, int Interval);
+	void SetKeyRepeat(int Delay, int Interval);
 
-    void SetCursorPos(unsigned short X, unsigned short Y);
+	void SetCursorPos(unsigned short X, unsigned short Y);
 
-    void ShowCursor(bool Show);
+	void ShowCursor(bool Show);
 
 private:
-    void Initialize();
+	void Initialize();
 
-    SDL_Surface *WindowSurface;
+	SDL_Surface *WindowSurface;
 
-    bool FpsCap;
+	bool FpsCap;
 
-    int FpsLimit;
-    int Frames;
+	int FpsLimit;
+	int Frames;
 
-    Timer FpsTimer;
+	Timer FpsTimer;
+
+	Timer FrameTimer;
 };
 
 #endif // WINDOW_H

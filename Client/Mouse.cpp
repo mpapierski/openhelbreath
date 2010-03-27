@@ -2,13 +2,13 @@
 
 Mouse::Mouse()
 {
-	Mx = 320;
-	My = 240;
+	Mx = 0;
+	My = 0;
 }
 
 void Mouse::Draw(SDL_Surface *Dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_CURSOR], Mx, My, SPRID_CURSOR_NORMAL);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_CURSOR], Mx, My, SPRID_CURSOR_ARROW);
 }
 
 void Mouse::OnEvent(SDL_Event *EventSource)

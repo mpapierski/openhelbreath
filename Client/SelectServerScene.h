@@ -1,12 +1,12 @@
-#ifndef MENUSCENE_H
-#define MENUSCENE_H
+#ifndef SELECTSERVERSCENE_H
+#define SELECTSERVERSCENE_H
 
 #include "Scene.h"
 
-class MenuScene : public Scene
+class SelectServerScene : public Scene
 {
 public:
-	MenuScene();
+	SelectServerScene();
 
 	void Draw(SDL_Surface *Dest);
 
@@ -17,7 +17,7 @@ public:
 	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
 private:
-	enum Focus { Login, NewAccount, Exit } MenuFocus;
+	enum Focus { Abaddon, Apocalypse, Cancel } SelectServerFocus;
 };
 
-#endif // MENUSCENE_H
+#endif // SELECTSERVERSCENE_H

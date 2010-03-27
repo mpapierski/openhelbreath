@@ -6,11 +6,11 @@
 class ExitScene : public Scene
 {
 public:
-    ExitScene();
+	ExitScene();
 
-    void OnLoop();
+	void OnLoop();
 
-    void Draw(SDL_Surface *Dest);
+	void Draw(SDL_Surface *Dest);
 
 private:
 	Timer ExitTimer;

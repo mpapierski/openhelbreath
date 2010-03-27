@@ -2,70 +2,71 @@
 
 Game::Game()
 {
-    Running = true;
+	Running = true;
 
-    ChangeScene(new LoadingScene);
+	ChangeScene(new LoadingScene);
 }
 
 int Game::OnExecute()
 {
-    if(!OnInitialize())
-    {
-        return -1;
-    }
+	if(!OnInitialize())
+	{
+		return -1;
+	}
 
-    SDL_Event EventHandle;
+	SDL_Event EventHandle;
 
-    while(Running)
-    {
-        while(SDL_PollEvent(&EventHandle))
-        {
-            OnEvent(&EventHandle);
+	while(Running)
+	{
+		while(SDL_PollEvent(&EventHandle))
+		{
+			OnEvent(&EventHandle);
 
-            MouseCursor.OnEvent(&EventHandle);
+			MouseCursor.OnEvent(&EventHandle);
 
-            CurrentScene->OnEvent(&EventHandle);
-        }
+			CurrentScene->OnEvent(&EventHandle);
+		}
 
-        OnLoop();
+		OnLoop();
 
-        OnDraw();
+		OnDraw();
 
-        MainWindow.Update();
-    }
+		MainWindow.Update();
+	}
 
-    OnCleanup();
+	OnCleanup();
 
-    return 0;
+	return 0;
 }
 
 bool Game::OnInitialize()
 {
-    MainWindow.Create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	MainWindow.Create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
 
-    MainWindow.SetKeyRepeat(10, 250);
-    MainWindow.SetCursorPos(320, 240);
-    MainWindow.ShowCursor(false);
-    //MainWindow.SetFpsLimit(35);
+	MainWindow.SetKeyRepeat(50, 150);
+	MainWindow.ShowCursor(false);
+	MainWindow.SetCursorPos(320, 240);
+	//MainWindow.SetFpsLimit(60);
 
+	//Load some Sprites before Loading
 	Sprites.push_back(Sprite::Sprite("sprites/interface.pak", 0)); //SPRID_CURSOR 0
 	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
 
-    Sprites.push_back(Sprite::Sprite("sprites/New-Dialog.pak", 0)); //SPRID_LOADING 1
+	Sprites.push_back(Sprite::Sprite("sprites/New-Dialog.pak", 0)); //SPRID_LOADING 1
 
-    return true;
+	return true;
 }
 
 void Game::OnLoop()
 {
-    CurrentScene->OnLoop();
+	CurrentScene->OnLoop();
 }
 
 void Game::OnDraw()
 {
-    CurrentScene->Draw(MainWindow.GetSurface());
+	CurrentScene->Draw(MainWindow.GetSurface());
 
-    MouseCursor.Draw(MainWindow.GetSurface());
+	MouseCursor.Draw(MainWindow.GetSurface());
 }
 
 void Game::OnEvent(SDL_Event *EventSource)
@@ -75,7 +76,7 @@ void Game::OnEvent(SDL_Event *EventSource)
 
 void Game::OnExit()
 {
-    Running = false;
+	Running = false;
 }
 
 void Game::OnCleanup()
@@ -90,5 +91,7 @@ void Game::OnCleanup()
 
 void Game::ChangeScene(Scene *NewScene)
 {
+	delete CurrentScene;
+	
 	CurrentScene = NewScene;
 }
