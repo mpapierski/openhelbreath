@@ -27,6 +27,9 @@ void LoadingScene::OnLoop()
 
 void LoadingScene::Draw(SDL_Surface *Dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOADING], 0, 0, SPRID_LOADING_BACKGROUND);
+	// New-Dialog.pak is bugged. So we need to draw background +1, +1. TODO: Fix New-Dialog.pak
+	// Crazy koreans, they didn't fix it up to most recent versions
+	// Notice when original client is loading there is black line on edges. 
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOADING], 1, 1, SPRID_LOADING_BACKGROUND);
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOADING], 473, 443, Percent, 17, SPRID_LOADING_PROGRESSBAR);
 }

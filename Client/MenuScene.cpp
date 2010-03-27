@@ -37,7 +37,15 @@ void MenuScene::OnLButtonDown(int X, int Y)
 {
 	if(X > 385 && X < (385+164))
 	{
-		if(Y > 178 && Y < (178+22)) Game::GetInstance().ChangeScene(new LoginScene); // Login Button
+
+		if(Y > 178 && Y < (178+22))
+		{
+#ifdef DEF_SELECTSERVER
+			Game::GetInstance().ChangeScene(new SelectServerScene); // Login Button
+#else
+			Game::GetInstance().ChangeScene(new LoginScene);
+#endif
+		}
 		//if(Y > 216 && Y < (216+22)) Game::GetInstance().ChangeScene(); // New Account Button
 		if(Y > 255 && Y < (255+22)) Game::GetInstance().ChangeScene(new ExitScene); // Exit Button
 	}

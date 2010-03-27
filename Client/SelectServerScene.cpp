@@ -58,6 +58,7 @@ void SelectServerScene::OnLButtonDown(int X, int Y)
 		if(Y > 176 && Y < (176+19))
 		{
 			SelectServerFocus = Abaddon;
+			Game::GetInstance().ChangeScene(new LoginScene);
 		}
 	}
 
@@ -90,6 +91,7 @@ void SelectServerScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		switch(SelectServerFocus)
 		{
 		case Abaddon:
+			Game::GetInstance().ChangeScene(new LoginScene);
 			break;
 		case Apocalypse:
 			break;

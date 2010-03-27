@@ -50,6 +50,8 @@ private:
 	int CursorPosition;
 
 	unsigned int MaxLength;
+
+	int Blink;
 };
 
 #endif // TEXTEDIT_H

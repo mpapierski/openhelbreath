@@ -13,6 +13,8 @@ TextEdit::TextEdit()
 	CursorSurface = Font::Draw(WidgetFont, "_");
 
 	CursorPosition = 0;
+
+	Blink = 0;
 }
 
 TextEdit::TextEdit(const std::string &Text)
@@ -30,15 +32,28 @@ TextEdit::TextEdit(const std::string &Text)
 	CursorPosition = 0;
 
 	SetText(Text);
+	
+	Blink = 0;
+
 }
+
 
 void TextEdit::Draw(SDL_Surface *Dest)
 {
 	Surface::Draw(Dest, GetSurface(), this->X(), this->Y());
 	if(CursorVisible)
 	{
-		Surface::Draw(Dest, CursorSurface, (this->X() + CursorPosition), this->Y());
+		Blink++;
+		if (Blink >= 50)
+		{
+			Surface::Draw(Dest, CursorSurface, (this->X() + CursorPosition), this->Y());
+		}
+		if (Blink > 100)
+		{
+			Blink = 0;
+		}
 	}
+
 }
 
 const std::string &TextEdit::GetText()

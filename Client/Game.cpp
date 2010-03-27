@@ -41,7 +41,11 @@ int Game::OnExecute()
 
 bool Game::OnInitialize()
 {
+#ifdef DEF_FULLSCREEN
+	MainWindow.Create("HelGame", 640, 480, 32, SDL_FULLSCREEN | SDL_HWSURFACE | SDL_DOUBLEBUF);
+#else
 	MainWindow.Create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+#endif
 
 	MainWindow.SetKeyRepeat(50, 150);
 	MainWindow.ShowCursor(false);

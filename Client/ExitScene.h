@@ -12,6 +12,8 @@ public:
 
 	void Draw(SDL_Surface *Dest);
 
+	void OnLButtonDown(int X, int Y);
+
 private:
 	Timer ExitTimer;
 };

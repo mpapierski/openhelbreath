@@ -26,3 +26,8 @@ void ExitScene::Draw(SDL_Surface *Dest)
 		Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_EXIT], 255, 123, SPRID_EXIT_MESSAGE);
 	}
 }
+
+void ExitScene::OnLButtonDown(int X, int Y)
+{
+	Game::GetInstance().OnExit();
+}
