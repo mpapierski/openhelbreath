@@ -8,14 +8,24 @@ class DebugScene : public Scene
 public:
 	DebugScene();
 	~DebugScene();
+
 	void Draw(SDL_Surface *Dest);
+
 	void OnLoop();
+
 	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+
 	inline void Print(std::string txt);
+
 	std::vector<std::string> backlog;
+
 private:
-	SDL_Surface * rect;
+	SDL_Surface *rect;
+
+	SDL_Surface *TextSurface;
+
 	Font MainFont;
+
 	bool _connected;
 };
 
