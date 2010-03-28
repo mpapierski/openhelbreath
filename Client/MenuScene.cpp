@@ -35,13 +35,13 @@ void MenuScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Ri
 
 void MenuScene::OnLButtonDown(int X, int Y)
 {
-	if(X > 385 && X < (385+164))
+	if(X > 385 && X < (385+164)) // Login Button
 	{
 
 		if(Y > 178 && Y < (178+22))
 		{
 #ifdef DEF_SELECTSERVER
-			Game::GetInstance().ChangeScene(new SelectServerScene); // Login Button
+			Game::GetInstance().ChangeScene(new SelectServerScene);
 #else
 			Game::GetInstance().ChangeScene(new LoginScene);
 #endif
@@ -63,7 +63,11 @@ void MenuScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		switch(MenuFocus)
 		{
 		case Login:
+#ifdef DEF_SELECTSERVER
+			Game::GetInstance().ChangeScene(new SelectServerScene);
+#else
 			Game::GetInstance().ChangeScene(new LoginScene);
+#endif
 			break;
 		case NewAccount:
 			//MenuFocus = Login;

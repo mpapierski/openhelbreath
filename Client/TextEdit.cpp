@@ -32,7 +32,7 @@ TextEdit::TextEdit(const std::string &Text)
 	CursorPosition = 0;
 
 	SetText(Text);
-	
+
 	Blink = 0;
 
 }
@@ -41,6 +41,7 @@ TextEdit::TextEdit(const std::string &Text)
 void TextEdit::Draw(SDL_Surface *Dest)
 {
 	Surface::Draw(Dest, GetSurface(), this->X(), this->Y());
+
 	if(CursorVisible)
 	{
 		Blink++;
@@ -53,7 +54,6 @@ void TextEdit::Draw(SDL_Surface *Dest)
 			Blink = 0;
 		}
 	}
-
 }
 
 const std::string &TextEdit::GetText()
@@ -78,18 +78,21 @@ void TextEdit::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		if(WidgetText.size())
 			WidgetText.erase((WidgetText.size() - 1), 1);
 	}
-
-	if(Sym > 31 && Sym < 127)
+	if(WidgetText.size() < MaxLength)
 	{
-		if(Mod == KMOD_LSHIFT || Mod == KMOD_RSHIFT)
-		{
-			if(Sym > 96 && Sym < 123)
-			WidgetText.push_back(static_cast<char>(Sym-32));
-		}
-		else
-			WidgetText.push_back(static_cast<char>(Sym));
-	}
 
+
+		if(Sym > 31 && Sym < 127)
+		{
+			if(Mod == KMOD_LSHIFT || Mod == KMOD_RSHIFT)
+			{
+				if(Sym > 96 && Sym < 123)
+					WidgetText.push_back(static_cast<char>(Sym-32));
+			}
+			else
+				WidgetText.push_back(static_cast<char>(Sym));
+		}
+	}
 	Update();
 }
 
@@ -140,7 +143,7 @@ void TextEdit::SetText(const std::string &Text)
 void TextEdit::Update()
 {
 	SDL_FreeSurface(GetSurface());
-	
+
 	if(PasswordMode)
 	{
 		std::string Temp;

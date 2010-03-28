@@ -5,6 +5,8 @@ Game::Game()
 	Running = true;
 
 	ChangeScene(new LoadingScene);
+
+	Sprites.assign(DEF_MAXSPRITES, Sprite::Sprite());
 }
 
 int Game::OnExecute()
@@ -50,13 +52,13 @@ bool Game::OnInitialize()
 	MainWindow.SetKeyRepeat(50, 150);
 	MainWindow.ShowCursor(false);
 	MainWindow.SetCursorPos(320, 240);
-	//MainWindow.SetFpsLimit(60);
+	//MainWindow.SetFpsLimit(30);
 
 	//Load some Sprites before Loading
-	Sprites.push_back(Sprite::Sprite("sprites/interface.pak", 0)); //SPRID_CURSOR 0
+	Sprites[SPRID_CURSOR].LoadImage("sprites/interface.pak", 0);
 	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
 
-	Sprites.push_back(Sprite::Sprite("sprites/New-Dialog.pak", 0)); //SPRID_LOADING 1
+	Sprites[SPRID_LOADING].LoadImage("sprites/New-Dialog.pak", 0);
 
 	return true;
 }
@@ -96,6 +98,6 @@ void Game::OnCleanup()
 void Game::ChangeScene(Scene *NewScene)
 {
 	delete CurrentScene;
-	
+
 	CurrentScene = NewScene;
 }

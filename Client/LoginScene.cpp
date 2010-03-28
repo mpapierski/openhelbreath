@@ -6,7 +6,7 @@ LoginScene::LoginScene()
 
 	LoginEdit.SetPosition(175, 161);
 	LoginEdit.SetCursorVisible(true);
-	LoginEdit.SetMaxLength(20);
+	LoginEdit.SetMaxLength(12);
 
 	PasswordEdit.SetPosition(175, 181);
 	PasswordEdit.SetCursorVisible(false);
@@ -52,7 +52,12 @@ void LoginScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool R
 	if(Y > 282 && Y < (282+20))
 	{
 		if(X > 80 && X < (80+84)) LoginFocus = Connect;
-		if(X > 256 && X < (256+76)) LoginFocus = Cancel;
+		if(X > 256 && X < (256+76))
+		{
+			LoginEdit.SetCursorVisible(false);
+			PasswordEdit.SetCursorVisible(false);
+			LoginFocus = Cancel;
+		}
 	}
 }
 
