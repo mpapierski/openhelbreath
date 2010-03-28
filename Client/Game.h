@@ -32,6 +32,8 @@ public:
 
 	void OnEvent(SDL_Event *EventSource);
 
+	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+
 	void OnExit();
 
 	void OnCleanup();

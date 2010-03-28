@@ -22,6 +22,25 @@ SDL_Surface *Surface::LoadFromImage(const std::string &FileName)
 	return Return;
 }
 
+SDL_Surface *Surface::CreateSurface(int W, int H, int R, int G, int B, int Alpha)
+{
+	SDL_Surface *ReturnSurface = NULL;
+
+	ReturnSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, W, H, 32, 0, 0, 0, 0);
+
+	if(ReturnSurface == NULL)
+	{
+		fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError());
+		exit(1);
+	}
+
+	SDL_FillRect(ReturnSurface, NULL, SDL_MapRGB(ReturnSurface->format, R, G, B));
+
+	SDL_SetAlpha(ReturnSurface, SDL_SRCALPHA | SDL_RLEACCEL, Alpha);
+
+	return ReturnSurface;
+}
+
 bool Surface::Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y)
 {
 	if (Dest == NULL || Src == NULL)

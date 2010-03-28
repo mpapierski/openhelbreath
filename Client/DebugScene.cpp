@@ -1,45 +1,31 @@
-#include "DebugScene.h"
+#include "Game.h"
 
 DebugScene::DebugScene()
 {
-	rect = NULL;
-	SDL_Surface * ReturnSurface;
-	
-	ReturnSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, 640-100, 480-100, 32, 0, 0, 0, 0);
-
-	if(ReturnSurface == NULL)
-	{
-		fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError());
-		exit(1);
-	}
-
-	SDL_FillRect(ReturnSurface, NULL, SDL_MapRGB(ReturnSurface->format, 255,255,255));
-	SDL_SetAlpha(ReturnSurface, SDL_SRCALPHA | SDL_RLEACCEL, 128);
+	rect = Surface::CreateSurface(640-100, 480-100, 255, 255, 255, 128);
 
 	MainFont.LoadFont("font/VeraSe.ttf", 12);
-
-	rect = ReturnSurface;
 
 	Print("Press ESC to exit Debug console");
 }
 DebugScene::~DebugScene()
 {
-	delete rect;
+	SDL_FreeSurface(rect);
 }
 
 void
 DebugScene::Draw(SDL_Surface * Dest)
 {
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0, SPRID_LOGIN_BACKGROUND);
-	if (rect != NULL)
-		Surface::Draw(Dest, rect,50,50);
-	
+
+	Surface::Draw(Dest, rect, 50, 50);
+
 	int y = 0;
 	int size = (int)backlog.size();
 	int start = size - 19;
 	if (start < 0)
 		start = 0;
-	
+
 	for (int i = start; i < size; i++)
 	{
 		if (i >= size)
@@ -48,19 +34,23 @@ DebugScene::Draw(SDL_Surface * Dest)
 		y+=20;
 	}
 }
+void
+DebugScene::OnLoop()
+{
+
+}
 
 void
 DebugScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
-	if (Sym == SDLK_ESCAPE)
+	if(Sym == SDLK_ESCAPE)
 	{
 		Game::GetInstance().ChangeScene(new MenuScene);
 	}
-	else if (Sym == SDLK_RETURN)
+	else if(Sym == SDLK_RETURN)
 	{
 		Print("SDLK_RETURN");
 	}
-
 }
 
 void

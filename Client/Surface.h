@@ -12,6 +12,8 @@ public:
 
 	static SDL_Surface *LoadFromImage(const std::string &FileName);
 
+	static SDL_Surface *CreateSurface(int W, int H, int R, int G, int B, int Alpha);
+
 	static bool Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y);
 
 	static bool Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y, int X2, int Y2, int W, int H);

@@ -81,6 +81,14 @@ void Game::OnEvent(SDL_Event *EventSource)
 	Event::OnEvent(EventSource);
 }
 
+void Game::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
+{
+	if(Sym == SDLK_F12)
+	{
+		ChangeScene(new DebugScene);
+	}
+}
+
 void Game::OnExit()
 {
 	Running = false;
