@@ -19,7 +19,11 @@ fi
 
 echo 'CFLAGS=-Wall -O2 `sdl-config --cflags`' >> $file_name
 echo 'LDFLAGS=' >> $file_name
-echo 'LIBS=`sdl-config --libs` -lSDL_image -lSDL_ttf -lSDL_mixer' >> $file_name
+if [[ "$PLATFORM" == 'Windows' ]]; then
+	echo 'LIBS=`sdl-config --libs` -lSDL_image -lSDL_ttf -lSDL_mixer -lws2_32' >> $file_name
+else
+	echo 'LIBS=`sdl-config --libs` -lSDL_image -lSDL_ttf -lSDL_mixer' >> $file_name
+fi
 echo "SOURCES=$sources" >> $file_name
 echo 'OBJECTS=$(SOURCES:.cpp=.o)' >> $file_name
 echo "$OBJECTS"

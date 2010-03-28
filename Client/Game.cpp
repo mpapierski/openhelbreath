@@ -52,8 +52,9 @@ bool Game::OnInitialize()
 	MainWindow.SetKeyRepeat(50, 150);
 	MainWindow.ShowCursor(false);
 	MainWindow.SetCursorPos(320, 240);
-	//MainWindow.SetFpsLimit(30);
-
+#ifdef DEF_FPSLIMIT
+	MainWindow.SetFpsLimit(DEF_FPSLIMIT);
+#endif
 	//Load some Sprites before Loading
 	Sprites[SPRID_CURSOR].LoadImage("sprites/interface.pak", 0);
 	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);

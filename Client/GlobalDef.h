@@ -2,6 +2,7 @@
 #define GLOBALDEF_H
 
 #define DEF_FULLSCREEN
+#define DEF_FPSLIMIT 60
 
 #define DEF_SELECTSERVER //Abaddon, Apocalypse server
 #define DEF_SERVERADDR "localhost" //Abaddon address (Default address)

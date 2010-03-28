@@ -25,6 +25,9 @@ private:
 	TextEdit LoginEdit;
 
 	TextEdit PasswordEdit;
+
+	void _Connect();
+	void _Cancel();
 };
 
 #endif // LOGINSCENE_H

@@ -89,16 +89,12 @@ void LoginScene::OnLButtonDown(int X, int Y)
 		{
 			if(PasswordEdit.GetText().size() && LoginEdit.GetText().size())
 			{
-				// TODO: Connect
+				_Connect();
 			}
 		}
 		if(X > 256 && X < (256+76)) // Cancel Button
 		{
-#ifdef DEF_SELECTSERVER
-			Game::GetInstance().ChangeScene(new SelectServerScene);
-#else
-			Game::GetInstance().ChangeScene(new MenuScene);
-#endif
+			_Cancel();
 		}
 	}
 }
@@ -107,11 +103,7 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
 	if(Sym == SDLK_ESCAPE)
 	{
-#ifdef DEF_SELECTSERVER
-		Game::GetInstance().ChangeScene(new SelectServerScene);
-#else
-		Game::GetInstance().ChangeScene(new MenuScene);
-#endif
+		_Cancel();
 	}
 
 	if(Sym == SDLK_RETURN)
@@ -132,15 +124,11 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		case Connect:
 			if(PasswordEdit.GetText().size() && LoginEdit.GetText().size())
 			{
-				// // TODO: Connection
+				_Connect();
 			}
 			break;
 		case Cancel:
-#ifdef DEF_SELECTSERVER
-				Game::GetInstance().ChangeScene(new SelectServerScene);
-#else
-				Game::GetInstance().ChangeScene(new MenuScene);
-#endif
+			_Cancel();
 			break;
 		}
 	}
@@ -198,4 +186,20 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 			break;
 		}
 	}
+}
+
+void
+LoginScene::_Connect()
+{
+	Game::GetInstance().ChangeScene(new DebugScene);
+}
+
+void
+LoginScene::_Cancel()
+{
+#ifdef DEF_SELECTSERVER
+				Game::GetInstance().ChangeScene(new SelectServerScene);
+#else
+				Game::GetInstance().ChangeScene(new MenuScene);
+#endif
 }
