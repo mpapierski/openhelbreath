@@ -36,8 +36,8 @@ public:
 
 	void Update();
 
-private:
 	Font WidgetFont;
+private:
 
 	SDL_Surface *CursorSurface;
 

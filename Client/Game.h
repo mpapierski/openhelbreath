@@ -11,6 +11,8 @@
 #include "LoginScene.h"
 #include "SelectServerScene.h"
 #include "DebugScene.h"
+#include "SignupScene.h"
+
 #include "GlobalDef.h"
 
 class Game : public Event

@@ -5,6 +5,7 @@
 #define DEF_FPSLIMIT 60
 
 #define DEF_SELECTSERVER //Abaddon, Apocalypse server
+
 #define DEF_SERVERADDR "localhost" //Abaddon address (Default address)
 #define DEF_SERVERPORT 2848 //Abaddon port (Default port)
 
@@ -13,9 +14,11 @@
 #	define DEF_SERVERPORT2 2849 //Apocalypse port
 #endif
 
+#define DEF_MAKEACCOUNT // Enable account creation from Client
+
 #define DEF_MAXSPRITES 10
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #	undef DEF_FULLSCREEN

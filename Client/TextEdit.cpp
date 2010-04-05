@@ -99,7 +99,9 @@ void TextEdit::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 void TextEdit::SetColor(int R, int G, int B)
 {
 	WidgetFont.SetColor(R, G, B);
-
+	delete CursorSurface;
+	CursorSurface = NULL;
+	CursorSurface = Font::Draw(WidgetFont, "_");
 	Update();
 }
 
@@ -111,6 +113,7 @@ void TextEdit::SetCursorVisible(bool Visible)
 	}
 	else
 		CursorVisible = false;
+	Update();
 }
 
 void TextEdit::SetCursorPosition(int Position)
