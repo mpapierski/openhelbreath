@@ -27,11 +27,13 @@ class SignupScene: public Scene
 	private:
 		void _Cancel();
 		void _Ok();
+		void _Reset();
 
 		typedef struct FormItem
 		{
 				std::string Label;
 				TextEdit Input;
+				std::string Info[3];
 		};
 
 		FormItem Form[DEF_INPUTTOTAL];

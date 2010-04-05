@@ -138,13 +138,13 @@ void TextEdit::SetPasswordMode(bool Visible)
 
 void TextEdit::SetText(const std::string &Text)
 {
-	WidgetText.append(Text);
-
+	WidgetText = Text;
 	Update();
 }
 
 void TextEdit::Update()
 {
+	Blink = 0;
 	SDL_FreeSurface(GetSurface());
 
 	if(PasswordMode)

@@ -6,11 +6,11 @@ LoginScene::LoginScene()
 
 	LoginEdit.SetPosition(175, 161);
 	LoginEdit.SetCursorVisible(true);
-	LoginEdit.SetMaxLength(12);
+	LoginEdit.SetMaxLength(10);
 
 	PasswordEdit.SetPosition(175, 181);
 	PasswordEdit.SetCursorVisible(false);
-	PasswordEdit.SetMaxLength(24);
+	PasswordEdit.SetMaxLength(10);
 	PasswordEdit.SetPasswordMode(true);
 }
 
