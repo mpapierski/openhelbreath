@@ -41,6 +41,10 @@ private:
 
 	SDL_Surface *CursorSurface;
 
+	SDL_Surface *CursorShadow;
+
+	SDL_Surface *TextShadow;
+
 	std::string WidgetText;
 
 	bool Enabled;

@@ -42,6 +42,7 @@ SignupScene::SignupScene()
 		for (int j = 0; j < 3; j++)
 			Form[i].Info[j] = _descr[i].info[j];
 	}
+
 	SetFocus(0);
 }
 
@@ -69,39 +70,50 @@ SignupScene::~SignupScene()
 void SignupScene::Draw(SDL_Surface * Dest)
 {
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0,
-			SPRID_LOGIN_BACKGROUND);
-	SDL_Surface * txt_surface;
+				SPRID_LOGIN_BACKGROUND);
 
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
+	SDL_Surface *temp;
+
+	for(int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		txt_surface = DrawText(Game::GetInstance().Font, Form[i].Label, 255, 255, 255);
-		Surface::Draw(Dest, txt_surface,
-				Form[i].Input.X() - txt_surface->w - 6, Form[i].Input.Y());
+		temp = DrawText(Game::GetInstance().Font, Form[i].Label, 255, 255, 255);
+		Surface::Draw(Dest, temp, Form[i].Input.X() - temp->w - 6, Form[i].Input.Y());
+		SDL_FreeSurface(temp);
+
 		Form[i].Input.Draw(Dest);
 	}
 
 	if (FormFocus < DEF_INPUTTOTAL)
+	{
 		for (int i = 0; i < 3; i++)
 		{
-			Surface::Draw(Dest, DrawText(Game::GetInstance().Font, Form[FormFocus].Info[i], 255, 255, 255),
-					290, 330 + (15 * i));
+			temp = DrawText(Game::GetInstance().Font, Form[FormFocus].Info[i], 255, 255, 255);
+			Surface::Draw(Dest, temp, 290, 330 + (15 * i));
+			SDL_FreeSurface(temp);
 		}
+	}
 	else
+	{
 		switch (FormFocus)
 		{
 			case 6:
-				Surface::Draw(Dest, DrawText(Game::GetInstance().Font,
-						"Create an account with your input.", 255, 255, 255), 290, 330);
+				temp = DrawText(Game::GetInstance().Font,
+						"Create an account with your input.", 255, 255, 255);
+				Surface::Draw(Dest, temp, 290, 330);
+				SDL_FreeSurface(temp);
 				break;
 			case 7:
-				Surface::Draw(Dest, DrawText(Game::GetInstance().Font, "Clear all.", 255, 255, 255), 290,
-						330);
+				temp = DrawText(Game::GetInstance().Font, "Clear all.", 255, 255, 255);
+				Surface::Draw(Dest, temp, 290, 330);
+				SDL_FreeSurface(temp);
 				break;
 			case 8:
-				Surface::Draw(Dest, DrawText(Game::GetInstance().Font, "Back to main menu.", 255, 255, 255),
-						290, 330);
+				temp = DrawText(Game::GetInstance().Font, "Back to main menu.", 255, 255, 255);
+				Surface::Draw(Dest, temp, 290, 330);
+				SDL_FreeSurface(temp);
 				break;
 		}
+	}
 
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON],
 			199 + 98, 398, FormFocus == 6 ? BUTTON_CREATE + 1 : BUTTON_CREATE);
@@ -117,6 +129,7 @@ void SignupScene::OnEvent(SDL_Event * EventSource)
 	if (FormFocus < DEF_INPUTTOTAL)
 		Form[FormFocus].Input.OnEvent(EventSource);
 }
+
 void SignupScene::OnMouseMove(
 		int X,
 		int Y,
@@ -133,6 +146,7 @@ void SignupScene::OnMouseMove(
 	if ((X >= 488) && (X <= 561) && (Y >= 396) && (Y <= 417))
 		SetFocus(8);
 }
+
 void SignupScene::OnLButtonDown(int X, int Y)
 {
 	for (int i = 0; i < DEF_INPUTTOTAL; i++)
@@ -151,6 +165,7 @@ void SignupScene::OnLButtonDown(int X, int Y)
 	if ((X >= 488) && (X <= 561) && (Y >= 396) && (Y <= 417))
 		_Cancel();
 }
+
 void SignupScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
 	if (Sym == SDLK_RETURN)

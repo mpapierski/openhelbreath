@@ -40,7 +40,6 @@ class SignupScene: public Scene
 		int FormFocus;
 
 		void SetFocus(int NewId);
-
 };
 
 #endif
