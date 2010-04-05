@@ -1,40 +1,33 @@
 #include "TextEdit.h"
+#include "Game.h"
 
 TextEdit::TextEdit()
 {
-	WidgetFont.LoadFont("font/VeraSe.ttf", 12);
-
-	SetMaxLength(255);
-
-	SetPasswordMode(false);
-
-	CursorVisible = true;
-
-	CursorSurface = Font::Draw(WidgetFont, "_");
-
-	CursorPosition = 0;
-
-	Blink = 0;
+	Create();
 }
 
 TextEdit::TextEdit(const std::string &Text)
 {
-	WidgetFont.LoadFont("font/VersSe.ttf", 12);
+	Create();
 
-	SetMaxLength(255);
+	SetText(Text);
+}
 
-	SetPasswordMode(false);
+void TextEdit::Create()
+{
+	MaxLength = 255;
+
+	Enabled = true;
+
+	PasswordMode = false;
 
 	CursorVisible = true;
 
-	CursorSurface = Font::Draw(WidgetFont, "_");
-
 	CursorPosition = 0;
 
-	SetText(Text);
+	CursorSurface = DrawText(Game::GetInstance().Font, "_", 255, 255, 255);
 
 	Blink = 0;
-
 }
 
 
@@ -78,10 +71,9 @@ void TextEdit::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		if(WidgetText.size())
 			WidgetText.erase((WidgetText.size() - 1), 1);
 	}
+
 	if(WidgetText.size() < MaxLength)
 	{
-
-
 		if(Sym > 31 && Sym < 127)
 		{
 			if(Mod == KMOD_LSHIFT || Mod == KMOD_RSHIFT)
@@ -93,15 +85,21 @@ void TextEdit::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 				WidgetText.push_back(static_cast<char>(Sym));
 		}
 	}
+
 	Update();
 }
 
-void TextEdit::SetColor(int R, int G, int B)
+void TextEdit::SetEnabled(bool Enable)
 {
-	WidgetFont.SetColor(R, G, B);
-	delete CursorSurface;
-	CursorSurface = NULL;
-	CursorSurface = Font::Draw(WidgetFont, "_");
+	Enabled = Enable;
+
+	if(Enabled)
+	{
+		CursorVisible = true;
+	}
+	else
+		CursorVisible = false;
+
 	Update();
 }
 
@@ -113,6 +111,7 @@ void TextEdit::SetCursorVisible(bool Visible)
 	}
 	else
 		CursorVisible = false;
+
 	Update();
 }
 
@@ -138,23 +137,41 @@ void TextEdit::SetPasswordMode(bool Visible)
 
 void TextEdit::SetText(const std::string &Text)
 {
-	WidgetText = Text;
+	WidgetText.assign(Text);
+
 	Update();
 }
 
 void TextEdit::Update()
 {
-	Blink = 0;
 	SDL_FreeSurface(GetSurface());
 
 	if(PasswordMode)
 	{
 		std::string Temp;
 		Temp.append(WidgetText.size() , '*');
-		SetSurface(Font::Draw(WidgetFont, Temp));
+
+		if(!Enabled)
+		{
+
+			SetSurface(DrawText(Game::GetInstance().Font, Temp, 102, 102, 102));
+		}
+		else
+		{
+			SetSurface(DrawText(Game::GetInstance().Font, Temp, 255, 255, 255));
+		}
 	}
 	else
-		SetSurface(Font::Draw(WidgetFont, WidgetText));
+	{
+		if(!Enabled)
+		{
+			SetSurface(DrawText(Game::GetInstance().Font, WidgetText, 102, 102, 102));
+		}
+		else
+		{
+			SetSurface(DrawText(Game::GetInstance().Font, WidgetText, 255, 255, 255));
+		}
+	}
 
 	if(WidgetText.size())
 	{

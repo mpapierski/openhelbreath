@@ -22,7 +22,7 @@ public:
 
 	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
-	void SetColor(int R, int G, int B);
+	void SetEnabled(bool Enable);
 
 	void SetCursorVisible(bool Visible);
 
@@ -36,12 +36,14 @@ public:
 
 	void Update();
 
-	Font WidgetFont;
 private:
+	void Create();
 
 	SDL_Surface *CursorSurface;
 
 	std::string WidgetText;
+
+	bool Enabled;
 
 	bool PasswordMode;
 

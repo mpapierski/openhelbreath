@@ -8,7 +8,6 @@ class Widget : public Event
 {
 public:
 	Widget();
-
 	~Widget();
 
 	virtual void Draw(SDL_Surface *Dest);

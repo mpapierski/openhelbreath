@@ -6,8 +6,6 @@ DebugScene::DebugScene()
 
 	TextSurface = NULL;
 
-	MainFont.LoadFont("font/VeraSe.ttf", 12);
-
 	Print("Press ESC to exit Debug console");
 }
 
@@ -36,7 +34,7 @@ DebugScene::Draw(SDL_Surface *Dest)
 		if(i >= size)
 			break;
 		SDL_FreeSurface(TextSurface);
-		TextSurface = Font::Draw(MainFont, backlog[i].c_str());
+		TextSurface = DrawText(Game::GetInstance().Font, backlog[i].c_str(), 0, 0, 0);
 		Surface::Draw(Dest, TextSurface, 55, 53+y);
 		y+=20;
 	}

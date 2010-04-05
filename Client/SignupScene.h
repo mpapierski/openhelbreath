@@ -6,6 +6,13 @@
 
 #define DEF_INPUTTOTAL 6
 
+struct FormItem
+{
+	std::string Label;
+	TextEdit Input;
+	std::string Info[3];
+};
+
 class SignupScene: public Scene
 {
 	public:
@@ -29,16 +36,8 @@ class SignupScene: public Scene
 		void _Ok();
 		void _Reset();
 
-		typedef struct FormItem
-		{
-				std::string Label;
-				TextEdit Input;
-				std::string Info[3];
-		};
-
 		FormItem Form[DEF_INPUTTOTAL];
 		int FormFocus;
-		Font MainFont;
 
 		void SetFocus(int NewId);
 

@@ -43,8 +43,6 @@ SignupScene::SignupScene()
 			Form[i].Info[j] = _descr[i].info[j];
 	}
 	SetFocus(0);
-	MainFont.LoadFont("font/VeraSe.ttf", 12);
-	MainFont.SetColor(255, 255, 255);
 }
 
 void SignupScene::SetFocus(int NewId)
@@ -56,13 +54,11 @@ void SignupScene::SetFocus(int NewId)
 
 	for (int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		Form[i].Input.SetColor(102, 102, 102);
-		Form[i].Input.SetCursorVisible(false);
+		Form[i].Input.SetEnabled(false);
 	}
 	if (NewId >= DEF_INPUTTOTAL)
 		return;
-	Form[NewId].Input.SetColor(255, 255, 255);
-	Form[NewId].Input.SetCursorVisible(true);
+	Form[NewId].Input.SetEnabled(true);
 }
 
 SignupScene::~SignupScene()
@@ -78,7 +74,7 @@ void SignupScene::Draw(SDL_Surface * Dest)
 
 	for (int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		txt_surface = Font::Draw(MainFont, Form[i].Label);
+		txt_surface = DrawText(Game::GetInstance().Font, Form[i].Label, 255, 255, 255);
 		Surface::Draw(Dest, txt_surface,
 				Form[i].Input.X() - txt_surface->w - 6, Form[i].Input.Y());
 		Form[i].Input.Draw(Dest);
@@ -87,22 +83,22 @@ void SignupScene::Draw(SDL_Surface * Dest)
 	if (FormFocus < DEF_INPUTTOTAL)
 		for (int i = 0; i < 3; i++)
 		{
-			Surface::Draw(Dest, Font::Draw(MainFont, Form[FormFocus].Info[i]),
+			Surface::Draw(Dest, DrawText(Game::GetInstance().Font, Form[FormFocus].Info[i], 255, 255, 255),
 					290, 330 + (15 * i));
 		}
 	else
 		switch (FormFocus)
 		{
 			case 6:
-				Surface::Draw(Dest, Font::Draw(MainFont,
-						"Create an account with your input."), 290, 330);
+				Surface::Draw(Dest, DrawText(Game::GetInstance().Font,
+						"Create an account with your input.", 255, 255, 255), 290, 330);
 				break;
 			case 7:
-				Surface::Draw(Dest, Font::Draw(MainFont, "Clear all."), 290,
+				Surface::Draw(Dest, DrawText(Game::GetInstance().Font, "Clear all.", 255, 255, 255), 290,
 						330);
 				break;
 			case 8:
-				Surface::Draw(Dest, Font::Draw(MainFont, "Back to main menu."),
+				Surface::Draw(Dest, DrawText(Game::GetInstance().Font, "Back to main menu.", 255, 255, 255),
 						290, 330);
 				break;
 		}

@@ -24,8 +24,6 @@ private:
 
 	SDL_Surface *TextSurface;
 
-	Font MainFont;
-
 	bool _connected;
 };
 

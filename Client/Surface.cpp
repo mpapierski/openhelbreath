@@ -54,7 +54,6 @@ bool Surface::Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y)
 	DestR.y = Y;
 
 	SDL_BlitSurface(Src, NULL, Dest, &DestR);
-	SDL_FreeSurface(Dest);
 
 	return true;
 }

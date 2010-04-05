@@ -55,6 +55,9 @@ bool Game::OnInitialize()
 #ifdef DEF_FPSLIMIT
 	MainWindow.SetFpsLimit(DEF_FPSLIMIT);
 #endif
+
+	Font = TTF_OpenFont("font/VeraSe.ttf", 12);
+
 	//Load some Sprites before Loading
 	Sprites[SPRID_CURSOR].LoadImage("sprites/interface.pak", 0);
 	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
@@ -96,6 +99,8 @@ void Game::OnExit()
 
 void Game::OnCleanup()
 {
+	TTF_CloseFont(Font);
+
 	for(unsigned int i = 0; i < Sprites.size(); i++)
 	{
 		SDL_FreeSurface(Sprites[i].GetSurface());

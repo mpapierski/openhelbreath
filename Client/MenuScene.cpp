@@ -65,7 +65,6 @@ void MenuScene::OnLButtonDown(int X, int Y)
 		if (Y > 216 && Y < (216 + 22))
 			Game::GetInstance().ChangeScene(new SignupScene); // New Account Button
 #endif
-
 		if (Y > 255 && Y < (255 + 22))
 			Game::GetInstance().ChangeScene(new ExitScene); // Exit Button
 	}

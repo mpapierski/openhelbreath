@@ -5,6 +5,7 @@
 #include "Sprite.h"
 #include "SpriteID.h"
 #include "Mouse.h"
+
 #include "LoadingScene.h"
 #include "MenuScene.h"
 #include "ExitScene.h"
@@ -43,6 +44,8 @@ public:
 	void ChangeScene(Scene *NewScene);
 
 	std::vector<Sprite> Sprites;
+
+	TTF_Font *Font;
 
 private:
 	Game();
