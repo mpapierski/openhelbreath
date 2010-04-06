@@ -550,8 +550,9 @@ class CLoginServer(object):
 		PutLogList("(*) MainSocket -> Server open")
 		
 	def MainSocket_OnReceive(self, sender, buffer):
-		PutLogList("(*) MainSocket -> Received %d bytes" % size)
 		size = len(buffer)
+		PutLogList("(*) MainSocket -> Received %d bytes" % size)
+		
 		try:
 			format = '<Bh'
 			header_size = struct.calcsize(format)
