@@ -76,7 +76,7 @@ void SignupScene::Draw(SDL_Surface * Dest)
 
 	for(int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		temp = DrawText(Game::GetInstance().Font, Form[i].Label, 255, 255, 255);
+		temp = Font::Text(Game::GetInstance().Font, Form[i].Label, 255, 255, 255);
 		Surface::Draw(Dest, temp, Form[i].Input.X() - temp->w - 6, Form[i].Input.Y());
 		SDL_FreeSurface(temp);
 
@@ -87,7 +87,7 @@ void SignupScene::Draw(SDL_Surface * Dest)
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			temp = DrawText(Game::GetInstance().Font, Form[FormFocus].Info[i], 255, 255, 255);
+			temp = Font::Text(Game::GetInstance().Font, Form[FormFocus].Info[i], 255, 255, 255);
 			Surface::Draw(Dest, temp, 290, 330 + (15 * i));
 			SDL_FreeSurface(temp);
 		}
@@ -97,18 +97,18 @@ void SignupScene::Draw(SDL_Surface * Dest)
 		switch (FormFocus)
 		{
 			case 6:
-				temp = DrawText(Game::GetInstance().Font,
+				temp = Font::Text(Game::GetInstance().Font,
 						"Create an account with your input.", 255, 255, 255);
 				Surface::Draw(Dest, temp, 290, 330);
 				SDL_FreeSurface(temp);
 				break;
 			case 7:
-				temp = DrawText(Game::GetInstance().Font, "Clear all.", 255, 255, 255);
+				temp = Font::Text(Game::GetInstance().Font, "Clear all.", 255, 255, 255);
 				Surface::Draw(Dest, temp, 290, 330);
 				SDL_FreeSurface(temp);
 				break;
 			case 8:
-				temp = DrawText(Game::GetInstance().Font, "Back to main menu.", 255, 255, 255);
+				temp = Font::Text(Game::GetInstance().Font, "Back to main menu.", 255, 255, 255);
 				Surface::Draw(Dest, temp, 290, 330);
 				SDL_FreeSurface(temp);
 				break;

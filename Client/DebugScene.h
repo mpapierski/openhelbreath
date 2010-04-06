@@ -24,7 +24,14 @@ private:
 
 	SDL_Surface *TextSurface;
 
+	int state;
+
 	bool _connected;
+
+	NetSock* sock;
+	Buffer * data;
+	void _OnRead();
+	void _Readable();
 };
 
 #endif

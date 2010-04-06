@@ -1,6 +1,10 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "NetSock.h"
+#include "Buffers.h"
+#include "NetMessages.h"
+
 #include "Window.h"
 #include "Sprite.h"
 #include "SpriteID.h"

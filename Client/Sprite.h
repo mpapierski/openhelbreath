@@ -15,7 +15,7 @@ public:
 
 	Sprite(const std::string &FileName, int Number);
 
-	bool LoadImage(const std::string &FileName, int Number);
+	bool LoadFromFile(const std::string &FileName, int Number);
 
 	static bool Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int Frame);
 

@@ -25,9 +25,9 @@ void TextEdit::Create()
 
 	CursorPosition = 0;
 
-	CursorShadow = DrawText(Game::GetInstance().Font, "_", 0, 0, 0);
+	CursorShadow = Font::Text(Game::GetInstance().Font, "_", 0, 0, 0);
 
-	CursorSurface = DrawText(Game::GetInstance().Font, "_", 255, 255, 255);
+	CursorSurface = Font::Text(Game::GetInstance().Font, "_", 255, 255, 255);
 
 	TextShadow = NULL;
 
@@ -162,24 +162,24 @@ void TextEdit::Update()
 
 		if(!Enabled)
 		{
-			SetSurface(DrawText(Game::GetInstance().Font, Temp, 102, 102, 102));
+			SetSurface(Font::Text(Game::GetInstance().Font, Temp, 102, 102, 102));
 		}
 		else
 		{
-			TextShadow = DrawText(Game::GetInstance().Font, Temp, 0, 0, 0);
-			SetSurface(DrawText(Game::GetInstance().Font, Temp, 255, 255, 255));
+			TextShadow = Font::Text(Game::GetInstance().Font, Temp, 0, 0, 0);
+			SetSurface(Font::Text(Game::GetInstance().Font, Temp, 255, 255, 255));
 		}
 	}
 	else
 	{
 		if(!Enabled)
 		{
-			SetSurface(DrawText(Game::GetInstance().Font, WidgetText, 102, 102, 102));
+			SetSurface(Font::Text(Game::GetInstance().Font, WidgetText, 102, 102, 102));
 		}
 		else
 		{
-			TextShadow = DrawText(Game::GetInstance().Font, WidgetText, 0, 0, 0);
-			SetSurface(DrawText(Game::GetInstance().Font, WidgetText, 255, 255, 255));
+			TextShadow = Font::Text(Game::GetInstance().Font, WidgetText, 0, 0, 0);
+			SetSurface(Font::Text(Game::GetInstance().Font, WidgetText, 255, 255, 255));
 		}
 	}
 

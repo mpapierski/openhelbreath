@@ -1,11 +1,14 @@
 #include "Font.h"
 
-SDL_Surface *DrawText(TTF_Font *Font, const std::string &Text, int R, int G, int B)
+SDL_Surface * Font::Text(
+		TTF_Font *Font,
+		const std::string &Text,
+		int R,
+		int G,
+		int B)
 {
-	if(Text.empty())
-	{
+	if (Text.empty())
 		return NULL;
-	}
 
 	SDL_Surface *ReturnSurface = NULL;
 

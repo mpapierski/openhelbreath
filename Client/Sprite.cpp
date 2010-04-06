@@ -7,10 +7,10 @@ Sprite::Sprite()
 
 Sprite::Sprite(const std::string &FileName, int Number)
 {
-	LoadImage(FileName, Number);
+	LoadFromFile(FileName, Number);
 }
 
-bool Sprite::LoadImage(const std::string &FileName, int Number)
+bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 {
 	FILE *pakFile;
 
