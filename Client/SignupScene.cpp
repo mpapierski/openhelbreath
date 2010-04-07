@@ -70,47 +70,32 @@ SignupScene::~SignupScene()
 void SignupScene::Draw(SDL_Surface * Dest)
 {
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0,
-				SPRID_LOGIN_BACKGROUND);
+			SPRID_LOGIN_BACKGROUND);
 
-	SDL_Surface *temp;
-
-	for(int i = 0; i < DEF_INPUTTOTAL; i++)
+	for (int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		temp = Font::Text(Game::GetInstance().Font, Form[i].Label, 255, 255, 255);
-		Surface::Draw(Dest, temp, Form[i].Input.X() - temp->w - 6, Form[i].Input.Y());
-		SDL_FreeSurface(temp);
-
+		Font::PutText(Dest, Form[i].Input.X() - Font::TextWidth(Form[i].Label)
+				- 6, Form[i].Input.Y(), Form[i].Label, 255, 255, 255);
 		Form[i].Input.Draw(Dest);
 	}
 
 	if (FormFocus < DEF_INPUTTOTAL)
 	{
 		for (int i = 0; i < 3; i++)
-		{
-			temp = Font::Text(Game::GetInstance().Font, Form[FormFocus].Info[i], 255, 255, 255);
-			Surface::Draw(Dest, temp, 290, 330 + (15 * i));
-			SDL_FreeSurface(temp);
-		}
+			Font::PutAlignedText(Dest, 290, 330 + (15 * i), 285, Form[FormFocus].Info[i], 255, 255, 255);
 	}
 	else
 	{
 		switch (FormFocus)
 		{
 			case 6:
-				temp = Font::Text(Game::GetInstance().Font,
-						"Create an account with your input.", 255, 255, 255);
-				Surface::Draw(Dest, temp, 290, 330);
-				SDL_FreeSurface(temp);
+				Font::PutAlignedText(Dest, 290, 330, 285, "Create an account with your input.", 255, 255, 255);
 				break;
 			case 7:
-				temp = Font::Text(Game::GetInstance().Font, "Clear all.", 255, 255, 255);
-				Surface::Draw(Dest, temp, 290, 330);
-				SDL_FreeSurface(temp);
+				Font::PutAlignedText(Dest, 290, 330, 285, "Clear all.", 255,255, 255);
 				break;
 			case 8:
-				temp = Font::Text(Game::GetInstance().Font, "Back to main menu.", 255, 255, 255);
-				Surface::Draw(Dest, temp, 290, 330);
-				SDL_FreeSurface(temp);
+				Font::PutAlignedText(Dest, 290, 330, 285, "Back to main menu.", 255, 255, 255);
 				break;
 		}
 	}

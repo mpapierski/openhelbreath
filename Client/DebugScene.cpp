@@ -41,10 +41,7 @@ void DebugScene::Draw(SDL_Surface *Dest)
 	{
 		if (i >= size)
 			break;
-		SDL_FreeSurface(TextSurface);
-		TextSurface = Font::Text(Game::GetInstance().Font, backlog[i].c_str(),
-				0, 0, 0);
-		Surface::Draw(Dest, TextSurface, 55, 53 + y);
+		Font::PutText(Dest, 55, 53 + y, backlog[i], 0, 0, 0);
 		y += 20;
 	}
 }
