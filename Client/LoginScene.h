@@ -3,11 +3,13 @@
 
 #include "Scene.h"
 #include "TextEdit.h"
+#include "MessageBox.h"
 
 class LoginScene : public Scene
 {
 public:
 	LoginScene();
+	~LoginScene();
 
 	void Draw(SDL_Surface *Dest);
 
@@ -20,14 +22,17 @@ public:
 	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
 private:
+	void _Connect();
+
+	void _Cancel();
+
 	enum Focus { Login, Password, Connect, Cancel } LoginFocus;
 
 	TextEdit LoginEdit;
 
 	TextEdit PasswordEdit;
 
-	void _Connect();
-	void _Cancel();
+	MessageBox ConnectingBox;
 };
 
 #endif // LOGINSCENE_H

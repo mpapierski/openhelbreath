@@ -8,7 +8,7 @@ Mouse::Mouse()
 
 void Mouse::Draw(SDL_Surface *Dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_CURSOR], Mx, My, SPRID_CURSOR_ARROW);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_CURSOR], Mx, My, INTERFACE_CURSOR_ARROW);
 }
 
 void Mouse::OnEvent(SDL_Event *EventSource)

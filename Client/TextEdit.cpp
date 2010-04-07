@@ -25,11 +25,7 @@ void TextEdit::Create()
 
 	CursorPosition = 0;
 
-	CursorShadow = Font::Text("_", 0, 0, 0);
-
-	CursorSurface = Font::Text("_", 255, 255, 255);
-
-	TextShadow = NULL;
+	CursorSurface = Font::TextShaded("_", 255, 255, 255);
 
 	Blink = 0;
 }
@@ -37,10 +33,6 @@ void TextEdit::Create()
 
 void TextEdit::Draw(SDL_Surface *Dest)
 {
-	if(Enabled)
-	{
-		Surface::Draw(Dest, TextShadow, this->X()+1, this->Y()+1);
-	}
 	Surface::Draw(Dest, GetSurface(), this->X(), this->Y());
 
 	if(CursorVisible)
@@ -48,7 +40,6 @@ void TextEdit::Draw(SDL_Surface *Dest)
 		Blink++;
 		if (Blink >= 50)
 		{
-			Surface::Draw(Dest, CursorShadow, (this->X() + CursorPosition)+1, this->Y()+1);
 			Surface::Draw(Dest, CursorSurface, (this->X() + CursorPosition), this->Y());
 		}
 		if (Blink > 100)
@@ -166,8 +157,7 @@ void TextEdit::Update()
 		}
 		else
 		{
-			TextShadow = Font::Text(Temp, 0, 0, 0);
-			SetSurface(Font::Text(Temp, 255, 255, 255));
+			SetSurface(Font::TextShaded(Temp, 255, 255, 255));
 		}
 	}
 	else
@@ -178,8 +168,7 @@ void TextEdit::Update()
 		}
 		else
 		{
-			TextShadow = Font::Text(WidgetText, 0, 0, 0);
-			SetSurface(Font::Text(WidgetText, 255, 255, 255));
+			SetSurface(Font::TextShaded(WidgetText, 255, 255, 255));
 		}
 	}
 
@@ -194,8 +183,4 @@ void TextEdit::Update()
 TextEdit::~TextEdit()
 {
 	SDL_FreeSurface(CursorSurface);
-
-	SDL_FreeSurface(CursorShadow);
-
-	SDL_FreeSurface(TextShadow);
 }

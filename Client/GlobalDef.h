@@ -2,7 +2,7 @@
 #define GLOBALDEF_H
 
 #define DEF_FULLSCREEN
-#define DEF_FPSLIMIT 60
+//#define DEF_FPSLIMIT 60
 
 #define DEF_SELECTSERVER //Abaddon, Apocalypse server
 
@@ -16,7 +16,7 @@
 
 #define DEF_MAKEACCOUNT // Enable account creation from Client
 
-#define DEF_MAXSPRITES 10
+#define DEF_MAXSPRITES 20
 
 #define DEBUG
 

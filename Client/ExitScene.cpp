@@ -13,7 +13,7 @@ void ExitScene::OnLoop()
 	}
 	if(ExitTimer.GetTicks() > 2000)
 	{
-		Game::GetInstance().OnExit();
+		Game::GetInstance().OnQuit();
 	}
 }
 

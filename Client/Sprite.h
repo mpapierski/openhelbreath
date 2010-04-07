@@ -25,10 +25,14 @@ public:
 
 	SDL_Rect GetFrame(int Number) const;
 
+	int GetMaxFrameH() const;
+
 private:
 	SDL_Surface *Image;
 
 	std::vector<SDL_Rect>Frames;
+
+	int MaxFrameH;
 };
 
 #endif // SPRITE_H

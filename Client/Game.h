@@ -43,6 +43,8 @@ public:
 
 	void OnExit();
 
+	void OnQuit();
+
 	void OnCleanup();
 
 	void ChangeScene(Scene *NewScene);

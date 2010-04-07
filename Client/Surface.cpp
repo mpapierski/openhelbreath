@@ -26,7 +26,7 @@ SDL_Surface *Surface::CreateSurface(int W, int H, int R, int G, int B, int Alpha
 {
 	SDL_Surface *ReturnSurface = NULL;
 
-	ReturnSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, W, H, 32, 0, 0, 0, 0);
+	ReturnSurface = SDL_CreateRGBSurface(SDL_HWSURFACE, W, H, 32, 0, 0, 0, 0);
 
 	if(ReturnSurface == NULL)
 	{

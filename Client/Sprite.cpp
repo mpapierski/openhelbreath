@@ -14,18 +14,22 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 {
 	FILE *pakFile;
 
+	std::string path = "sprites/";
+
+	path.append(FileName);
+
 	int tmp, tmp2;
 
-	int TotalFrame;
+	int TotalFrames;
 	int BitmapFileStartLoc;
 	int BmpSize;
 	char *BmpFile;
 
-	pakFile = fopen(FileName.c_str(), "rb");
+	pakFile = fopen(path.c_str(), "rb");
 
 	if(pakFile == NULL)
 	{
-		printf("Unable to load: %s\n", FileName.c_str());
+		printf("Unable to load: %s\n", path.c_str());
 		return false;
 	}
 
@@ -33,11 +37,11 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 	fread(&tmp, 1, 4, pakFile);
 
 	fseek(pakFile, tmp+100, SEEK_SET);
-	fread(&TotalFrame, 1, 4, pakFile);
+	fread(&TotalFrames, 1, 4, pakFile);
 
-	Frames.resize(TotalFrame);
+	Frames.resize(TotalFrames);
 
-	for(int i = 0; i < TotalFrame; i++)
+	for(int i = 0; i < TotalFrames; i++)
 	{
 		tmp2 = (tmp+104+(i*12));
 		fseek(pakFile, tmp2, SEEK_SET);
@@ -53,7 +57,15 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 		fread(&Frames[i].h, 1, 2, pakFile);
 	}
 
-	BitmapFileStartLoc = tmp  + (108 + (12*TotalFrame));
+	int max = 0;
+	for (int i = 0; i < TotalFrames; i++)
+	{
+		if (Frames[i].h > Frames[max].h)
+	         max = i;
+	}
+	MaxFrameH = Frames[max].h;
+
+	BitmapFileStartLoc = tmp  + (108 + (12*TotalFrames));
 
 	fseek(pakFile, BitmapFileStartLoc+2, SEEK_SET);
 	fread(&BmpSize, 1, 4, pakFile);
@@ -94,7 +106,12 @@ SDL_Rect Sprite::GetFrame(int Number) const
 	return Frames.at(Number);
 }
 
+int Sprite::GetMaxFrameH() const
+{
+	return MaxFrameH;
+}
+
 Sprite::~Sprite()
 {
-
+	SDL_FreeSurface(Image);
 }

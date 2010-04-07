@@ -1,5 +1,5 @@
 #ifndef SIGNUPSCENE_H
-#define SIGNUPSCENE_h
+#define SIGNUPSCENE_H
 
 #include "Scene.h"
 #include "TextEdit.h"
@@ -32,14 +32,13 @@ class SignupScene: public Scene
 		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
 	private:
+		void SetFocus(int NewId);
 		void _Cancel();
 		void _Ok();
 		void _Reset();
 
 		FormItem Form[DEF_INPUTTOTAL];
 		int FormFocus;
-
-		void SetFocus(int NewId);
 };
 
 #endif

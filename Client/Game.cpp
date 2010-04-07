@@ -60,9 +60,10 @@ bool Game::OnInitialize()
 	MainWindow.Create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
 #endif
 
-	MainWindow.SetKeyRepeat(50, 150);
+	MainWindow.SetKeyRepeat(5, 200);
 	MainWindow.ShowCursor(false);
 	MainWindow.SetCursorPos(320, 240);
+
 #ifdef DEF_FPSLIMIT
 	MainWindow.SetFpsLimit(DEF_FPSLIMIT);
 #endif
@@ -70,10 +71,15 @@ bool Game::OnInitialize()
 	Font = TTF_OpenFont("font/VeraSe.ttf", 12);
 
 	//Load some Sprites before Loading
-	Sprites[SPRID_CURSOR].LoadFromFile("sprites/interface.pak", 0);
+	Sprites[SPRID_CURSOR].LoadFromFile("interface.pak", 0);
 	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
+	
+	Sprites[SPRID_SPRFONT].LoadFromFile("SPRFONTS.PAK", 0);
+	Surface::SetTransparent(Sprites[SPRID_SPRFONT].GetSurface(), 255, 255, 255);
+	Sprites[SPRID_SPRFONT2].LoadFromFile("SPRFONTS.PAK", 1);
+	Surface::SetTransparent(Sprites[SPRID_SPRFONT2].GetSurface(), 255, 255, 255);
 
-	Sprites[SPRID_LOADING].LoadFromFile("sprites/New-Dialog.pak", 0);
+	Sprites[SPRID_LOADING].LoadFromFile("New-Dialog.pak", 0);
 
 	return true;
 }
@@ -105,17 +111,17 @@ void Game::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 
 void Game::OnExit()
 {
+	ChangeScene(new ExitScene);
+}
+
+void Game::OnQuit()
+{
 	Running = false;
 }
 
 void Game::OnCleanup()
 {
 	TTF_CloseFont(Font);
-
-	for (unsigned int i = 0; i < Sprites.size(); i++)
-	{
-		SDL_FreeSurface(Sprites[i].GetSurface());
-	}
 
 	MainWindow.Close();
 }

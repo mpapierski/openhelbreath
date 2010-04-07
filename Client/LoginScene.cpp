@@ -35,6 +35,8 @@ void LoginScene::Draw(SDL_Surface *Dest)
 
 	LoginEdit.Draw(Dest);
 	PasswordEdit.Draw(Dest);
+
+	ConnectingBox.Draw(Dest);
 }
 
 void LoginScene::OnEvent(SDL_Event *EventSource)
@@ -176,7 +178,7 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 void
 LoginScene::_Connect()
 {
-	Game::GetInstance().ChangeScene(new DebugScene);
+	ConnectingBox.SetEnabled(true);
 }
 
 void
@@ -187,4 +189,9 @@ LoginScene::_Cancel()
 #else
 				Game::GetInstance().ChangeScene(new MenuScene);
 #endif
+}
+
+LoginScene::~LoginScene()
+{
+
 }

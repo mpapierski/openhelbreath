@@ -10,10 +10,12 @@ void LoadingScene::OnLoop()
 	switch(Percent)
 	{
 	case 0:
-		Game::GetInstance().Sprites[SPRID_MAINMENU].LoadFromFile("sprites/New-Dialog.pak", 1);
-		Game::GetInstance().Sprites[SPRID_EXIT].LoadFromFile("sprites/New-Dialog.pak", 2);
-		Game::GetInstance().Sprites[SPRID_LOGIN].LoadFromFile("sprites/LoginDialog.pak", 0);
-		Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON].LoadFromFile("sprites/DialogText.pak", 1);
+		Game::GetInstance().Sprites[SPRID_MAINMENU].LoadFromFile("New-Dialog.pak", 1);
+		Game::GetInstance().Sprites[SPRID_EXIT].LoadFromFile("New-Dialog.pak", 2);
+		Game::GetInstance().Sprites[SPRID_LOGIN].LoadFromFile("LoginDialog.pak", 0);
+		Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].LoadFromFile("GameDialog.pak", 3);
+		Surface::SetTransparent(Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetSurface(), 0, 123, 255);
+		Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON].LoadFromFile("DialogText.pak", 1);
 		break;
 	case 100:
 		Game::GetInstance().ChangeScene(new MenuScene);

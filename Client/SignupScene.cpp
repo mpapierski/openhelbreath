@@ -43,6 +43,8 @@ SignupScene::SignupScene()
 			Form[i].Info[j] = _descr[i].info[j];
 	}
 
+
+
 	SetFocus(0);
 }
 
@@ -74,8 +76,9 @@ void SignupScene::Draw(SDL_Surface * Dest)
 
 	for (int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		Font::PutText(Dest, Form[i].Input.X() - Font::TextWidth(Form[i].Label)
+		Font::PutTextShaded(Dest, Form[i].Input.X() - Font::TextWidth(Form[i].Label)
 				- 6, Form[i].Input.Y(), Form[i].Label, 255, 255, 255);
+				
 		Form[i].Input.Draw(Dest);
 	}
 
@@ -101,11 +104,11 @@ void SignupScene::Draw(SDL_Surface * Dest)
 	}
 
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON],
-			199 + 98, 398, FormFocus == 6 ? BUTTON_CREATE + 1 : BUTTON_CREATE);
+			199 + 98, 398, FormFocus == 6 ? INTERFACE_BUTTON_CREATE + 1 : INTERFACE_BUTTON_CREATE);
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON],
-			294 + 98, 398, FormFocus == 7 ? BUTTON_RESET + 1 : BUTTON_RESET);
+			294 + 98, 398, FormFocus == 7 ? INTERFACE_BUTTON_RESET + 1 : INTERFACE_BUTTON_RESET);
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON],
-			390 + 98, 398, FormFocus == 8 ? BUTTON_CANCEL + 1 : BUTTON_CANCEL);
+			390 + 98, 398, FormFocus == 8 ? INTERFACE_BUTTON_CANCEL + 1 : INTERFACE_BUTTON_CANCEL);
 }
 
 void SignupScene::OnEvent(SDL_Event * EventSource)
@@ -171,10 +174,15 @@ void SignupScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 					break;
 			}
 	}
+
 	if (Sym == SDLK_ESCAPE)
 		_Cancel();
-	if (Sym == SDLK_TAB)
+
+	if (Sym == SDLK_TAB || Sym == SDLK_DOWN)
 		SetFocus((FormFocus + 1) % (DEF_INPUTTOTAL + 3));
+
+	if(Sym == SDLK_UP)
+		SetFocus((FormFocus - 1) % (DEF_INPUTTOTAL + 3));
 }
 
 void SignupScene::_Cancel()
