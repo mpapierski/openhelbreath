@@ -3,7 +3,7 @@
 
 #include "Scene.h"
 #include "TextEdit.h"
-#include "MessageBox.h"
+#include "ConnectingWidget.h"
 
 class LoginScene : public Scene
 {
@@ -32,7 +32,7 @@ private:
 
 	TextEdit PasswordEdit;
 
-	MessageBox ConnectingBox;
+	ConnectingWidget ConnectingBox;
 };
 
 #endif // LOGINSCENE_H

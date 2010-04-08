@@ -29,5 +29,5 @@ void ExitScene::Draw(SDL_Surface *Dest)
 
 void ExitScene::OnLButtonDown(int X, int Y)
 {
-	Game::GetInstance().OnExit();
+	Game::GetInstance().OnQuit();
 }
