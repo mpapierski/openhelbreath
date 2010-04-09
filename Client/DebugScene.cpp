@@ -9,19 +9,19 @@ DebugScene::DebugScene()
 	Print("Press ESC to exit Debug console");
 
 	state = 0;
-
-	sock = 0;
-	data = new Buffer(1024 * 32);
+	MLSocket = 0;
 }
 
 DebugScene::~DebugScene()
 {
 	SDL_FreeSurface(rect);
-
 	SDL_FreeSurface(TextSurface);
-	if (sock != 0)
-		delete sock;
-	delete data;
+
+	if (MLSocket != 0)
+	{
+		delete MLSocket;
+		MLSocket = 0;
+	}
 }
 
 void DebugScene::Draw(SDL_Surface *Dest)
@@ -48,138 +48,113 @@ void DebugScene::Draw(SDL_Surface *Dest)
 
 void DebugScene::OnLoop()
 {
-	if (state != 3)
-		return;
-	fd_set _reader;
-	struct timeval timeout;
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 1;
-	FD_ZERO(&_reader);
-	FD_SET((unsigned int)sock->socket, &_reader);
-	int _ret = select(sock->socket + 1, &_reader, (fd_set*) 0, (fd_set*) 0,
-			&timeout);
-	if (_ret == -1)
-	{
-		Print("Select() == -1. Critical Error.");
-		delete sock;
-		sock = 0;
-		state = 0;
-		return;
-	}
-	if (sock != NULL && FD_ISSET(sock->socket, &_reader))
-		_OnRead();
-	else
-		Print("...");
-}
 
-void DebugScene::_OnRead()
+}
+void DebugScene::OnEvent(SDL_Event *EventSource)
 {
-	if (!data->receive(sock))
+	if (EventSource->type == SDL_USEREVENT)
 	{
-		Print("Disconnected.");
-		delete sock;
-		sock = 0;
-		state = 0;
-		return;
-	}
-
-	unsigned short packetSize;
-
-	while (true)
-	{
-		memcpy(&packetSize, data->data() + 1, 2);
-
-		if (packetSize <= data->size() && packetSize > 0)
+		switch (EventSource->user.code)
 		{
-			int _before = data->pos();
-			unsigned char cKey = data->next<unsigned char> ();
-			unsigned short dwSize = data->next<unsigned short> ();
-
-			if (cKey > 0)
+			case SDL_NETWORK_ERROR:
+				Print("ERROR");
+				break;
+			case SDL_NETWORK_INIT:
+				Print("INIT");
+				break;
+			case SDL_NETWORK_CONNECTED:
 			{
-				char * buf = data->data();
-				for (int i = 0; i < dwSize - 3; i++)
-				{
-					buf[i] ^= (cKey ^ (dwSize - i - 3));
-					buf[i] -= i ^ cKey;
-				}
+				Print("CONNECTED");
+				Packet p1(MSGID_REQUEST_LOGIN, DEF_MSGTYPE_CONFIRM);
+				p1.push<char> ("asdfff", 10);
+				p1.push<char> ("asdff", 10);
+				p1.push<char> ("WS1", 30);
+				p1.send((NetSock*) EventSource->user.data1);
 			}
+				break;
+			case SDL_NETWORK_RECEIVE:
+				{
+					Buffer * data = (Buffer*) EventSource->user.data2;
 
-			_Readable();
-			int _readcount = _before - data->pos();
-			printf("_readcount = %d\n", _readcount);
-			data->seek(dwSize - _readcount);
-		}
-		else
-		{
-			Print("BREAK!!!");
-			break;
+				unsigned int MsgID = data->next<int> ();
+				unsigned short MsgType = data->next<unsigned short> ();
+
+				char testlog[100];
+				sprintf(testlog,
+						"Size:%d Received -> MsgID: 0x%08X MsgType: 0x%04X",
+						data->size(), MsgID, MsgType);
+				Print(testlog);
+				switch (MsgID)
+				{
+					case MSGID_RESPONSE_LOG:
+						Print("MSGID_RESPONSE_LOG");
+
+						switch (MsgType)
+						{
+							case DEF_MSGTYPE_CONFIRM:
+							{
+								unsigned short Upper =
+										data->next<unsigned short> ();
+								unsigned short Lower =
+										data->next<unsigned char> ();
+								unsigned short AccountStatus = data->next<
+										unsigned short> ();
+
+								char buffer[100];
+								sprintf(
+										buffer,
+										"Login OK! Server version: %d.%d Account Status: %d",
+										Upper, Lower, AccountStatus);
+								Print(buffer);
+							}
+								break;
+							case DEF_LOGRESMSGTYPE_PASSWORDMISMATCH:
+								Print("Password mismatch!");
+								break;
+							case DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT:
+								Print("Account does not exists!");
+								break;
+							case DEF_LOGRESMSGTYPE_REJECT:
+							{
+								unsigned int A = data->next<unsigned int> ();
+
+								unsigned int B = data->next<unsigned int> ();
+								unsigned int C = data->next<unsigned int> ();
+								unsigned short AccountStatus = data->next<
+										unsigned short> ();
+								char buffer[100];
+								sprintf(
+										buffer,
+										"Account banned till %04d-%02d-%02d (Account status: %d)",
+										A, B, C, AccountStatus);
+								Print(buffer);
+							}
+								break;
+						}
+
+						break;
+				}
+
+				delete MLSocket;
+				MLSocket = 0;
+				}
+				break;
+			case SDL_NETWORK_CLOSED:
+				Print("CLOSED");
+				break;
+			case SDL_NETWORK_FINISH:
+				Print("FINISH");
+				if (MLSocket != 0)
+				{
+					delete MLSocket;
+					MLSocket = 0;
+				}
+				break;
 		}
 	}
+
+	Event::OnEvent(EventSource);
 }
-void DebugScene::_Readable()
-{
-	unsigned int MsgID = data->next<int> ();
-	unsigned short MsgType = data->next<unsigned short> ();
-
-	char testlog[100];
-	sprintf(testlog, "Received -> MsgID: 0x%08X MsgType: 0x%04X", MsgID,
-			MsgType);
-	Print(testlog);
-	switch (MsgID)
-	{
-		case MSGID_RESPONSE_LOG:
-			Print("MSGID_RESPONSE_LOG");
-
-			switch (MsgType)
-			{
-				case DEF_MSGTYPE_CONFIRM:
-				{
-					unsigned short Upper = data->next<unsigned short> ();
-					unsigned short Lower = data->next<unsigned char> ();
-					unsigned short AccountStatus =
-							data->next<unsigned short> ();
-
-					char buffer[100];
-					sprintf(
-							buffer,
-							"Login OK! Server version: %d.%d Account Status: %d",
-							Upper, Lower, AccountStatus);
-					Print(buffer);
-				}
-					break;
-				case DEF_LOGRESMSGTYPE_PASSWORDMISMATCH:
-					Print("Password mismatch!");
-					break;
-				case DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT:
-					Print("Account does not exists!");
-					break;
-				case DEF_LOGRESMSGTYPE_REJECT:
-				{
-					unsigned int A = data->next<unsigned int> ();
-
-					unsigned int B = data->next<unsigned int> ();
-					unsigned int C = data->next<unsigned int> ();
-					unsigned short AccountStatus =
-							data->next<unsigned short> ();
-					char buffer[100];
-					sprintf(
-							buffer,
-							"Account banned till %04d-%02d-%02d (Account status: %d)",
-							A, B, C, AccountStatus);
-					Print(buffer);
-				}
-					break;
-			}
-
-			delete sock;
-			sock = 0;
-			state = 0;
-
-			break;
-	}
-}
-
 void DebugScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
 	if (Sym == SDLK_ESCAPE)
@@ -188,41 +163,21 @@ void DebugScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 	}
 	else if (Sym == SDLK_RETURN)
 	{
-		switch (state)
+		if (MLSocket == 0)
 		{
-			case 0:
-				Print("Connecting...");
-
-				if (sock == 0)
-					sock = new NetSock();
-
-				sock->SetMode(NetSock::ASYNCHRONIC);
-				if (sock->Connect("127.0.0.1", 9501))
-				{
-					Print("Connected.");
-					state++;
-				}
-				else
-				{
-					Print("Failed.");
-				}
-				break;
-			case 1:
+			MLSocket = new Socket("localhost", 9501);
+			if (MLSocket->Connect())
 			{
-				Print("Log...");
-				Packet p1(MSGID_REQUEST_LOGIN, DEF_MSGTYPE_CONFIRM);
-				p1.push<char> ("asdf", 10);
-				p1.push<char> ("asdffffffffff", 10);
-				p1.push<char> ("WS1", 30);
-				p1.send(sock);
-				state += 1;
+				Print("MLSocket->Connect() == TRUE");
 			}
-				break;
-			case 2:
-				Print("Reader...");
-				state++;
-				break;
-
+			else
+				Print("MLSocket->Connect() == FALSE");
+		}
+		else
+		{
+			delete MLSocket;
+			MLSocket = 0;
+			Print("Cleaned up.");
 		}
 	}
 }
@@ -231,4 +186,173 @@ void DebugScene::Print(std::string txt)
 {
 	backlog.push_back(txt);
 	puts(txt.c_str());
+}
+
+void Socket::run()
+{
+	SDL_Event Ev;
+	Ev.type = SDL_USEREVENT;
+	Ev.user.code = SDL_NETWORK_INIT;
+	Ev.user.data1 = Connection;
+	Ev.user.data2 = 0;
+	SDL_PushEvent(&Ev);
+	puts("Before connect");
+	bool OK = Connection->Connect(Address.c_str(), Port);
+	puts("After connect");
+	Ev.user.code = OK ? SDL_NETWORK_CONNECTED : SDL_NETWORK_ERROR;
+	Ev.user.data1 = Connection;
+	Ev.user.data2 = 0;
+	SDL_PushEvent(&Ev);
+
+	puts("Before loop");
+	while (Connection != 0 && OK)
+	{
+		FD_ZERO(&Reader);
+		FD_SET((unsigned int)Connection->socket, &Reader);
+		int Ret = select(Connection->socket + 1, &Reader, (fd_set*) 0,
+				(fd_set*) 0, &Timeout);
+		if (Ret == -1)
+		{
+			puts("Select() == -1. Critical Error.");
+			KillSocket();
+			break;
+		}
+		else
+		{
+			printf("select: %d\n", Ret);
+		}
+		if (FD_ISSET(Connection->socket, &Reader))
+		{
+			puts("OnDataPresent()");
+			OnDataPresent();
+		}
+		else
+		{
+			Ev.user.code = SDL_NETWORK_BUSY;
+			Ev.user.data1 = Connection;
+			Ev.user.data2 = 0;
+			SDL_PushEvent(&Ev);
+		}
+	}
+	Ev.user.code = SDL_NETWORK_FINISH;
+	Ev.user.data1 = Connection;
+	Ev.user.data2 = 0;
+	SDL_PushEvent(&Ev);
+}
+void Socket::OnDataPresent()
+{
+	if (!Data->receive(Connection))
+	{
+		SDL_Event Ev;
+		Ev.type = SDL_USEREVENT;
+		Ev.user.code = SDL_NETWORK_CLOSED;
+		Ev.user.data1 = Connection;
+		Ev.user.data2 = 0;
+		SDL_PushEvent(&Ev);
+		puts("Disconnected.");
+		KillSocket();
+		return;
+	}
+	unsigned short packetSize;
+
+	while (true)
+	{
+		memcpy(&packetSize, Data->data() + 1, 2);
+
+		if (packetSize <= Data->size() && packetSize > 0)
+		{
+			unsigned char cKey = Data->next<unsigned char> ();
+			unsigned short dwSize = Data->next<unsigned short> ();
+
+			if (cKey > 0)
+			{
+				char * buf = Data->data();
+				for (int i = 0; i < dwSize - 3; i++)
+				{
+					buf[i] ^= (cKey ^ (dwSize - i - 3));
+					buf[i] -= i ^ cKey;
+				}
+			}
+			Readable(dwSize);
+		}
+		else
+			break;
+	}
+}
+void Socket::Readable(int SizeHeader)
+{
+	SDL_Event Ev;
+	Ev.type = SDL_USEREVENT;
+	Ev.user.code = SDL_NETWORK_RECEIVE;
+	Ev.user.data1 = Connection;
+	Buffer * copybuffer = new Buffer(SizeHeader);
+	copybuffer->clear();
+	memcpy(copybuffer->writeptr(), Data->data(), SizeHeader);
+	copybuffer->_written(SizeHeader);
+	Data->seek(SizeHeader);
+	Ev.user.data2 = copybuffer;
+	SDL_PushEvent(&Ev);
+}
+inline bool Socket::IsConnected() const
+{
+	return this->Connected;
+}
+
+Socket::~Socket()
+{
+	SDL_KillThread(Th);
+	KillSocket();
+	delete Data;
+}
+void Socket::KillSocket()
+{
+	if (Connection != 0)
+	{
+		delete Connection;
+		Connection = 0;
+	}
+
+	Connected = false;
+}
+
+Socket::Socket(std::string Addr, int Port)
+{
+	Connected = false;
+	Connection = 0;
+	Connection = new NetSock();
+	Connection->SetMode(NetSock::ASYNCHRONIC);
+	Data = new Buffer(DEF_BUFFERSIZE);
+	Timeout.tv_sec = 1;
+	Timeout.tv_usec = 0;
+	this->Address = Addr;
+	this->Port = Port;
+	Th = 0;
+}
+
+bool Socket::Connect()
+{
+	if (Connection == 0)
+		return false;
+	this->Start();
+	return true;
+}
+
+void Socket::Disconnect()
+{
+	KillSocket();
+	Connected = false;
+}
+int Socket::Wrapper(void * param)
+{
+	((Socket*) param)->run();
+	return 0;
+}
+void Socket::Start()
+{
+	Th = SDL_CreateThread(Wrapper, this);
+}
+void Socket::Join()
+{
+	int status;
+	SDL_WaitThread(Th, &status);
 }
