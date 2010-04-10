@@ -73,8 +73,8 @@ void DebugScene::OnEvent(SDL_Event *EventSource)
 			}
 				break;
 			case SDL_NETWORK_RECEIVE:
-				{
-					Buffer * data = (Buffer*) EventSource->user.data2;
+			{
+				Buffer * data = (Buffer*) EventSource->user.data2;
 
 				unsigned int MsgID = data->next<int> ();
 				unsigned short MsgType = data->next<unsigned short> ();
@@ -134,10 +134,9 @@ void DebugScene::OnEvent(SDL_Event *EventSource)
 
 						break;
 				}
-
 				delete MLSocket;
 				MLSocket = 0;
-				}
+			}
 				break;
 			case SDL_NETWORK_CLOSED:
 				Print("CLOSED");
@@ -149,6 +148,9 @@ void DebugScene::OnEvent(SDL_Event *EventSource)
 					delete MLSocket;
 					MLSocket = 0;
 				}
+				break;
+			case SDL_NETWORK_BUSY:
+				Print("BUSY");
 				break;
 		}
 	}
@@ -186,173 +188,4 @@ void DebugScene::Print(std::string txt)
 {
 	backlog.push_back(txt);
 	puts(txt.c_str());
-}
-
-void Socket::run()
-{
-	SDL_Event Ev;
-	Ev.type = SDL_USEREVENT;
-	Ev.user.code = SDL_NETWORK_INIT;
-	Ev.user.data1 = Connection;
-	Ev.user.data2 = 0;
-	SDL_PushEvent(&Ev);
-	puts("Before connect");
-	bool OK = Connection->Connect(Address.c_str(), Port);
-	puts("After connect");
-	Ev.user.code = OK ? SDL_NETWORK_CONNECTED : SDL_NETWORK_ERROR;
-	Ev.user.data1 = Connection;
-	Ev.user.data2 = 0;
-	SDL_PushEvent(&Ev);
-
-	puts("Before loop");
-	while (Connection != 0 && OK)
-	{
-		FD_ZERO(&Reader);
-		FD_SET((unsigned int)Connection->socket, &Reader);
-		int Ret = select(Connection->socket + 1, &Reader, (fd_set*) 0,
-				(fd_set*) 0, &Timeout);
-		if (Ret == -1)
-		{
-			puts("Select() == -1. Critical Error.");
-			KillSocket();
-			break;
-		}
-		else
-		{
-			printf("select: %d\n", Ret);
-		}
-		if (FD_ISSET(Connection->socket, &Reader))
-		{
-			puts("OnDataPresent()");
-			OnDataPresent();
-		}
-		else
-		{
-			Ev.user.code = SDL_NETWORK_BUSY;
-			Ev.user.data1 = Connection;
-			Ev.user.data2 = 0;
-			SDL_PushEvent(&Ev);
-		}
-	}
-	Ev.user.code = SDL_NETWORK_FINISH;
-	Ev.user.data1 = Connection;
-	Ev.user.data2 = 0;
-	SDL_PushEvent(&Ev);
-}
-void Socket::OnDataPresent()
-{
-	if (!Data->receive(Connection))
-	{
-		SDL_Event Ev;
-		Ev.type = SDL_USEREVENT;
-		Ev.user.code = SDL_NETWORK_CLOSED;
-		Ev.user.data1 = Connection;
-		Ev.user.data2 = 0;
-		SDL_PushEvent(&Ev);
-		puts("Disconnected.");
-		KillSocket();
-		return;
-	}
-	unsigned short packetSize;
-
-	while (true)
-	{
-		memcpy(&packetSize, Data->data() + 1, 2);
-
-		if (packetSize <= Data->size() && packetSize > 0)
-		{
-			unsigned char cKey = Data->next<unsigned char> ();
-			unsigned short dwSize = Data->next<unsigned short> ();
-
-			if (cKey > 0)
-			{
-				char * buf = Data->data();
-				for (int i = 0; i < dwSize - 3; i++)
-				{
-					buf[i] ^= (cKey ^ (dwSize - i - 3));
-					buf[i] -= i ^ cKey;
-				}
-			}
-			Readable(dwSize);
-		}
-		else
-			break;
-	}
-}
-void Socket::Readable(int SizeHeader)
-{
-	SDL_Event Ev;
-	Ev.type = SDL_USEREVENT;
-	Ev.user.code = SDL_NETWORK_RECEIVE;
-	Ev.user.data1 = Connection;
-	Buffer * copybuffer = new Buffer(SizeHeader);
-	copybuffer->clear();
-	memcpy(copybuffer->writeptr(), Data->data(), SizeHeader);
-	copybuffer->_written(SizeHeader);
-	Data->seek(SizeHeader);
-	Ev.user.data2 = copybuffer;
-	SDL_PushEvent(&Ev);
-}
-inline bool Socket::IsConnected() const
-{
-	return this->Connected;
-}
-
-Socket::~Socket()
-{
-	SDL_KillThread(Th);
-	KillSocket();
-	delete Data;
-}
-void Socket::KillSocket()
-{
-	if (Connection != 0)
-	{
-		delete Connection;
-		Connection = 0;
-	}
-
-	Connected = false;
-}
-
-Socket::Socket(std::string Addr, int Port)
-{
-	Connected = false;
-	Connection = 0;
-	Connection = new NetSock();
-	Connection->SetMode(NetSock::ASYNCHRONIC);
-	Data = new Buffer(DEF_BUFFERSIZE);
-	Timeout.tv_sec = 1;
-	Timeout.tv_usec = 0;
-	this->Address = Addr;
-	this->Port = Port;
-	Th = 0;
-}
-
-bool Socket::Connect()
-{
-	if (Connection == 0)
-		return false;
-	this->Start();
-	return true;
-}
-
-void Socket::Disconnect()
-{
-	KillSocket();
-	Connected = false;
-}
-int Socket::Wrapper(void * param)
-{
-	((Socket*) param)->run();
-	return 0;
-}
-void Socket::Start()
-{
-	Th = SDL_CreateThread(Wrapper, this);
-}
-void Socket::Join()
-{
-	int status;
-	SDL_WaitThread(Th, &status);
 }

@@ -3,37 +3,7 @@
 
 #include "Font.h"
 
-//#include "Threading.h"
-#include "SDL_thread.h"
-
-class Socket
-{
-	private:
-		bool Connected;
-		void KillSocket();
-	public:
-		Socket(std::string Addr, int Port);
-		~Socket();
-		void run();
-		inline bool IsConnected() const;
-		bool Connect();
-		void OnDataPresent();
-		void Readable(int SizeHeader);
-		void Disconnect();
-		static int Wrapper(void* param);
-		void Start();
-		void Join();
-		std::string Address;
-		int Port;
-
-		fd_set Reader;
-		struct timeval Timeout;
-
-		NetSock * Connection;
-		Buffer * Data;
-
-		SDL_Thread * Th;
-};
+#include "Socket.h"
 
 class DebugScene : public Scene
 {
@@ -51,6 +21,7 @@ public:
 
 	std::vector<std::string> backlog;
 
+
 private:
 	SDL_Surface *rect;
 
@@ -59,6 +30,7 @@ private:
 	int state;
 
 	bool _connected;
+	//Socket * MLSocket;
 	Socket * MLSocket;
 };
 
