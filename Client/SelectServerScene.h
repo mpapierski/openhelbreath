@@ -18,6 +18,9 @@ public:
 
 private:
 	enum Focus { Abaddon, Apocalypse, Cancel } SelectServerFocus;
+	void _Cancel();
+	void _Server1();
+	void _Server2();
 };
 
 #endif // SELECTSERVERSCENE_H

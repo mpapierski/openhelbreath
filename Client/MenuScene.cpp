@@ -51,22 +51,15 @@ void MenuScene::OnLButtonDown(int X, int Y)
 {
 	if (X > 385 && X < (385 + 164)) // Login Button
 	{
-
 		if (Y > 178 && Y < (178 + 22))
-		{
-#ifdef DEF_SELECTSERVER
-			Game::GetInstance().ChangeScene(new SelectServerScene);
-#else
-			Game::GetInstance().ChangeScene(new LoginScene);
-#endif
-		}
+			_Login();
 
 #ifdef DEF_MAKEACCOUNT
 		if (Y > 216 && Y < (216 + 22))
-			Game::GetInstance().ChangeScene(new SignupScene); // New Account Button
+			_NewAccount();
 #endif
 		if (Y > 255 && Y < (255 + 22))
-			Game::GetInstance().ChangeScene(new ExitScene); // Exit Button
+			_Exit();
 	}
 }
 
@@ -82,19 +75,15 @@ void MenuScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		switch (MenuFocus)
 		{
 			case Login:
-#ifdef DEF_SELECTSERVER
-				Game::GetInstance().ChangeScene(new SelectServerScene);
-#else
-				Game::GetInstance().ChangeScene(new LoginScene);
-#endif
+				_Login();
 				break;
 #ifdef DEF_MAKEACCOUNT
 			case NewAccount:
-				Game::GetInstance().ChangeScene(new SignupScene);
+				_NewAccount();
 				break;
 #endif
 			case Exit:
-				Game::GetInstance().ChangeScene(new ExitScene);
+				_Exit();
 				break;
 		}
 	}
@@ -131,3 +120,26 @@ void MenuScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		}
 	}
 }
+
+void MenuScene::_NewAccount()
+{
+	Game::GetInstance().Audio->Play("E14");
+	Game::GetInstance().ChangeScene(new SignupScene);
+}
+
+void MenuScene::_Exit()
+{
+	Game::GetInstance().Audio->Play("E14");
+	Game::GetInstance().ChangeScene(new ExitScene);
+}
+
+void MenuScene::_Login()
+{
+	Game::GetInstance().Audio->Play("E14");
+#ifdef DEF_SELECTSERVER
+	Game::GetInstance().ChangeScene(new SelectServerScene);
+#else
+	Game::GetInstance().ChangeScene(new LoginScene);
+#endif
+}
+

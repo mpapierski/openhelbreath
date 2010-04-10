@@ -18,6 +18,9 @@ public:
 
 private:
 	enum Focus { Login, NewAccount, Exit } MenuFocus;
+	void _Login();
+	void _NewAccount();
+	void _Exit();
 };
 
 #endif // MENUSCENE_H

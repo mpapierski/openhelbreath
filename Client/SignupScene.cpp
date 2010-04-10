@@ -187,16 +187,18 @@ void SignupScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 
 void SignupScene::_Cancel()
 {
+	Game::GetInstance().Audio->Play("E14");
 	Game::GetInstance().ChangeScene(new MenuScene);
 }
 
 void SignupScene::_Ok()
 {
-	//
+	Game::GetInstance().Audio->Play("E14");
 }
 
 void SignupScene::_Reset()
 {
+	Game::GetInstance().Audio->Play("E14");
 	for (int i = 0; i < DEF_INPUTTOTAL; i++)
 		Form[i].Input.SetText("");
 }

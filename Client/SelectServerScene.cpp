@@ -58,7 +58,7 @@ void SelectServerScene::OnLButtonDown(int X, int Y)
 		if(Y > 176 && Y < (176+19))
 		{
 			SelectServerFocus = Abaddon;
-			Game::GetInstance().ChangeScene(new LoginScene);
+			_Server1();
 		}
 	}
 
@@ -67,6 +67,7 @@ void SelectServerScene::OnLButtonDown(int X, int Y)
 		if(Y > 204 && Y < (204+19))
 		{
 			SelectServerFocus = Apocalypse;
+			_Server2();
 		}
 	}
 
@@ -74,7 +75,7 @@ void SelectServerScene::OnLButtonDown(int X, int Y)
 	{
 		if(Y > 282 && Y < (282+20))
 		{
-			Game::GetInstance().ChangeScene(new MenuScene);
+			_Cancel();
 		}
 	}
 }
@@ -91,12 +92,13 @@ void SelectServerScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		switch(SelectServerFocus)
 		{
 		case Abaddon:
-			Game::GetInstance().ChangeScene(new LoginScene);
+			_Server1();
 			break;
 		case Apocalypse:
+			_Server2();
 			break;
 		case Cancel:
-			Game::GetInstance().ChangeScene(new MenuScene);
+			_Cancel();
 			break;
 		}
 	}
@@ -132,4 +134,27 @@ void SelectServerScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 			break;
 		}
 	}
+}
+
+void SelectServerScene::_Server1()
+{
+	Game::GetInstance().Audio->Play("E14");
+	Game::GetInstance().ChangeScene(new LoginScene);
+}
+
+
+
+void SelectServerScene::_Cancel()
+{
+	Game::GetInstance().Audio->Play("E14");
+	Game::GetInstance().ChangeScene(new MenuScene);
+}
+
+
+
+void SelectServerScene::_Server2()
+{
+	_Server1();
+	//Game::GetInstance().Audio->Play("E14");
+	//Game::GetInstance().ChangeScene(new LoginScene);
 }

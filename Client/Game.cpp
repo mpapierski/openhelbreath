@@ -70,6 +70,8 @@ bool Game::OnInitialize()
 
 	Font = TTF_OpenFont("font/VeraSe.ttf", 12);
 
+
+
 	//Load some Sprites before Loading
 	Sprites[SPRID_CURSOR].LoadFromFile("interface.pak", 0);
 	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
@@ -81,6 +83,7 @@ bool Game::OnInitialize()
 
 	Sprites[SPRID_LOADING].LoadFromFile("New-Dialog.pak", 0);
 
+	Audio = new AudioManager();
 	return true;
 }
 
@@ -121,9 +124,12 @@ void Game::OnQuit()
 
 void Game::OnCleanup()
 {
+	delete Audio;
+
 	TTF_CloseFont(Font);
 
 	MainWindow.Close();
+
 }
 
 void Game::ChangeScene(Scene *NewScene)

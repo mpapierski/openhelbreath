@@ -17,6 +17,9 @@ void LoadingScene::OnLoop()
 		Surface::SetTransparent(Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetSurface(), 0, 123, 255);
 		Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON].LoadFromFile("DialogText.pak", 1);
 		break;
+	case 1:
+		Game::GetInstance().Audio->Add("E14", AUDIO_SOUND);
+		break;
 	case 100:
 		Game::GetInstance().ChangeScene(new MenuScene);
 		break;
