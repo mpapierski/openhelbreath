@@ -3,36 +3,24 @@
 Game::Game()
 {
 	Running = true;
-
 	ChangeScene(new LoadingScene);
-
 	Sprites.assign(DEF_MAXSPRITES, Sprite::Sprite());
 }
 
 int Game::OnExecute()
 {
 	if (!OnInitialize())
-	{
 		return -1;
-	}
-
 	SDL_Event EventHandle;
-
 	while (Running)
 	{
 		while (SDL_PollEvent(&EventHandle))
 		{
 			OnEvent(&EventHandle);
-
 			MouseCursor.OnEvent(&EventHandle);
-
-			CurrentScene->OnEvent(&EventHandle);
 		}
-
 		OnLoop();
-
 		OnDraw();
-
 		MainWindow.Update();
 	}
 
@@ -68,14 +56,14 @@ bool Game::OnInitialize()
 	MainWindow.SetFpsLimit(DEF_FPSLIMIT);
 #endif
 
+	SDL_EnableUNICODE(SDL_ENABLE);
+
 	Font = TTF_OpenFont("font/VeraSe.ttf", 12);
-
-
 
 	//Load some Sprites before Loading
 	Sprites[SPRID_CURSOR].LoadFromFile("interface.pak", 0);
 	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
-	
+
 	Sprites[SPRID_SPRFONT].LoadFromFile("SPRFONTS.PAK", 0);
 	Surface::SetTransparent(Sprites[SPRID_SPRFONT].GetSurface(), 255, 255, 255);
 	Sprites[SPRID_SPRFONT2].LoadFromFile("SPRFONTS.PAK", 1);
@@ -95,21 +83,43 @@ void Game::OnLoop()
 void Game::OnDraw()
 {
 	CurrentScene->Draw(MainWindow.GetSurface());
-
 	MouseCursor.Draw(MainWindow.GetSurface());
 }
 
 void Game::OnEvent(SDL_Event *EventSource)
 {
+#ifdef DEBUG
+	if (EventSource->type == SDL_USEREVENT)
+	{
+		switch (EventSource->user.code)
+		{
+			case SDL_THREAD_START:
+			{
+				int ThreadID = (int) EventSource->user.data2;
+				printf("Thread started (ID: %d)\n", ThreadID);
+			}
+				break;
+			case SDL_THREAD_FINISHED:
+			{
+				int ThreadID = (int) EventSource->user.data2;
+				printf("Thread finished (ID: %d)\n", ThreadID);
+			}
+				break;
+		}
+	}
+#endif
+	CurrentScene->OnEvent(EventSource);
 	Event::OnEvent(EventSource);
 }
 
 void Game::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
+#ifdef DEBUG
 	if (Sym == SDLK_F12)
 	{
 		ChangeScene(new DebugScene);
 	}
+#endif
 }
 
 void Game::OnExit()
@@ -125,16 +135,12 @@ void Game::OnQuit()
 void Game::OnCleanup()
 {
 	delete Audio;
-
 	TTF_CloseFont(Font);
-
 	MainWindow.Close();
-
 }
 
 void Game::ChangeScene(Scene *NewScene)
 {
 	delete CurrentScene;
-
 	CurrentScene = NewScene;
 }

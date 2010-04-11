@@ -1,6 +1,8 @@
 #ifndef THREADING_H_
 #define THREADING_H_
 
+#include <SDL.h>
+#include "GlobalDef.h"
 #include "SDL_thread.h"
 
 class Thread
@@ -12,8 +14,10 @@ class Thread
 		virtual ~Thread();
 		void Start();
 		void Join();
+		int ThreadID();
 		static int ThreadWrapper(void* Param);
 		virtual void Run() = 0;
+		int ID;
 };
 
 class Locker

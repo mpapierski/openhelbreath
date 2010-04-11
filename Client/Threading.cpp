@@ -3,6 +3,7 @@
 Thread::Thread()
 {
 	Th = 0;
+	ID = 0;
 }
 
 Thread::~Thread()
@@ -16,9 +17,29 @@ void Thread::Join()
 	SDL_WaitThread(Th, &status);
 }
 
+int Thread::ThreadID()
+{
+	return ID;
+	//int ThId = SDL_GetThreadID(Th);
+	//return ThId == 0 ? ID : (ID = ThId);
+}
+
 int Thread::ThreadWrapper(void *Param)
 {
+#ifdef DEBUG
+	SDL_Event Ev;
+	Ev.type = SDL_USEREVENT;
+	Ev.user.code = SDL_THREAD_START;
+	Ev.user.data1 = Param;
+	Ev.user.data2 = (int*)SDL_ThreadID();
+	SDL_PushEvent(&Ev);
+#endif
+	((Thread*) Param)->ID = SDL_ThreadID();
 	((Thread*) Param)->Run();
+#ifdef DEBUG
+	Ev.user.code = SDL_THREAD_FINISHED;
+	SDL_PushEvent(&Ev);
+#endif
 	return 0;
 }
 

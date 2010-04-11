@@ -1,24 +1,28 @@
 #ifndef GLOBALDEF_H
 #define GLOBALDEF_H
 
-#define DEF_FULLSCREEN
-//#define DEF_FPSLIMIT 60
-
+///////////////////////////////////////////////////////////////////////////////
+#define DEBUG // Debug messages
+#define DEF_FPSLIMIT 60
 #define DEF_SELECTSERVER //Abaddon, Apocalypse server
-#define DEF_SERVERADDR "localhost" //Abaddon address (Default address)
-#define DEF_SERVERPORT 2848 //Abaddon port (Default port)
-#ifdef DEF_SELECTSERVER
-#	define DEF_SERVERADDR2 "localhost" //Apocalpyse address
-#	define DEF_SERVERPORT2 2849 //Apocalypse port
-#endif
-
+#define DEF_FULLSCREEN // Run game in full screen
 #define DEF_MAKEACCOUNT // Enable account creation from Client
+#define DEF_CONSOLE  // Relocate stdout to console Window (Win32)
+///////////////////////////////////////////////////////////////////////////////
+
+#define DEF_SERVER_ADDR "localhost" // Server address (Default address)
+#define DEF_SERVER_PORT 2848 // Server port (Default port)
+#define DEF_SERVER_NAME1 "WS1" // Abaddon server name (Default)
+#define DEF_SERVER_NAME2 "WS2" // Apocalypse server name (Apocalypse)
 #define DEF_MAXSPRITES 20
 
-#define DEBUG
-
 #ifdef DEBUG
-#	undef DEF_FULLSCREEN
+#	if !defined(WIN32)
+#		undef DEF_CONSOLE
+#	endif
+#	undef DEF_FULLSCREEN // No full screen while debug mode
+#else
+#	undef DEF_CONSOLE
 #endif
 
 #define DEF_BUFFERSIZE 128 * 1024 // Max buffer size (128Kb)
@@ -31,5 +35,9 @@
 #define SDL_NETWORK_RECEIVE		0x00000005
 #define SDL_NETWORK_FINISH		0x00000006
 #define SDL_NETWORK_BUSY		0x00000007
+
+// Thread debugging
+#define SDL_THREAD_START		0x00000008
+#define SDL_THREAD_FINISHED		0x00000009
 
 #endif // GLOBALDEF_H

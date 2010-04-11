@@ -1,7 +1,6 @@
-#define NO_STDIO_REDIRECT
 #include "Game.h"
 
-#if defined(DEBUG) && defined(WIN32)
+#ifdef DEF_CONSOLE
 #include <io.h>
 #include <FCNTL.H>
 void ActivateConsole()
@@ -27,7 +26,7 @@ void ActivateConsole()
 
 int main(int argc, char** argv)
 {
-#if defined(DEBUG) && defined(WIN32)
+#ifdef DEF_CONSOLE
 	ActivateConsole();
 #endif
 	return Game::GetInstance().OnExecute();

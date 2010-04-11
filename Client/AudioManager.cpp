@@ -1,10 +1,3 @@
-/*
- * AudioManager.cpp
- *
- *  Created on: 2010-04-10
- *      Author: Owner
- */
-
 #include "AudioManager.h"
 
 AudioManager::AudioManager()
@@ -26,10 +19,11 @@ AudioManager::~AudioManager()
 	{
 		std::string key = p->first;
 		Mix_Chunk* val = p->second;
+#ifdef DEBUG
 		printf("Free: %s\n", key.c_str());
+#endif
 		Mix_FreeChunk(val);
 	}
-	// TODO Auto-generated destructor stub
 #ifdef DEBUG
 	puts("SDL_CloseAudio();");
 #endif
@@ -61,7 +55,7 @@ void AudioManager::Add(std::string Source, int AudioType)
 			break;
 	}
 #ifdef DEBUG
-	printf("AudioManager::Add(\"%s\");", Path.c_str());
+	printf("AudioManager::Add(\"%s\");\n", Path.c_str());
 #endif
 
 	Mix_Chunk * Temp;
@@ -78,7 +72,7 @@ void AudioManager::Play(std::string Key, bool Loop)
 	SoundMap::iterator p = SoundBank.find(Key);
 	if (p == SoundBank.end())
 	{
-		printf("AudioManager can not play sound named \"%s\" !", Key.c_str());
+		printf("AudioManager can not play sound named \"%s\" !\n", Key.c_str());
 		return;
 	}
 	Mix_PlayChannel(-1, SoundBank[Key], Loop ? -1 : 0);

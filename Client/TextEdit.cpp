@@ -9,43 +9,30 @@ TextEdit::TextEdit()
 TextEdit::TextEdit(const std::string &Text)
 {
 	Create();
-
 	SetText(Text);
 }
 
 void TextEdit::Create()
 {
 	MaxLength = 255;
-
 	Enabled = true;
-
 	PasswordMode = false;
-
 	CursorVisible = true;
-
-	CursorPosition = 0;
-
+	CursorPosition = CursorPositionX = 0;
 	CursorSurface = Font::TextShaded("_", 255, 255, 255);
-
 	Blink = 0;
 }
-
 
 void TextEdit::Draw(SDL_Surface *Dest)
 {
 	Surface::Draw(Dest, GetSurface(), this->X(), this->Y());
-
-	if(CursorVisible)
+	if (CursorVisible)
 	{
 		Blink++;
 		if (Blink >= 50)
-		{
-			Surface::Draw(Dest, CursorSurface, (this->X() + CursorPosition), this->Y());
-		}
+			Surface::Draw(Dest, CursorSurface, (this->X() + CursorPositionX), this->Y());
 		if (Blink > 100)
-		{
 			Blink = 0;
-		}
 	}
 }
 
@@ -54,7 +41,14 @@ const std::string &TextEdit::GetText()
 	return WidgetText;
 }
 
-void TextEdit::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
+void TextEdit::OnMouseMove(
+		int X,
+		int Y,
+		int RelX,
+		int RelY,
+		bool Left,
+		bool Right,
+		bool Middle)
 {
 
 }
@@ -66,52 +60,65 @@ void TextEdit::OnLButtonDown(int X, int Y)
 
 void TextEdit::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
-	if(Sym == SDLK_BACKSPACE)
+	switch (Sym)
 	{
-		if(WidgetText.size())
-			WidgetText.erase((WidgetText.size() - 1), 1);
-	}
+		case SDLK_BACKSPACE:
+			if (!WidgetText.empty() && CursorPosition > 0)
+				WidgetText.erase(--CursorPosition, 1);
+			break;
+		case SDLK_DELETE:
+			if (!WidgetText.empty() && CursorPosition
+					!= (int) WidgetText.length())
+				WidgetText.erase(CursorPosition, 1);
+			break;
+		case SDLK_LEFT:
+			CursorPosition = max(CursorPosition - 1, 0);
+			break;
+		case SDLK_RIGHT:
+			CursorPosition = (CursorPosition + 1 > (int) WidgetText.length())
+					? WidgetText.length()
+					: CursorPosition + 1;
+			break;
+		case SDLK_END:
+			CursorPosition = (int) WidgetText.length();
+			break;
+		case SDLK_HOME:
+			CursorPosition = 0;
+			break;
 
-	if(WidgetText.size() < MaxLength)
-	{
-		if(Sym > 31 && Sym < 127)
+		default:
 		{
-			if(Mod == KMOD_LSHIFT || Mod == KMOD_RSHIFT)
+			if (Sym < 32 || WidgetText.length() >= MaxLength)
+				return;
+			const int INTERNATIONAL_MASK = 0xFF80, UNICODE_MASK = 0x7F;
+			if (Unicode == 0)
+				return;
+			else if ((Unicode & INTERNATIONAL_MASK) == 0)
 			{
-				if(Sym > 96 && Sym < 123)
-					WidgetText.push_back(static_cast<char>(Sym-32));
+				char Key = static_cast<char> (Unicode & UNICODE_MASK);
+				WidgetText = WidgetText.substr(0, CursorPosition) + Key
+						+ WidgetText.substr(CursorPosition, WidgetText.length()
+								- CursorPosition);
+				CursorPosition = CursorPosition + 1 > (int)WidgetText.length() ? WidgetText.length() : CursorPosition + 1;
 			}
 			else
-				WidgetText.push_back(static_cast<char>(Sym));
+				return;
 		}
+			break;
 	}
-
 	Update();
 }
 
 void TextEdit::SetEnabled(bool Enable)
 {
 	Enabled = Enable;
-
-	if(Enabled)
-	{
-		CursorVisible = true;
-	}
-	else
-		CursorVisible = false;
-
+	CursorVisible = Enabled;
 	Update();
 }
 
 void TextEdit::SetCursorVisible(bool Visible)
 {
-	if(Visible)
-	{
-		CursorVisible = true;
-	}
-	else
-		CursorVisible = false;
-
+	CursorVisible = Visible;
 	Update();
 }
 
@@ -127,57 +134,30 @@ void TextEdit::SetMaxLength(int Length)
 
 void TextEdit::SetPasswordMode(bool Visible)
 {
-	if(Visible)
-	{
-		PasswordMode = true;
-	}
-	else
-		PasswordMode = false;
+	PasswordMode = Visible;
 }
 
 void TextEdit::SetText(const std::string &Text)
 {
 	WidgetText.assign(Text);
-
 	Update();
 }
 
 void TextEdit::Update()
 {
 	SDL_FreeSurface(GetSurface());
-
-	if(PasswordMode)
-	{
-		std::string Temp;
-		Temp.append(WidgetText.size() , '*');
-
-		if(!Enabled)
-		{
-			SetSurface(Font::Text(Temp, 102, 102, 102));
-		}
-		else
-		{
-			SetSurface(Font::TextShaded(Temp, 255, 255, 255));
-		}
-	}
+	std::string Temp;
+	if (PasswordMode)
+		Temp.append(WidgetText.size(), '*');
 	else
-	{
-		if(!Enabled)
-		{
-			SetSurface(Font::Text(WidgetText, 102, 102, 102));
-		}
-		else
-		{
-			SetSurface(Font::TextShaded(WidgetText, 255, 255, 255));
-		}
-	}
+		Temp.assign(WidgetText);
 
-	if(WidgetText.size())
-	{
-		CursorPosition = GetSurface()->w;
-	}
+	if (!Enabled)
+		SetSurface(Font::Text(Temp, 102, 102, 102));
 	else
-		CursorPosition = 0;
+		SetSurface(Font::TextShaded(Temp, 255, 255, 255));
+
+	CursorPositionX = CursorPosition > 0 ? Font::TextWidth(Temp.substr(0, CursorPosition)) : 0;
 }
 
 TextEdit::~TextEdit()
