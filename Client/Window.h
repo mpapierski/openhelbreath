@@ -50,4 +50,9 @@ private:
 	Timer FrameTimer;
 };
 
+inline SDL_Surface *Window::GetSurface() const
+{
+	return WindowSurface;
+}
+
 #endif // WINDOW_H

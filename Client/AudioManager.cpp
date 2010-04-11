@@ -48,10 +48,10 @@ void AudioManager::Add(std::string Source, int AudioType)
 	switch (AudioType)
 	{
 		case AUDIO_MUSIC:
-			Path = "music/" + Source + ".wav";
+			Path = "MUSIC/" + Source + ".WAV";
 			break;
 		case AUDIO_SOUND:
-			Path = "sounds/" + Source + ".wav";
+			Path = "SOUNDS/" + Source + ".WAV";
 			break;
 	}
 #ifdef DEBUG

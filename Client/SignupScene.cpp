@@ -103,11 +103,11 @@ void SignupScene::Draw(SDL_Surface * Dest)
 		}
 	}
 
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON],
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS],
 			199 + 98, 398, FormFocus == 6 ? INTERFACE_BUTTON_CREATE + 1 : INTERFACE_BUTTON_CREATE);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON],
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS],
 			294 + 98, 398, FormFocus == 7 ? INTERFACE_BUTTON_RESET + 1 : INTERFACE_BUTTON_RESET);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON],
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS],
 			390 + 98, 398, FormFocus == 8 ? INTERFACE_BUTTON_CANCEL + 1 : INTERFACE_BUTTON_CANCEL);
 }
 

@@ -5,6 +5,7 @@ LoginScene::LoginScene()
 	LoginFocus = Login;
 	LoginEdit.SetPosition(180, 162);
 	LoginEdit.SetMaxLength(11);
+	
 	PasswordEdit.SetPosition(180, 185);
 	PasswordEdit.SetCursorVisible(false);
 	PasswordEdit.SetMaxLength(11);
@@ -64,7 +65,10 @@ void LoginScene::OnMouseMove(
 	{
 		if (X > 80 && X < (80 + 84))
 		{
-			LoginFocus = Connect;
+			if(PasswordEdit.GetText().size() && LoginEdit.GetText().size())
+			{
+				LoginFocus = Connect;
+			}
 		}
 		if (X > 256 && X < (256 + 76))
 		{
@@ -81,12 +85,14 @@ void LoginScene::OnLButtonDown(int X, int Y)
 	{
 		if (Y > 160 && Y < (160 + 20)) // LoginEdit
 		{
+			Game::GetInstance().Audio->Play(("E14"));
 			LoginEdit.SetEnabled(true);
 			PasswordEdit.SetEnabled(false);
 			LoginFocus = Login;
 		}
 		if (Y > 180 && Y < (180 + 20)) // PasswordEdit
 		{
+			Game::GetInstance().Audio->Play(("E14"));
 			PasswordEdit.SetEnabled(true);
 			LoginEdit.SetEnabled(false);
 			LoginFocus = Password;
@@ -104,6 +110,7 @@ void LoginScene::OnLButtonDown(int X, int Y)
 		}
 		if (X > 256 && X < (256 + 76)) // Cancel Button
 		{
+			Game::GetInstance().Audio->Play("E14");
 			_Cancel();
 		}
 	}
@@ -120,22 +127,24 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 	{
 		switch (LoginFocus)
 		{
-			case Login:
-				LoginEdit.SetEnabled(false);
-				PasswordEdit.SetEnabled(true);
-				LoginFocus = Password;
-				break;
-			case Password:
-				PasswordEdit.SetEnabled(false);
-			case Connect:
-				if (PasswordEdit.GetText().size() && LoginEdit.GetText().size())
-				{
-					_Connect();
-				}
-				break;
-			case Cancel:
-				_Cancel();
-				break;
+		case Login:
+			LoginEdit.SetEnabled(false);
+			PasswordEdit.SetEnabled(true);
+			LoginFocus = Password;
+			break;
+		case Password:
+			PasswordEdit.SetEnabled(false);
+		case Connect:
+			if(PasswordEdit.GetText().size() && LoginEdit.GetText().size())
+			{
+				Game::GetInstance().Audio->Play("E14");
+				_Connect();
+			}
+			break;
+		case Cancel:
+			Game::GetInstance().Audio->Play("E14");
+			_Cancel();
+			break;
 		}
 	}
 
@@ -188,6 +197,7 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 
 void LoginScene::_Connect()
 {
+	Game::GetInstance().Audio->Play(("E14"));
 #ifdef DEBUG
 	printf("Login: %s Password: %s\n", LoginEdit.GetText().c_str(),
 			PasswordEdit.GetText().c_str());

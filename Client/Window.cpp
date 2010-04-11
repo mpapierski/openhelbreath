@@ -75,11 +75,6 @@ void Window::Initialize()
 	}
 }
 
-SDL_Surface *Window::GetSurface() const
-{
-	return WindowSurface;
-}
-
 int Window::GetWidth() const
 {
 	return WindowSurface->w;

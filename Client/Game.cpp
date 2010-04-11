@@ -3,7 +3,9 @@
 Game::Game()
 {
 	Running = true;
+
 	ChangeScene(new LoadingScene);
+
 	Sprites.assign(DEF_MAXSPRITES, Sprite::Sprite());
 }
 
@@ -11,16 +13,24 @@ int Game::OnExecute()
 {
 	if (!OnInitialize())
 		return -1;
+
 	SDL_Event EventHandle;
+
 	while (Running)
 	{
 		while (SDL_PollEvent(&EventHandle))
 		{
 			OnEvent(&EventHandle);
+
+			CurrentScene->OnEvent(&EventHandle);
+
 			MouseCursor.OnEvent(&EventHandle);
 		}
+
 		OnLoop();
+
 		OnDraw();
+
 		MainWindow.Update();
 	}
 
@@ -58,7 +68,9 @@ bool Game::OnInitialize()
 
 	SDL_EnableUNICODE(SDL_ENABLE);
 
-	Font = TTF_OpenFont("font/VeraSe.ttf", 12);
+	Font = TTF_OpenFont("FONTS/VeraSe.ttf", 12);
+
+	Audio = new AudioManager();
 
 	//Load some Sprites before Loading
 	Sprites[SPRID_CURSOR].LoadFromFile("interface.pak", 0);
@@ -71,7 +83,6 @@ bool Game::OnInitialize()
 
 	Sprites[SPRID_LOADING].LoadFromFile("New-Dialog.pak", 0);
 
-	Audio = new AudioManager();
 	return true;
 }
 
@@ -83,6 +94,7 @@ void Game::OnLoop()
 void Game::OnDraw()
 {
 	CurrentScene->Draw(MainWindow.GetSurface());
+
 	MouseCursor.Draw(MainWindow.GetSurface());
 }
 
@@ -95,20 +107,21 @@ void Game::OnEvent(SDL_Event *EventSource)
 		{
 			case SDL_THREAD_START:
 			{
-				int ThreadID = (int) EventSource->user.data2;
-				printf("Thread started (ID: %d)\n", ThreadID);
+				//int ThreadID = (int) EventSource->user.data2;
+				//printf("Thread started (ID: %d)\n", ThreadID);
 			}
 				break;
 			case SDL_THREAD_FINISHED:
 			{
-				int ThreadID = (int) EventSource->user.data2;
-				printf("Thread finished (ID: %d)\n", ThreadID);
+				//int ThreadID = (int) EventSource->user.data2;
+				//printf("Thread started (ID: %d)\n", ThreadID);
 			}
 				break;
 		}
+
 	}
 #endif
-	CurrentScene->OnEvent(EventSource);
+
 	Event::OnEvent(EventSource);
 }
 
@@ -135,12 +148,15 @@ void Game::OnQuit()
 void Game::OnCleanup()
 {
 	delete Audio;
+
 	TTF_CloseFont(Font);
+
 	MainWindow.Close();
 }
 
 void Game::ChangeScene(Scene *NewScene)
 {
 	delete CurrentScene;
+
 	CurrentScene = NewScene;
 }

@@ -18,6 +18,7 @@
 #include "SelectServerScene.h"
 #include "DebugScene.h"
 #include "SignupScene.h"
+#include "SelectCharScene.h"
 
 #include "GlobalDef.h"
 
@@ -54,7 +55,8 @@ class Game: public Event
 
 		TTF_Font *Font;
 
-		AudioManager * Audio;
+		AudioManager *Audio;
+		
 	private:
 		Game();
 		Game(const Game &);

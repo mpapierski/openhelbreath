@@ -32,4 +32,9 @@ private:
 	int PosY;
 };
 
+inline SDL_Surface *Widget::GetSurface() const
+{
+	return WidgetSurface;
+}
+
 #endif // WIDGET_H

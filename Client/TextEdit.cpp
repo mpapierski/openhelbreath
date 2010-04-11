@@ -20,7 +20,7 @@ void TextEdit::Create()
 	CursorVisible = true;
 	CursorPosition = CursorPositionX = 0;
 	CursorSurface = Font::TextShaded("_", 255, 255, 255);
-	Blink = 0;
+	BlinkTimer.Start();
 }
 
 void TextEdit::Draw(SDL_Surface *Dest)
@@ -28,11 +28,13 @@ void TextEdit::Draw(SDL_Surface *Dest)
 	Surface::Draw(Dest, GetSurface(), this->X(), this->Y());
 	if (CursorVisible)
 	{
-		Blink++;
-		if (Blink >= 50)
+		if(BlinkTimer.GetTicks() > 500)
+		{
 			Surface::Draw(Dest, CursorSurface, (this->X() + CursorPositionX), this->Y());
-		if (Blink > 100)
-			Blink = 0;
+
+			if(BlinkTimer.GetTicks() > 1000)
+				BlinkTimer.Start();
+		}
 	}
 }
 

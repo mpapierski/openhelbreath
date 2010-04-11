@@ -167,7 +167,7 @@ void DebugScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 	{
 		if (MLSocket == 0)
 		{
-			MLSocket = new Socket("localhost", 9501);
+			MLSocket = new Socket(DEF_SERVER_ADDR, DEF_SERVER_PORT);
 			if (MLSocket->Connect())
 			{
 				Print("MLSocket->Connect() == TRUE");

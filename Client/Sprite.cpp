@@ -14,7 +14,7 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 {
 	FILE *pakFile;
 
-	std::string path = "sprites/";
+	std::string path = "SPRITES/";
 
 	path.append(FileName);
 
@@ -103,7 +103,14 @@ SDL_Surface *Sprite::GetSurface() const
 
 SDL_Rect Sprite::GetFrame(int Number) const
 {
-	return Frames.at(Number);
+	SDL_Rect Empty = { 0, 0, 0, 0};
+
+	if(Frames.size() != 0)
+	{
+		return Frames.at(Number);
+	}
+	else
+		return Empty;
 }
 
 int Sprite::GetMaxFrameH() const

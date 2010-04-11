@@ -29,11 +29,6 @@ void Widget::SetSurface(SDL_Surface *Source)
 	WidgetSurface = Source;
 }
 
-SDL_Surface *Widget::GetSurface() const
-{
-	return WidgetSurface;
-}
-
 int Widget::X() const
 {
 	return PosX;

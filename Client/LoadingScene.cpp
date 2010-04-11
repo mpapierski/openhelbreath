@@ -20,8 +20,9 @@ void LoadingScene::OnLoop()
 					"GameDialog.pak", 3);
 			Surface::SetTransparent(
 					Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetSurface(),
-					0, 123, 255);
-			Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTON].LoadFromFile(
+					0, 123, 255);	
+			Game::GetInstance().Sprites[SPRID_GAMEDIALOG_8].LoadFromFile("GameDialog.pak", 8);
+			Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS].LoadFromFile(
 					"DialogText.pak", 1);
 			break;
 		case 1:

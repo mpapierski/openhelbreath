@@ -64,14 +64,10 @@ void ConnectingWidget::SetEnabled(bool Enable)
 	}
 }
 
-ConnectingWidget::~ConnectingWidget()
+void ConnectingWidget::SetState(int State)
 {
-
-}
-
-inline bool ConnectingWidget::IsEnabled() const
-{
-	return Enabled;
+	this->State = State;
+	MessageTimer.Start();
 }
 
 int ConnectingWidget::GetState() const
@@ -79,12 +75,14 @@ int ConnectingWidget::GetState() const
 	return this->State;
 }
 
-
-
-void ConnectingWidget::SetState(int State)
+inline bool ConnectingWidget::IsEnabled() const
 {
-	this->State = State;
-	MessageTimer.Start();
+	return Enabled;
+}
+
+ConnectingWidget::~ConnectingWidget()
+{
+
 }
 
 

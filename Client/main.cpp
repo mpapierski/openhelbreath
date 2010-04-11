@@ -3,6 +3,7 @@
 #ifdef DEF_CONSOLE
 #include <io.h>
 #include <FCNTL.H>
+
 void ActivateConsole()
 {
     AllocConsole();

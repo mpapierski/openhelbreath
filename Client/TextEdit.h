@@ -3,6 +3,7 @@
 
 #include "Widget.h"
 #include "Font.h"
+#include "Timer.h"
 
 class TextEdit : public Widget
 {
@@ -22,6 +23,7 @@ public:
 	void SetPasswordMode(bool Visible);
 	void SetText(const std::string &Text);
 	void Update();
+
 private:
 	void Create();
 	SDL_Surface *CursorSurface;
@@ -32,7 +34,7 @@ private:
 	int CursorPosition;
 	int CursorPositionX;
 	unsigned int MaxLength;
-	int Blink;
+	Timer BlinkTimer;
 };
 
 #endif // TEXTEDIT_H

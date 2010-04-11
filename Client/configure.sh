@@ -40,5 +40,5 @@ echo '	$(CC) $(LDFLAGS) $(OBJECTS) -o $@ -s $(LIBS) ' >> $file_name
 echo '.cpp.o:' >> $file_name
 echo '	$(CC) $(CFLAGS) -c $< -o $@' >> $file_name
 echo 'clean:' >> $file_name
-echo '	@rm -rf $(OBJECTS) $(EXECUTABLE) Makefile' >> $file_name
+echo '	@rm -rf $(OBJECTS) $(EXECUTABLE)' >> $file_name
 echo 'Done. Now you can type `make`.'

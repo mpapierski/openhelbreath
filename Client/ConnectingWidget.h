@@ -8,7 +8,6 @@
 class ConnectingWidget: public Widget
 {
 	public:
-
 		ConnectingWidget();
 		~ConnectingWidget();
 
@@ -17,13 +16,18 @@ class ConnectingWidget: public Widget
 		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
 		void SetEnabled(bool Enable);
-		inline bool IsEnabled() const;
-		int GetState() const;
+
 		void SetState(int State);
+
+		int GetState() const;
+
+		inline bool IsEnabled() const;
 
 	private:
 		Timer MessageTimer;
+
 		bool Enabled;
+
 		int State;
 };
 
