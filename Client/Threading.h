@@ -5,21 +5,6 @@
 #include "GlobalDef.h"
 #include "SDL_thread.h"
 
-class Thread
-{
-	private:
-		SDL_Thread * Th;
-	public:
-		Thread();
-		virtual ~Thread();
-		void Start();
-		void Join();
-		int ThreadID();
-		static int ThreadWrapper(void* Param);
-		virtual void Run() = 0;
-		int ID;
-};
-
 class Locker
 {
 	public:
@@ -47,5 +32,23 @@ class Mutex : public Locker
 		virtual ~Mutex();
 		void Acquire();
 		void Release();
+};
+
+class Thread
+{
+	private:
+		SDL_Thread * Th;
+	public:
+		Thread();
+		virtual ~Thread();
+		void Start();
+		void Join();
+		int ThreadID();
+		static int ThreadWrapper(void* Param);
+		virtual void Run() = 0;
+		int ID;
+		bool Running;
+		static int ThreadCount;
+		static Semaphore ThreadCounter;
 };
 #endif /* THREADING_H_ */

@@ -60,6 +60,12 @@ class Font
 				int X,
 				int Y,
 				const std::string &Text);
+		static void PutAlignedSprText(
+				SDL_Surface * Dest,
+				int X,
+				int Y,
+				int Width,
+				const std::string &Text);
 };
 
 #endif // FONT_H

@@ -40,4 +40,8 @@
 #define SDL_THREAD_START		0x00000008
 #define SDL_THREAD_FINISHED		0x00000009
 
+// Dialog button result...
+#define SDL_CLICKED_LEFT		0x0000000A
+#define SDL_CLICKED_RIGHT		0x0000000B
+
 #endif // GLOBALDEF_H

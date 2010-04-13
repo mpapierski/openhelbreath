@@ -177,3 +177,12 @@ void Font::PutSprText(
 	Surface::Draw(Dest, _txt, X, Y);
 	SDL_FreeSurface(_txt);
 }
+
+void Font::PutAlignedSprText(SDL_Surface *Dest, int X, int Y, int Width, const std::string & Text)
+{
+	SDL_Surface * _txt = Font::SprText(Text);
+	Surface::Draw(Dest, _txt, X+((Width - _txt->w) / 2), Y);
+	SDL_FreeSurface(_txt);
+}
+
+

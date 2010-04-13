@@ -21,7 +21,7 @@ class ConnectingWidget: public Widget
 
 		int GetState() const;
 
-		inline bool IsEnabled() const;
+		bool IsEnabled() const;
 
 	private:
 		Timer MessageTimer;

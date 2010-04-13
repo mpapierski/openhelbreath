@@ -137,6 +137,6 @@ bool Socket::Connect()
 
 void Socket::Disconnect()
 {
-	KillSocket();
+	Connection->Disconnect();
 	Connected = false;
 }

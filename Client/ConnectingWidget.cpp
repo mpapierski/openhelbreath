@@ -28,12 +28,12 @@ void ConnectingWidget::Draw(SDL_Surface *Dest)
 		case 0:
 			sprintf(Descr, "Connecting to server... %dsec.",
 					MessageTimer.GetTicks() / 1000);
-			Font::PutSprText(Dest, 172 + 35, 190, Descr);
+			Font::PutAlignedSprText(Dest, 180, 190, 283, Descr);
 			break;
 		case 1:
 			sprintf(Descr, "Waiting for response... %dsec.",
 					MessageTimer.GetTicks() / 1000);
-			Font::PutSprText(Dest, 172 + 44, 190, Descr);
+			Font::PutAlignedSprText(Dest, 180, 190, 283,Descr);
 			break;
 	}
 
@@ -51,7 +51,8 @@ void ConnectingWidget::Draw(SDL_Surface *Dest)
 
 void ConnectingWidget::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
-
+	if (Sym == SDLK_ESCAPE)
+		SetEnabled(false);
 }
 
 void ConnectingWidget::SetEnabled(bool Enable)
@@ -75,7 +76,7 @@ int ConnectingWidget::GetState() const
 	return this->State;
 }
 
-inline bool ConnectingWidget::IsEnabled() const
+bool ConnectingWidget::IsEnabled() const
 {
 	return Enabled;
 }
@@ -84,6 +85,4 @@ ConnectingWidget::~ConnectingWidget()
 {
 
 }
-
-
 

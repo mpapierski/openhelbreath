@@ -1,14 +1,24 @@
 #include "Threading.h"
 
+int Thread::ThreadCount = 0;
+Semaphore Thread::ThreadCounter;
+
 Thread::Thread()
 {
 	Th = 0;
-	ID = 0;
+	Thread::ThreadCounter.Acquire();
+	ID = Thread::ThreadCount++;
+	Thread::ThreadCounter.Release();
+	Running = false;
 }
 
 Thread::~Thread()
 {
-	SDL_KillThread(Th);
+	Thread::ThreadCounter.Acquire();
+	Thread::ThreadCount--;
+	Thread::ThreadCounter.Release();
+	if (Running)
+		SDL_KillThread(Th);
 }
 
 void Thread::Join()
@@ -20,22 +30,22 @@ void Thread::Join()
 int Thread::ThreadID()
 {
 	return ID;
-	//int ThId = SDL_GetThreadID(Th);
-	//return ThId == 0 ? ID : (ID = ThId);
 }
 
 int Thread::ThreadWrapper(void *Param)
 {
+	printf("ThreadWrapper\n");
 #ifdef DEBUG
 	SDL_Event Ev;
 	Ev.type = SDL_USEREVENT;
 	Ev.user.code = SDL_THREAD_START;
 	Ev.user.data1 = Param;
-	Ev.user.data2 = (int*)SDL_ThreadID();
+	Ev.user.data2 = (int*)((Thread*) Param)->ThreadID();
 	SDL_PushEvent(&Ev);
 #endif
-	((Thread*) Param)->ID = SDL_ThreadID();
+	((Thread*) Param)->Running = true;
 	((Thread*) Param)->Run();
+	((Thread*) Param)->Running = false;
 #ifdef DEBUG
 	Ev.user.code = SDL_THREAD_FINISHED;
 	SDL_PushEvent(&Ev);
