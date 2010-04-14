@@ -19,6 +19,7 @@
 #include "DebugScene.h"
 #include "SignupScene.h"
 #include "SelectCharScene.h"
+#include "VersionNotMatchScene.h"
 
 #include "GlobalDef.h"
 

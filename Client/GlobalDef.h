@@ -8,12 +8,18 @@
 #define DEF_FULLSCREEN // Run game in full screen
 #define DEF_MAKEACCOUNT // Enable account creation from Client
 #define DEF_CONSOLE  // Relocate stdout to console Window (Win32)
+#define DEF_CHECKVERSION // Server version check
 ///////////////////////////////////////////////////////////////////////////////
 
 #define DEF_SERVER_ADDR "localhost" // Server address (Default address)
 #define DEF_SERVER_PORT 2848 // Server port (Default port)
 #define DEF_SERVER_NAME1 "WS1" // Abaddon server name (Default)
 #define DEF_SERVER_NAME2 "WS2" // Apocalypse server name (Apocalypse)
+#define MSG_HOMEPAGE "http://code.google.com/p/openhelbreath"
+
+#define DEF_LOWERVERSION 3
+#define DEF_UPPERVERSION 82
+
 #define DEF_MAXSPRITES 20
 
 #ifdef DEBUG
@@ -21,6 +27,7 @@
 #		undef DEF_CONSOLE
 #	endif
 #	undef DEF_FULLSCREEN // No full screen while debug mode
+#	undef DEF_CHECKVERSION // No version checking in Debug
 #else
 #	undef DEF_CONSOLE
 #endif

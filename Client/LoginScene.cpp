@@ -112,20 +112,28 @@ void LoginScene::OnEvent(SDL_Event *EventSource)
 						{
 							case DEF_MSGTYPE_CONFIRM:
 							{
-								unsigned short Upper =
-										data->next<unsigned short> ();
 								unsigned short Lower =
+										data->next<unsigned short> ();
+								unsigned short Upper =
 										data->next<unsigned char> ();
 								unsigned short AccountStatus = data->next<
 										unsigned short> ();
 #ifdef DEBUG
 								printf(
-										"Login OK! Server version: %d.%d Account Status: %d",
-										Upper, Lower, AccountStatus);
+										"Login OK! Server version: %d.%d (Client version: %d.%d) Account Status: %d\n",
+										Lower, Upper, DEF_LOWERVERSION,
+										DEF_UPPERVERSION, AccountStatus);
 #endif
 								Disconnect();
-								Game::GetInstance().ChangeScene(
-										new SelectCharScene);
+								if ((Lower == DEF_LOWERVERSION) && (Upper
+										== DEF_UPPERVERSION))
+									Game::GetInstance().ChangeScene(
+											new SelectCharScene);
+#ifdef DEF_CHECKVERSION
+								else
+									Game::GetInstance().ChangeScene(
+											new VersionNotMatchScene);
+#endif
 								return;
 							}
 								break;
