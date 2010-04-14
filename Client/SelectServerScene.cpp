@@ -22,6 +22,7 @@ void SelectServerScene::Draw(SDL_Surface *Dest)
 		Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 257, 282, SPRID_LOGIN_BUTTON_CANCEL);
 		break;
 	}
+	Scene::Draw(Dest);
 }
 
 void SelectServerScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)

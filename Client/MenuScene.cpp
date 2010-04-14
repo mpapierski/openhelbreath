@@ -25,6 +25,7 @@ void MenuScene::Draw(SDL_Surface *Dest)
 					385, 255, SPRID_MAINMENU_EXIT);
 			break;
 	}
+	Scene::Draw(Dest);
 }
 
 void MenuScene::OnMouseMove(

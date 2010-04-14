@@ -93,3 +93,20 @@ bool Surface::SetTransparent(SDL_Surface *Dest, int R, int G, int B)
 
 	return true;
 }
+
+void Surface::ReplaceColor(SDL_Surface * Surf_Dest, Uint32 A, Uint32 B)
+{
+	int bpp = Surf_Dest->format->BytesPerPixel;
+	if (SDL_MUSTLOCK(Surf_Dest))
+		SDL_LockSurface(Surf_Dest);
+	for (int x = 0; x < Surf_Dest->w; x++)
+		for (int y = 0; y < Surf_Dest->h; y++)
+			if (*(Uint32 *) ((Uint8 *) Surf_Dest->pixels + y * Surf_Dest->pitch + x
+					* bpp) == A)
+				*(Uint32 *) ((Uint8 *) Surf_Dest->pixels + y * Surf_Dest->pitch + x
+						* bpp) = B;
+	if (SDL_MUSTLOCK(Surf_Dest))
+		SDL_UnlockSurface(Surf_Dest);
+}
+
+

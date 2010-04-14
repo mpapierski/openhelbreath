@@ -24,6 +24,8 @@ void LoadingScene::OnLoop()
 			Game::GetInstance().Sprites[SPRID_GAMEDIALOG_8].LoadFromFile("GameDialog.pak", 8);
 			Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS].LoadFromFile(
 					"DialogText.pak", 1);
+			Game::GetInstance().Sprites[SPRID_SPRFONT_NUM].LoadFromFile(
+								"interface2.pak", 0);
 			break;
 		case 1:
 			Game::GetInstance().Audio->Add("E14", AUDIO_SOUND);

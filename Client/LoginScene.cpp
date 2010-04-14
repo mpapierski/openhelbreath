@@ -45,6 +45,8 @@ void LoginScene::Draw(SDL_Surface *Dest)
 
 	ConnectingBox.Draw(Dest);
 	DlgBox.Draw(Dest);
+
+	Scene::Draw(Dest);
 }
 
 void LoginScene::OnEvent(SDL_Event *EventSource)

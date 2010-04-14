@@ -20,7 +20,7 @@
 #define DEF_LOWERVERSION 3
 #define DEF_UPPERVERSION 82
 
-#define DEF_MAXSPRITES 20
+#define DEF_MAXSPRITES 30
 
 #ifdef DEBUG
 #	if !defined(WIN32)

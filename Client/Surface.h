@@ -19,6 +19,8 @@ public:
 	static bool Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y, int X2, int Y2, int W, int H);
 
 	static bool SetTransparent(SDL_Surface *Surf_Dest, int R, int G, int B);
+
+	static void ReplaceColor(SDL_Surface * Surf_Dest, Uint32 A, Uint32 B);
 };
 
 #endif // SURFACE_H
