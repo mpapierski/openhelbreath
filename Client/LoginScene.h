@@ -10,7 +10,7 @@
 class LoginScene: public Scene
 {
 	public:
-		LoginScene();
+		LoginScene(std::string WS = DEF_SERVER_NAME1);
 		~LoginScene();
 		void Draw(SDL_Surface *Dest);
 		void OnEvent(SDL_Event *EventSource);
@@ -24,7 +24,8 @@ class LoginScene: public Scene
 
 		void __NotExistingAccount();
 		void __PasswordMismatch();
-
+		void __WorldNotActivated();
+		void __AccountBlocked(int Y, int M, int D);
 		void Disconnect();
 
 		enum Focus
@@ -36,6 +37,7 @@ class LoginScene: public Scene
 		ConnectingWidget ConnectingBox;
 		DialogBoxButtons DlgBox;
 		Socket * MLSocket;
+		std::string WorldServerName;
 };
 
 #endif // LOGINSCENE_H

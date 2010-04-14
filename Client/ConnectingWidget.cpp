@@ -51,8 +51,7 @@ void ConnectingWidget::Draw(SDL_Surface *Dest)
 
 void ConnectingWidget::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
-	if (Sym == SDLK_ESCAPE)
-		SetEnabled(false);
+
 }
 
 void ConnectingWidget::SetEnabled(bool Enable)
@@ -61,6 +60,7 @@ void ConnectingWidget::SetEnabled(bool Enable)
 
 	if (Enabled)
 	{
+		SetState(0);
 		MessageTimer.Start();
 	}
 }

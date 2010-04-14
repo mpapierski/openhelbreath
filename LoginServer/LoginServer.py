@@ -669,10 +669,9 @@ class CLoginServer(object):
 			self.SendMsgToClient(sender, SendData)
 			
 		elif OK[0] == Account.BLOCKED:
-			PutLogList("(!) Account %s blocked until %d-%d-%d and tries to login!" % (Read['AccountName'], OK[1], OK[2], OK[3]), Logfile.ERROR)
+			PutLogList("(!) Account %s blocked until %d-%d-%d and tries to login!" % (Packet.AccountName, OK[1], OK[2], OK[3]), Logfile.ERROR)
 			SendData = struct.pack('<Lh3i', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_REJECT, 
-												OK[1], OK[2], OK[3], #Y-m-d
-												0) #Account Status
+												OK[1], OK[2], OK[3]) #Y-m-d
 			self.SendMsgToClient(sender, SendData)
 			
 	def ChangePassword(self, sender, buffer):

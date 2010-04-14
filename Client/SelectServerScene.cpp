@@ -154,7 +154,10 @@ void SelectServerScene::_Cancel()
 
 void SelectServerScene::_Server2()
 {
+#ifdef DEF_SELECTSERVER
+	Game::GetInstance().Audio->Play("E14");
+	Game::GetInstance().ChangeScene(new LoginScene(DEF_SERVER_NAME2));
+#else
 	_Server1();
-	//Game::GetInstance().Audio->Play("E14");
-	//Game::GetInstance().ChangeScene(new LoginScene);
+#endif
 }

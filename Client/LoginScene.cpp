@@ -1,18 +1,19 @@
 #include "Game.h"
 
-LoginScene::LoginScene()
+LoginScene::LoginScene(std::string WS)
 {
 	LoginFocus = Login;
 	LoginEdit.SetPosition(180, 162);
-	LoginEdit.SetMaxLength(11);
+	LoginEdit.SetMaxLength(10);
 
 	PasswordEdit.SetPosition(180, 185);
 	PasswordEdit.SetCursorVisible(false);
-	PasswordEdit.SetMaxLength(11);
+	PasswordEdit.SetMaxLength(10);
 	PasswordEdit.SetPasswordMode(true);
 
 	DlgBox.SetMode(-1, INTERFACE_BUTTON_OK);
 	MLSocket = 0;
+	WorldServerName = WS;
 }
 
 void LoginScene::Draw(SDL_Surface *Dest)
@@ -53,44 +54,60 @@ void LoginScene::OnEvent(SDL_Event *EventSource)
 	{
 		switch (EventSource->user.code)
 		{
-
-			////////////////////////////
 			case SDL_CLICKED_RIGHT:
+				//DlgBox onclick event
 				Game::GetInstance().ChangeScene(new MenuScene);
 				break;
-				////////////////////////////
 
 			case SDL_NETWORK_ERROR:
+				// Socket error (ie unable to establish connection)
+#ifdef DEBUG
 				puts("ERROR");
+#endif
 				Disconnect();
 				break;
 			case SDL_NETWORK_INIT:
+				// Socket thread initialized
+#ifdef DEBUG
 				puts("INIT");
+#endif
+				ConnectingBox.SetEnabled(true);
 				break;
 			case SDL_NETWORK_CONNECTED:
 			{
+				// Socket is connected to server
 				ConnectingBox.SetState(1);
+#ifdef DEBUG
 				puts("CONNECTED");
+				printf("Log in : %s/%s at %s\n", LoginEdit.GetText().c_str(),
+						PasswordEdit.GetText().c_str(), WorldServerName.c_str());
+#endif
 				Packet p1(MSGID_REQUEST_LOGIN, DEF_MSGTYPE_CONFIRM);
 				p1.push<char> (LoginEdit.GetText().c_str(), 10);
 				p1.push<char> (PasswordEdit.GetText().c_str(), 10);
-				p1.push<char> (DEF_SERVER_NAME1, 30);
+				p1.push<char> (WorldServerName.c_str(), 30);
 				p1.send((NetSock*) EventSource->user.data1);
 			}
 				break;
 			case SDL_NETWORK_RECEIVE:
 			{
+				// Got data
+
 				Buffer * data = (Buffer*) EventSource->user.data2;
 
 				unsigned int MsgID = data->next<int> ();
 				unsigned short MsgType = data->next<unsigned short> ();
-
+#ifdef DEBUG
 				printf("Size:%d Received -> MsgID: 0x%08X MsgType: 0x%04X",
 						data->size(), MsgID, MsgType);
+#endif
 				switch (MsgID)
 				{
+
 					case MSGID_RESPONSE_LOG:
+#ifdef DEBUG
 						puts("MSGID_RESPONSE_LOG");
+#endif
 						switch (MsgType)
 						{
 							case DEF_MSGTYPE_CONFIRM:
@@ -101,12 +118,14 @@ void LoginScene::OnEvent(SDL_Event *EventSource)
 										data->next<unsigned char> ();
 								unsigned short AccountStatus = data->next<
 										unsigned short> ();
-
+#ifdef DEBUG
 								printf(
 										"Login OK! Server version: %d.%d Account Status: %d",
 										Upper, Lower, AccountStatus);
+#endif
 								Disconnect();
-								Game::GetInstance().ChangeScene(new SelectCharScene);
+								Game::GetInstance().ChangeScene(
+										new SelectCharScene);
 								return;
 							}
 								break;
@@ -122,11 +141,20 @@ void LoginScene::OnEvent(SDL_Event *EventSource)
 
 								unsigned int B = data->next<unsigned int> ();
 								unsigned int C = data->next<unsigned int> ();
-								unsigned short AccountStatus = data->next<
-										unsigned short> ();
-								printf(
-										"Account banned till %04d-%02d-%02d (Account status: %d)",
-										A, B, C, AccountStatus);
+
+#ifdef DEBUG
+								printf("Account banned till %04d-%02d-%02d", A,
+										B, C);
+#endif
+								__AccountBlocked(A, B, C);
+							}
+								break;
+							case DEF_LOGRESMSGTYPE_NOTEXISTINGWORLDSERVER:
+							{
+#ifdef DEBUG
+								puts("World server is not activated.");
+#endif
+								__WorldNotActivated();
 							}
 								break;
 						}
@@ -137,14 +165,23 @@ void LoginScene::OnEvent(SDL_Event *EventSource)
 			}
 				break;
 			case SDL_NETWORK_CLOSED:
+				// Closed connection
+#ifdef DEBUG
 				puts("CLOSED");
+#endif
 				break;
 			case SDL_NETWORK_FINISH:
+				// Socket thread finished
+#ifdef DEBUG
 				puts("FINISH");
+#endif
 				Disconnect();
 				break;
 			case SDL_NETWORK_BUSY:
+				// Socket is connected and waits for data
+#ifdef DEBUG
 				puts("BUSY");
+#endif
 				break;
 		}
 		return;
@@ -218,7 +255,6 @@ void LoginScene::OnLButtonDown(int X, int Y)
 		}
 		if (X > 256 && X < (256 + 76)) // Cancel Button
 		{
-
 			_Cancel();
 		}
 	}
@@ -233,7 +269,12 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 	}
 	if (ConnectingBox.IsEnabled())
 	{
-		ConnectingBox.OnKeyDown(Sym, Mod, Unicode);
+		if (Sym == SDLK_ESCAPE)
+		{
+			ConnectingBox.SetEnabled(false);
+			if (MLSocket != 0)
+				Disconnect();
+		}
 		return;
 	}
 	if (Sym == SDLK_ESCAPE)
@@ -320,10 +361,10 @@ void LoginScene::_Connect()
 	printf("Login: %s Password: %s\n", LoginEdit.GetText().c_str(),
 			PasswordEdit.GetText().c_str());
 #endif
+
 	MLSocket = new Socket(DEF_SERVER_ADDR, DEF_SERVER_PORT);
-	bool OK = MLSocket->Connect();
-	printf("Connect: %s\n", OK ? "true" : "false");
-	ConnectingBox.SetEnabled(true);
+	if (!MLSocket->Connect())
+		fprintf(stderr, "Connect() failed.\n");
 }
 
 void LoginScene::_Cancel()
@@ -362,6 +403,30 @@ void LoginScene::__NotExistingAccount()
 	DlgBox.SetEnabled(true);
 }
 
+void LoginScene::__WorldNotActivated()
+{
+	ConnectingBox.SetEnabled(false);
+	DlgBox.SetEnabled(false);
+	DlgBox.ClearText();
+	DlgBox.SetTitle("");
+	DlgBox.AddText("World server is not active now.");
+	DlgBox.AddText("Try again a few minutes later.");
+	DlgBox.SetEnabled(true);
+}
+
+void LoginScene::__AccountBlocked(int Y, int M, int D)
+{
+	ConnectingBox.SetEnabled(false);
+	DlgBox.SetEnabled(false);
+	DlgBox.ClearText();
+	DlgBox.SetTitle("Connection Rejected!");
+	DlgBox.AddText("You can't login because account is blocked.");
+	char Txt[30];
+	sprintf(Txt, "Block date: Until %dY %dM %dD", Y, M, D);
+	DlgBox.AddText(Txt);
+	DlgBox.SetEnabled(true);
+
+}
 void LoginScene::Disconnect()
 {
 	if (MLSocket == 0)
