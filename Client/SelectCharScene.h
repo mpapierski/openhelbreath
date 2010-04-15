@@ -11,14 +11,7 @@ class SelectCharScene: public Scene
 
 		void Draw(SDL_Surface *Dest);
 
-		void OnMouseMove(
-				int X,
-				int Y,
-				int RelX,
-				int RelY,
-				bool Left,
-				bool Right,
-				bool Middle);
+		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
 
 		void OnLButtonDown(int X, int Y);
 
@@ -27,11 +20,7 @@ class SelectCharScene: public Scene
 	private:
 		enum Focus
 		{
-			Start,
-			CreateNewChar,
-			DelChar,
-			ChangePasswd,
-			Logout
+			Start, CreateNewChar, DelChar, ChangePasswd, Logout
 		} ButtonFocus;
 
 		int SlotSelect;

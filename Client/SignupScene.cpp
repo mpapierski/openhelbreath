@@ -12,24 +12,15 @@ SignupScene::SignupScene()
 	} _descr[DEF_INPUTTOTAL] =
 	{
 	{ "Login:", 427, 84, 11, false,
-	{
-			"Enter your account ID.",
-			"( Only letters and numbers )",
-			"and numbers, no special keywords." } },
+	{ "Enter your account ID.", "( Only letters and numbers )", "and numbers, no special keywords." } },
 	{ "Password:", 427, 106, 11, true,
 	{ "Enter your account password.", "", "" } },
 	{ "Confirm:", 427, 129, 11, true,
 	{ "Confirm the password.", "", "" } },
 	{ "E-mail:", 311, 215, 31, false,
-	{
-			"Enter your E-mail address.",
-			"You should enter a correct E-mail address",
-			"to confirm the account owner." } },
+	{ "Enter your E-mail address.", "You should enter a correct E-mail address", "to confirm the account owner." } },
 	{ "Quiz:", 311, 253, 44, false,
-	{
-			"Enter the secret question, so you can",
-			"recover the password if you forget it.",
-			"" } },
+	{ "Enter the secret question, so you can", "recover the password if you forget it.", "" } },
 	{ "Answer:", 311, 291, 19, false,
 	{ "Answer the question.", "", "" } } };
 
@@ -42,8 +33,6 @@ SignupScene::SignupScene()
 		for (int j = 0; j < 3; j++)
 			Form[i].Info[j] = _descr[i].info[j];
 	}
-
-
 
 	SetFocus(0);
 }
@@ -71,14 +60,12 @@ SignupScene::~SignupScene()
 
 void SignupScene::Draw(SDL_Surface * Dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0,
-			SPRID_LOGIN_BACKGROUND);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0, SPRID_LOGIN_BACKGROUND);
 
 	for (int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		Font::PutTextShaded(Dest, Form[i].Input.X() - Font::TextWidth(Form[i].Label)
-				- 6, Form[i].Input.Y(), Form[i].Label, 255, 255, 255);
-				
+		Font::PutTextShaded(Dest, Form[i].Input.X() - Font::TextWidth(Form[i].Label) - 6, Form[i].Input.Y(), Form[i].Label, 255, 255, 255);
+
 		Form[i].Input.Draw(Dest);
 	}
 
@@ -95,7 +82,7 @@ void SignupScene::Draw(SDL_Surface * Dest)
 				Font::PutAlignedText(Dest, 290, 330, 285, "Create an account with your input.", 255, 255, 255);
 				break;
 			case 7:
-				Font::PutAlignedText(Dest, 290, 330, 285, "Clear all.", 255,255, 255);
+				Font::PutAlignedText(Dest, 290, 330, 285, "Clear all.", 255, 255, 255);
 				break;
 			case 8:
 				Font::PutAlignedText(Dest, 290, 330, 285, "Back to main menu.", 255, 255, 255);
@@ -103,12 +90,12 @@ void SignupScene::Draw(SDL_Surface * Dest)
 		}
 	}
 
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS],
-			199 + 98, 398, FormFocus == 6 ? INTERFACE_BUTTON_CREATE + 1 : INTERFACE_BUTTON_CREATE);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS],
-			294 + 98, 398, FormFocus == 7 ? INTERFACE_BUTTON_RESET + 1 : INTERFACE_BUTTON_RESET);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS],
-			390 + 98, 398, FormFocus == 8 ? INTERFACE_BUTTON_CANCEL + 1 : INTERFACE_BUTTON_CANCEL);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 199 + 98, 398, FormFocus == 6 ? INTERFACE_BUTTON_CREATE + 1
+			: INTERFACE_BUTTON_CREATE);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 294 + 98, 398, FormFocus == 7 ? INTERFACE_BUTTON_RESET + 1
+			: INTERFACE_BUTTON_RESET);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 390 + 98, 398, FormFocus == 8 ? INTERFACE_BUTTON_CANCEL + 1
+			: INTERFACE_BUTTON_CANCEL);
 
 	Scene::Draw(Dest);
 }
@@ -120,14 +107,7 @@ void SignupScene::OnEvent(SDL_Event * EventSource)
 		Form[FormFocus].Input.OnEvent(EventSource);
 }
 
-void SignupScene::OnMouseMove(
-		int X,
-		int Y,
-		int RelX,
-		int RelY,
-		bool Left,
-		bool Right,
-		bool Middle)
+void SignupScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
 {
 	if ((X >= 297) && (X <= 370) && (Y >= 396) && (Y <= 417))
 		SetFocus(6);
@@ -183,7 +163,7 @@ void SignupScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 	if (Sym == SDLK_TAB || Sym == SDLK_DOWN)
 		SetFocus((FormFocus + 1) % (DEF_INPUTTOTAL + 3));
 
-	if(Sym == SDLK_UP)
+	if (Sym == SDLK_UP)
 		SetFocus((FormFocus - 1) % (DEF_INPUTTOTAL + 3));
 }
 

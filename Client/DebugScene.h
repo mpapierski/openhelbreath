@@ -5,33 +5,34 @@
 
 #include "Socket.h"
 
-class DebugScene : public Scene
+class DebugScene: public Scene
 {
-public:
-	DebugScene();
-	~DebugScene();
+	public:
+		DebugScene();
+		~DebugScene();
 
-	void Draw(SDL_Surface *Dest);
+		void Draw(SDL_Surface *Dest);
 
-	void OnLoop();
-	void OnEvent(SDL_Event *EventSource);
-	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+		void OnLoop();
 
-	inline void Print(std::string txt);
+		void OnEvent(SDL_Event *EventSource);
 
-	std::vector<std::string> backlog;
+		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
+		inline void Print(std::string txt);
 
-private:
-	SDL_Surface *rect;
+		std::vector<std::string> backlog;
 
-	SDL_Surface *TextSurface;
+	private:
+		SDL_Surface *rect;
 
-	int state;
+		SDL_Surface *TextSurface;
 
-	bool _connected;
-	//Socket * MLSocket;
-	Socket * MLSocket;
+		int state;
+
+		bool _connected;
+
+		Socket * MLSocket;
 };
 
 #endif

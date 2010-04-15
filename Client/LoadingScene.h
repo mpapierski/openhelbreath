@@ -3,17 +3,17 @@
 
 #include "Scene.h"
 
-class LoadingScene : public Scene
+class LoadingScene: public Scene
 {
-public:
-	LoadingScene();
+	public:
+		LoadingScene();
 
-	void OnLoop();
+		void OnLoop();
 
-	void Draw(SDL_Surface *Dest);
+		void Draw(SDL_Surface *Dest);
 
-private:
-	int Percent;
+	private:
+		int Percent;
 };
 
 #endif // LOADINGSCENE_H

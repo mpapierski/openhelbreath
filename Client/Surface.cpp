@@ -94,19 +94,25 @@ bool Surface::SetTransparent(SDL_Surface *Dest, int R, int G, int B)
 	return true;
 }
 
-void Surface::ReplaceColor(SDL_Surface * Surf_Dest, Uint32 A, Uint32 B)
+Uint32 Surface::GetPixel32(SDL_Surface *Src, int X, int Y)
 {
-	int bpp = Surf_Dest->format->BytesPerPixel;
-	if (SDL_MUSTLOCK(Surf_Dest))
-		SDL_LockSurface(Surf_Dest);
-	for (int x = 0; x < Surf_Dest->w; x++)
-		for (int y = 0; y < Surf_Dest->h; y++)
-			if (*(Uint32 *) ((Uint8 *) Surf_Dest->pixels + y * Surf_Dest->pitch + x
-					* bpp) == A)
-				*(Uint32 *) ((Uint8 *) Surf_Dest->pixels + y * Surf_Dest->pitch + x
-						* bpp) = B;
-	if (SDL_MUSTLOCK(Surf_Dest))
-		SDL_UnlockSurface(Surf_Dest);
+	//Convert the pixels to 32 bit
+	Uint32 *pixels = (Uint32 *)Src->pixels;
+	//Get the requested pixel
+	return pixels[ ( Y * Src->w ) + X ];
 }
 
-
+void Surface::ReplaceColor(SDL_Surface *Dest, Uint32 A, Uint32 B)
+{
+	int bpp = Dest->format->BytesPerPixel;
+	if (SDL_MUSTLOCK(Dest))
+		SDL_LockSurface(Dest);
+	for (int x = 0; x < Dest->w; x++)
+		for (int y = 0; y < Dest->h; y++)
+			if (*(Uint32 *) ((Uint8 *) Dest->pixels + y * Dest->pitch + x
+					* bpp) == A)
+				*(Uint32 *) ((Uint8 *) Dest->pixels + y * Dest->pitch + x
+						* bpp) = B;
+	if (SDL_MUSTLOCK(Dest))
+		SDL_UnlockSurface(Dest);
+}

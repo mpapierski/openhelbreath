@@ -10,7 +10,7 @@ Event::~Event()
 
 }
 
-void Event::OnEvent(SDL_Event* EventSource)
+void Event::OnEvent(SDL_Event *EventSource)
 {
 	switch (EventSource->type)
 	{
@@ -285,7 +285,7 @@ void Event::OnExit()
 	// pure virtual
 }
 
-void Event::OnUser(Uint8 Type, int Code, void* Data1, void* Data2)
+void Event::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 {
 	// pure virtual
 }

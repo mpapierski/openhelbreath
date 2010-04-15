@@ -7,35 +7,24 @@ MenuScene::MenuScene()
 
 void MenuScene::Draw(SDL_Surface *Dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 0, 0,
-			SPRID_MAINMENU_BACKGROUND);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 0, 0, SPRID_MAINMENU_BACKGROUND);
 
 	switch (MenuFocus)
 	{
 		case Login:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU],
-					385, 178, SPRID_MAINMENU_LOGIN);
+			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 385, 178, SPRID_MAINMENU_LOGIN);
 			break;
 		case NewAccount:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU],
-					385, 216, SPRID_MAINMENU_NEWACCOUNT);
+			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 385, 216, SPRID_MAINMENU_NEWACCOUNT);
 			break;
 		case Exit:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU],
-					385, 255, SPRID_MAINMENU_EXIT);
+			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 385, 255, SPRID_MAINMENU_EXIT);
 			break;
 	}
-	Scene::Draw(Dest);
+	Scene::DrawVersion(Dest);
 }
 
-void MenuScene::OnMouseMove(
-		int X,
-		int Y,
-		int RelX,
-		int RelY,
-		bool Left,
-		bool Right,
-		bool Middle)
+void MenuScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
 {
 	if (X > 385 && X < (385 + 164))
 	{

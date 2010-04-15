@@ -22,7 +22,8 @@ void SelectServerScene::Draw(SDL_Surface *Dest)
 		Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 257, 282, SPRID_LOGIN_BUTTON_CANCEL);
 		break;
 	}
-	Scene::Draw(Dest);
+
+	Scene::DrawVersion(Dest);
 }
 
 void SelectServerScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
@@ -143,16 +144,6 @@ void SelectServerScene::_Server1()
 	Game::GetInstance().ChangeScene(new LoginScene);
 }
 
-
-
-void SelectServerScene::_Cancel()
-{
-	Game::GetInstance().Audio->Play("E14");
-	Game::GetInstance().ChangeScene(new MenuScene);
-}
-
-
-
 void SelectServerScene::_Server2()
 {
 #ifdef DEF_SELECTSERVER
@@ -161,4 +152,10 @@ void SelectServerScene::_Server2()
 #else
 	_Server1();
 #endif
+}
+
+void SelectServerScene::_Cancel()
+{
+	Game::GetInstance().Audio->Play("E14");
+	Game::GetInstance().ChangeScene(new MenuScene);
 }

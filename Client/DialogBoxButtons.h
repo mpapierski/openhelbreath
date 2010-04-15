@@ -20,15 +20,15 @@ class DialogBoxButtons: public Widget
 		DialogBoxButtons();
 		virtual ~DialogBoxButtons();
 		void Draw(SDL_Surface *Dest);
+		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
+		void OnLButtonDown(int X, int Y);
 		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 		void SetEnabled(bool Enable);
 		bool IsEnabled() const;
-		void OnLButtonDown(int X, int Y);
 		void SetMode(int LeftButton, int RightButton);
-		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
-		void SetTitle(std::string NewTitle);
+		void SetTitle(const std::string &NewTitle);
 		void ClearText();
-		void AddText(std::string Txt);
+		void AddText(const std::string &Txt);
 };
 
 #endif /* DIALOGBOXBUTTONS_H_ */

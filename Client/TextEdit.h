@@ -26,6 +26,7 @@ public:
 
 private:
 	void Create();
+
 	SDL_Surface *CursorSurface;
 	std::string WidgetText;
 	bool Enabled;

@@ -26,8 +26,7 @@ DebugScene::~DebugScene()
 
 void DebugScene::Draw(SDL_Surface *Dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0,
-			SPRID_LOGIN_BACKGROUND);
+	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0, SPRID_LOGIN_BACKGROUND);
 
 	Surface::Draw(Dest, rect, 50, 50);
 
@@ -74,15 +73,13 @@ void DebugScene::OnEvent(SDL_Event *EventSource)
 				break;
 			case SDL_NETWORK_RECEIVE:
 			{
-				Buffer * data = (Buffer*) EventSource->user.data2;
+				Buffer *data = (Buffer*) EventSource->user.data2;
 
 				unsigned int MsgID = data->next<int> ();
 				unsigned short MsgType = data->next<unsigned short> ();
 
 				char testlog[100];
-				sprintf(testlog,
-						"Size:%d Received -> MsgID: 0x%08X MsgType: 0x%04X",
-						data->size(), MsgID, MsgType);
+				sprintf(testlog, "Size:%d Received -> MsgID: 0x%08X MsgType: 0x%04X", data->size(), MsgID, MsgType);
 				Print(testlog);
 				switch (MsgID)
 				{
@@ -93,18 +90,12 @@ void DebugScene::OnEvent(SDL_Event *EventSource)
 						{
 							case DEF_MSGTYPE_CONFIRM:
 							{
-								unsigned short Upper =
-										data->next<unsigned short> ();
-								unsigned short Lower =
-										data->next<unsigned char> ();
-								unsigned short AccountStatus = data->next<
-										unsigned short> ();
+								unsigned short Upper = data->next<unsigned short> ();
+								unsigned short Lower = data->next<unsigned char> ();
+								unsigned short AccountStatus = data->next<unsigned short> ();
 
 								char buffer[100];
-								sprintf(
-										buffer,
-										"Login OK! Server version: %d.%d Account Status: %d",
-										Upper, Lower, AccountStatus);
+								sprintf(buffer, "Login OK! Server version: %d.%d Account Status: %d", Upper, Lower, AccountStatus);
 								Print(buffer);
 							}
 								break;
@@ -120,13 +111,9 @@ void DebugScene::OnEvent(SDL_Event *EventSource)
 
 								unsigned int B = data->next<unsigned int> ();
 								unsigned int C = data->next<unsigned int> ();
-								unsigned short AccountStatus = data->next<
-										unsigned short> ();
+								unsigned short AccountStatus = data->next<unsigned short> ();
 								char buffer[100];
-								sprintf(
-										buffer,
-										"Account banned till %04d-%02d-%02d (Account status: %d)",
-										A, B, C, AccountStatus);
+								sprintf(buffer, "Account banned till %04d-%02d-%02d (Account status: %d)", A, B, C, AccountStatus);
 								Print(buffer);
 							}
 								break;

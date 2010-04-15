@@ -10,9 +10,9 @@ class VersionNotMatchScene: public Scene
 	public:
 		VersionNotMatchScene();
 		virtual ~VersionNotMatchScene();
+		void Draw(SDL_Surface *Dest);
 		void OnLButtonDown(int X, int Y);
 		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
-		void Draw(SDL_Surface *Dest);
 };
 
 #endif /* VERSIONNOTMATCHSCENE_H_ */

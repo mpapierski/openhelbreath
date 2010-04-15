@@ -66,20 +66,28 @@ bool Game::OnInitialize()
 	MainWindow.SetFpsLimit(DEF_FPSLIMIT);
 #endif
 
-	SDL_EnableUNICODE(SDL_ENABLE);
+	SDL_EnableUNICODE( SDL_ENABLE);
 
 	Font = TTF_OpenFont("FONTS/VeraSe.ttf", 12);
+	if(Font == NULL)
+	{
+		printf("Unable to load font file: FONTS/VeraSe.ttf\n");
+		return false;
+	}
 
 	Audio = new AudioManager();
 
 	//Load some Sprites before Loading
 	Sprites[SPRID_CURSOR].LoadFromFile("interface.pak", 0);
-	Surface::SetTransparent(Sprites[SPRID_CURSOR].GetSurface(), 255, 132, 66);
+	Sprites[SPRID_CURSOR].SetColorKey();
+
+	Sprites[SPRID_SPRFONT_NUM].LoadFromFile("interface2.pak", 0);
+	Sprites[SPRID_SPRFONT_NUM].SetColorKey();
 
 	Sprites[SPRID_SPRFONT].LoadFromFile("SPRFONTS.PAK", 0);
-	Surface::SetTransparent(Sprites[SPRID_SPRFONT].GetSurface(), 255, 255, 255);
+	Sprites[SPRID_SPRFONT].SetColorKey();
 	Sprites[SPRID_SPRFONT2].LoadFromFile("SPRFONTS.PAK", 1);
-	Surface::SetTransparent(Sprites[SPRID_SPRFONT2].GetSurface(), 255, 255, 255);
+	Sprites[SPRID_SPRFONT2].SetColorKey();
 
 	Sprites[SPRID_LOADING].LoadFromFile("New-Dialog.pak", 0);
 
@@ -107,14 +115,14 @@ void Game::OnEvent(SDL_Event *EventSource)
 		{
 			case SDL_THREAD_START:
 			{
-				int ThreadID = (int) EventSource->user.data2;
-				printf("Thread started (ID: %d)\n", ThreadID);
+				//int ThreadID = (int) EventSource->user.data2;
+				//printf("Thread started (ID: %d)\n", ThreadID);
 			}
 				break;
 			case SDL_THREAD_FINISHED:
 			{
-				int ThreadID = (int) EventSource->user.data2;
-				printf("Thread finished (ID: %d)\n", ThreadID);
+				//int ThreadID = (int) EventSource->user.data2;
+				//printf("Thread finished (ID: %d)\n", ThreadID);
 			}
 				break;
 		}
@@ -127,6 +135,10 @@ void Game::OnEvent(SDL_Event *EventSource)
 void Game::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
 #ifdef DEBUG
+	if (Sym == SDLK_F11)
+	{
+		ChangeScene(new SelectCharScene);
+	}
 	if (Sym == SDLK_F12)
 	{
 		ChangeScene(new DebugScene);

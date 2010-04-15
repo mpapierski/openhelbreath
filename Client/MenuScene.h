@@ -3,24 +3,30 @@
 
 #include "Scene.h"
 
-class MenuScene : public Scene
+class MenuScene: public Scene
 {
-public:
-	MenuScene();
+	public:
+		MenuScene();
 
-	void Draw(SDL_Surface *Dest);
+		void Draw(SDL_Surface *Dest);
 
-	void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
+		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
 
-	void OnLButtonDown(int X, int Y);
+		void OnLButtonDown(int X, int Y);
 
-	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
-private:
-	enum Focus { Login, NewAccount, Exit } MenuFocus;
-	void _Login();
-	void _NewAccount();
-	void _Exit();
+	private:
+		void _Login();
+
+		void _NewAccount();
+
+		void _Exit();
+
+		enum Focus
+		{
+			Login, NewAccount, Exit
+		} MenuFocus;
 };
 
 #endif // MENUSCENE_H

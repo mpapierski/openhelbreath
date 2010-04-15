@@ -10,12 +10,12 @@
 class LoginScene: public Scene
 {
 	public:
-		LoginScene(std::string WS = DEF_SERVER_NAME1);
+		LoginScene(const std::string &WS = DEF_SERVER_NAME1);
 		~LoginScene();
 		void Draw(SDL_Surface *Dest);
 		void OnEvent(SDL_Event *EventSource);
-		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left,
-				bool Right, bool Middle);
+		void OnUser(Uint8 Type, int Code, void *Data1, void *Data2);
+		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
 		void OnLButtonDown(int X, int Y);
 		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 	private:
@@ -32,11 +32,12 @@ class LoginScene: public Scene
 		{
 			Login, Password, Connect, Cancel
 		} LoginFocus;
+
 		TextEdit LoginEdit;
 		TextEdit PasswordEdit;
 		ConnectingWidget ConnectingBox;
 		DialogBoxButtons DlgBox;
-		Socket * MLSocket;
+		Socket *MLSocket;
 		std::string WorldServerName;
 };
 

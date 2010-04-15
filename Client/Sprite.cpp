@@ -27,33 +27,33 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 
 	pakFile = fopen(path.c_str(), "rb");
 
-	if(pakFile == NULL)
+	if (pakFile == NULL)
 	{
 		printf("Unable to load: %s\n", path.c_str());
 		return false;
 	}
 
-	fseek(pakFile, (24+(Number*8)), SEEK_SET);
+	fseek(pakFile, (24 + (Number * 8)), SEEK_SET);
 	fread(&tmp, 1, 4, pakFile);
 
-	fseek(pakFile, tmp+100, SEEK_SET);
+	fseek(pakFile, tmp + 100, SEEK_SET);
 	fread(&TotalFrames, 1, 4, pakFile);
 
 	Frames.resize(TotalFrames);
 
-	for(int i = 0; i < TotalFrames; i++)
+	for (int i = 0; i < TotalFrames; i++)
 	{
-		tmp2 = (tmp+104+(i*12));
+		tmp2 = (tmp + 104 + (i * 12));
 		fseek(pakFile, tmp2, SEEK_SET);
 		fread(&Frames[i].x, 1, 2, pakFile);
 
-		fseek(pakFile, tmp2+2, SEEK_SET);
+		fseek(pakFile, tmp2 + 2, SEEK_SET);
 		fread(&Frames[i].y, 1, 2, pakFile);
 
-		fseek(pakFile, tmp2+4, SEEK_SET);
+		fseek(pakFile, tmp2 + 4, SEEK_SET);
 		fread(&Frames[i].w, 1, 2, pakFile);
 
-		fseek(pakFile, tmp2+6, SEEK_SET);
+		fseek(pakFile, tmp2 + 6, SEEK_SET);
 		fread(&Frames[i].h, 1, 2, pakFile);
 	}
 
@@ -61,13 +61,13 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 	for (int i = 0; i < TotalFrames; i++)
 	{
 		if (Frames[i].h > Frames[max].h)
-	         max = i;
+			max = i;
 	}
 	MaxFrameH = Frames[max].h;
 
-	BitmapFileStartLoc = tmp  + (108 + (12*TotalFrames));
+	BitmapFileStartLoc = tmp + (108 + (12 * TotalFrames));
 
-	fseek(pakFile, BitmapFileStartLoc+2, SEEK_SET);
+	fseek(pakFile, BitmapFileStartLoc + 2, SEEK_SET);
 	fread(&BmpSize, 1, 4, pakFile);
 
 	fseek(pakFile, BitmapFileStartLoc, SEEK_SET);
@@ -79,7 +79,7 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 	SDL_RWops *rw = SDL_RWFromMem(BmpFile, BmpSize);
 	Image = SDL_LoadBMP_RW(rw, 1);
 
-	delete [] BmpFile;
+	delete[] BmpFile;
 
 	fclose(pakFile);
 
@@ -103,9 +103,10 @@ SDL_Surface *Sprite::GetSurface() const
 
 SDL_Rect Sprite::GetFrame(int Number) const
 {
-	SDL_Rect Empty = { 0, 0, 0, 0};
+	SDL_Rect Empty =
+	{ 0, 0, 0, 0 };
 
-	if(Frames.size() != 0)
+	if (Frames.size() != 0)
 	{
 		return Frames.at(Number);
 	}
@@ -116,6 +117,17 @@ SDL_Rect Sprite::GetFrame(int Number) const
 int Sprite::GetMaxFrameH() const
 {
 	return MaxFrameH;
+}
+
+void Sprite::SetColorKey()
+{
+	SDL_Color color;
+	Uint8 index;
+
+	index= *((Uint8*)Image->pixels);
+	color=Image->format->palette->colors[index];
+
+	Surface::SetTransparent(Image, color.r, color.g, color.b);
 }
 
 Sprite::~Sprite()

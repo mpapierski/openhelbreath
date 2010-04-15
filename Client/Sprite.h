@@ -27,6 +27,8 @@ public:
 
 	int GetMaxFrameH() const;
 
+	void SetColorKey();
+
 private:
 	SDL_Surface *Image;
 

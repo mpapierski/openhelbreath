@@ -17,10 +17,13 @@ public:
 	void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
 
 private:
-	enum Focus { Abaddon, Apocalypse, Cancel } SelectServerFocus;
 	void _Cancel();
+
 	void _Server1();
+
 	void _Server2();
+
+	enum Focus { Abaddon, Apocalypse, Cancel } SelectServerFocus;
 };
 
 #endif // SELECTSERVERSCENE_H

@@ -15,7 +15,7 @@ public:
 
 	virtual void Draw(SDL_Surface *Dest);
 
-	inline void DrawVersion(SDL_Surface * Dest) const;
+	static void DrawVersion(SDL_Surface *Dest);
 };
 
 #endif // SCENE_H
