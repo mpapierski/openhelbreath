@@ -77,7 +77,6 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 #ifdef DEBUG
 			puts("ERROR");
 #endif
-			Disconnect();
 			break;
 
 		case SDL_NETWORK_CONNECTED:
@@ -429,7 +428,10 @@ void LoginScene::Disconnect()
 		return;
 
 	MLSocket->Disconnect();
-	//MLSocket->Join();
+#ifdef WIN32
+	// Dont know why, SDL_WaitThread does not like dead (finished) threads.
+	MLSocket->Join();
+#endif
 	delete MLSocket;
 	MLSocket = 0;
 }

@@ -115,14 +115,14 @@ void Game::OnEvent(SDL_Event *EventSource)
 		{
 			case SDL_THREAD_START:
 			{
-				//int ThreadID = (int) EventSource->user.data2;
-				//printf("Thread started (ID: %d)\n", ThreadID);
+				int ThreadID = reinterpret_cast<int>(EventSource->user.data2);
+				printf("Thread started (ID: %d)\n", ThreadID);
 			}
 				break;
 			case SDL_THREAD_FINISHED:
 			{
-				//int ThreadID = (int) EventSource->user.data2;
-				//printf("Thread finished (ID: %d)\n", ThreadID);
+				int ThreadID = reinterpret_cast<int>(EventSource->user.data2);
+				printf("Thread finished (ID: %d)\n", ThreadID);
 			}
 				break;
 		}

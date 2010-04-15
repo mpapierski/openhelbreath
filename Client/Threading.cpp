@@ -23,8 +23,7 @@ Thread::~Thread()
 
 void Thread::Join()
 {
-	int status;
-	SDL_WaitThread(Th, &status);
+	SDL_WaitThread(Th, NULL);
 }
 
 int Thread::ThreadID()
@@ -34,18 +33,17 @@ int Thread::ThreadID()
 
 int Thread::ThreadWrapper(void *Param)
 {
-	printf("ThreadWrapper\n");
 #ifdef DEBUG
 	SDL_Event Ev;
 	Ev.type = SDL_USEREVENT;
 	Ev.user.code = SDL_THREAD_START;
 	Ev.user.data1 = Param;
-	Ev.user.data2 = (int*)((Thread*) Param)->ThreadID();
+	Ev.user.data2 = reinterpret_cast<int*>((static_cast<Thread*>(Param))->ThreadID());
 	SDL_PushEvent(&Ev);
 #endif
-	((Thread*) Param)->Running = true;
-	((Thread*) Param)->Run();
-	((Thread*) Param)->Running = false;
+	(static_cast<Thread*>(Param))->Running = true;
+	(static_cast<Thread*>(Param))->Run();
+	(static_cast<Thread*>(Param))->Running = false;
 #ifdef DEBUG
 	Ev.user.code = SDL_THREAD_FINISHED;
 	SDL_PushEvent(&Ev);
