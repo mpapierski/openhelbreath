@@ -146,7 +146,7 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 							unsigned int C = data->next<unsigned int> ();
 
 #ifdef DEBUG
-							printf("Account banned till %04d-%02d-%02d", A, B, C);
+							printf("Account banned till %04d-%02d-%02d\n", A, B, C);
 #endif
 							__AccountBlocked(A, B, C);
 						}

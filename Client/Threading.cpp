@@ -38,7 +38,7 @@ int Thread::ThreadWrapper(void *Param)
 	Ev.type = SDL_USEREVENT;
 	Ev.user.code = SDL_THREAD_START;
 	Ev.user.data1 = Param;
-	Ev.user.data2 = reinterpret_cast<int*>((static_cast<Thread*>(Param))->ThreadID());
+	Ev.user.data2 = reinterpret_cast<INT*>((static_cast<Thread*>(Param))->ThreadID());
 	SDL_PushEvent(&Ev);
 #endif
 	(static_cast<Thread*>(Param))->Running = true;

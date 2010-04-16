@@ -1,6 +1,16 @@
 #ifndef GLOBALDEF_H
 #define GLOBALDEF_H
 
+#include <limits.h>
+#if INT_MAX < LONG_MAX
+#	define _64BIT_
+#	define INT long
+#	define INT_FMT "%lu"
+#else
+#	define _32BIT_
+#	define INT int
+#	define INT_FMT "%d"
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 #define DEBUG // Debug messages
 #define DEF_FPSLIMIT 60
