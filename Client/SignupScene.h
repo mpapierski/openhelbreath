@@ -9,7 +9,7 @@
 struct FormItem
 {
 		std::string Label;
-		TextEdit Input;
+		gui::TextEdit Input;
 		std::string Info[3];
 };
 

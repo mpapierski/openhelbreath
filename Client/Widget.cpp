@@ -1,45 +1,50 @@
 #include "Widget.h"
 
-Widget::Widget()
+namespace gui
 {
-	WidgetSurface = NULL;
 
-	PosX = 0;
-	PosY = 0;
-}
+	Widget::Widget()
+	{
+		WidgetSurface = NULL;
 
-void Widget::Draw(SDL_Surface *Dest)
-{
-	Surface::Draw(Dest, WidgetSurface, PosX, PosY);
-}
+		PosX = 0;
+		PosY = 0;
+	}
 
-void Widget::OnEvent(SDL_Event *EventSource)
-{
-	Event::OnEvent(EventSource);
-}
+	void Widget::Draw(SDL_Surface *Dest)
+	{
+		Surface::Draw(Dest, WidgetSurface, PosX, PosY);
+	}
 
-void Widget::SetPosition(int X, int Y)
-{
-	PosX = X;
-	PosY = Y;
-}
+	void Widget::OnEvent(SDL_Event *EventSource)
+	{
+		Event::OnEvent(EventSource);
+	}
 
-void Widget::SetSurface(SDL_Surface *Source)
-{
-	WidgetSurface = Source;
-}
+	void Widget::SetPosition(int X, int Y)
+	{
+		PosX = X;
+		PosY = Y;
+	}
 
-int Widget::X() const
-{
-	return PosX;
-}
+	void Widget::SetSurface(SDL_Surface *Source)
+	{
+		WidgetSurface = Source;
+	}
 
-int Widget::Y() const
-{
-	return PosY;
-}
+	int Widget::X() const
+	{
+		return PosX;
+	}
 
-Widget::~Widget()
-{
-	SDL_FreeSurface(WidgetSurface);
-}
+	int Widget::Y() const
+	{
+		return PosY;
+	}
+
+	Widget::~Widget()
+	{
+		SDL_FreeSurface(WidgetSurface);
+	}
+
+} //namespace gui

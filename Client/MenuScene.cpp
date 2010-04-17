@@ -21,7 +21,8 @@ void MenuScene::Draw(SDL_Surface *Dest)
 			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 385, 255, SPRID_MAINMENU_EXIT);
 			break;
 	}
-	Scene::DrawVersion(Dest);
+
+	Game::DrawVersion(Dest);
 }
 
 void MenuScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)

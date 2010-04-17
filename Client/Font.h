@@ -23,13 +23,13 @@ class Font
 
 		static void PutTextShaded(SDL_Surface *Dest, int X, int Y, const std::string &Text, int R, int G, int B);
 
-		static void PutAlignedText(SDL_Surface* Dest, int X, int Y, int Width, const std::string & Text, int R, int G, int B);
+		static void PutAlignedText(SDL_Surface *Dest, int X, int Y, int Width, const std::string &Text, int R, int G, int B);
 
 		static void PutSprText(SDL_Surface *Dest, int X, int Y, const std::string &Text);
 
-		static void PutAlignedSprText(SDL_Surface * Dest, int X, int Y, int Width, const std::string &Text);
+		static void PutAlignedSprText(SDL_Surface *Dest, int X, int Y, int Width, const std::string &Text);
 
-		static void PutTextSprF(SDL_Surface * Dest, int X, int Y, const std::string & Text);
+		static void PutTextSprF(SDL_Surface *Dest, int X, int Y, const std::string &Text);
 };
 
 #endif // FONT_H

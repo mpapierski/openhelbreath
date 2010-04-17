@@ -45,10 +45,6 @@ void DebugScene::Draw(SDL_Surface *Dest)
 	}
 }
 
-void DebugScene::OnLoop()
-{
-
-}
 void DebugScene::OnEvent(SDL_Event *EventSource)
 {
 	if (EventSource->type == SDL_USEREVENT)

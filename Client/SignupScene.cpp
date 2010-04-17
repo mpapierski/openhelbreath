@@ -37,22 +37,6 @@ SignupScene::SignupScene()
 	SetFocus(0);
 }
 
-void SignupScene::SetFocus(int NewId)
-{
-	if (NewId < 0)
-		return;
-
-	FormFocus = NewId;
-
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
-	{
-		Form[i].Input.SetEnabled(false);
-	}
-	if (NewId >= DEF_INPUTTOTAL)
-		return;
-	Form[NewId].Input.SetEnabled(true);
-}
-
 SignupScene::~SignupScene()
 {
 
@@ -121,7 +105,7 @@ void SignupScene::OnLButtonDown(int X, int Y)
 {
 	for (int i = 0; i < DEF_INPUTTOTAL; i++)
 	{
-		const TextEdit & _ctrl = Form[i].Input;
+		const gui::TextEdit & _ctrl = Form[i].Input;
 		if (X >= _ctrl.X() && X <= 640 && Y >= _ctrl.Y() && Y <= _ctrl.Y() + 20)
 		{
 			SetFocus(i);
@@ -165,6 +149,22 @@ void SignupScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 
 	if (Sym == SDLK_UP)
 		SetFocus((FormFocus - 1) % (DEF_INPUTTOTAL + 3));
+}
+
+void SignupScene::SetFocus(int NewId)
+{
+	if (NewId < 0)
+		return;
+
+	FormFocus = NewId;
+
+	for (int i = 0; i < DEF_INPUTTOTAL; i++)
+	{
+		Form[i].Input.SetEnabled(false);
+	}
+	if (NewId >= DEF_INPUTTOTAL)
+		return;
+	Form[NewId].Input.SetEnabled(true);
 }
 
 void SignupScene::_Cancel()

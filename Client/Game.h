@@ -52,12 +52,14 @@ class Game: public Event
 
 		void ChangeScene(Scene *NewScene);
 
+		static void DrawVersion(SDL_Surface *Dest);
+
 		std::vector<Sprite> Sprites;
 
 		TTF_Font *Font;
 
 		AudioManager *Audio;
-		
+
 	private:
 		Game();
 		Game(const Game &);

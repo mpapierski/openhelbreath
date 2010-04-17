@@ -7,6 +7,16 @@
 
 #include "Surface.h"
 
+struct Cord
+{
+	short X;
+	short Y;
+	short W;
+	short H;
+	short Vx;
+	short Vy;
+};
+
 class Sprite
 {
 public:
@@ -23,7 +33,9 @@ public:
 
 	SDL_Surface *GetSurface() const;
 
-	SDL_Rect GetFrame(int Number) const;
+	Cord GetCord(int Number) const;
+
+	int GetTotalFrames() const;
 
 	int GetMaxFrameH() const;
 
@@ -32,7 +44,9 @@ public:
 private:
 	SDL_Surface *Image;
 
-	std::vector<SDL_Rect>Frames;
+	std::vector<Cord>Cords;
+
+	int TotalFrames;
 
 	int MaxFrameH;
 };

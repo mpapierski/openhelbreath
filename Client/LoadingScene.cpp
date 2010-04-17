@@ -41,5 +41,5 @@ void LoadingScene::Draw(SDL_Surface *Dest)
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOADING], 1, 1, SPRID_LOADING_BACKGROUND);
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOADING], 473, 443, Percent, 17, SPRID_LOADING_PROGRESSBAR);
 
-	Scene::DrawVersion(Dest);
+	Game::DrawVersion(Dest);
 }

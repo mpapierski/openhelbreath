@@ -18,6 +18,7 @@ class LoginScene: public Scene
 		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
 		void OnLButtonDown(int X, int Y);
 		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+
 	private:
 		void _Connect();
 		void _Cancel();
@@ -33,8 +34,8 @@ class LoginScene: public Scene
 			Login, Password, Connect, Cancel
 		} LoginFocus;
 
-		TextEdit LoginEdit;
-		TextEdit PasswordEdit;
+		gui::TextEdit LoginEdit;
+		gui::TextEdit PasswordEdit;
 		ConnectingWidget ConnectingBox;
 		DialogBoxButtons DlgBox;
 		Socket *MLSocket;

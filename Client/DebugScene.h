@@ -13,8 +13,6 @@ class DebugScene: public Scene
 
 		void Draw(SDL_Surface *Dest);
 
-		void OnLoop();
-
 		void OnEvent(SDL_Event *EventSource);
 
 		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);

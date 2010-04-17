@@ -165,3 +165,10 @@ void Game::ChangeScene(Scene *NewScene)
 
 	CurrentScene = NewScene;
 }
+
+void Game::DrawVersion(SDL_Surface *Dest)
+{
+	char Ver[20];
+	sprintf(Ver, "V%d.%d", DEF_LOWERVERSION, DEF_UPPERVERSION);
+	Font::PutTextSprF(Dest, 14, 463, Ver);
+}

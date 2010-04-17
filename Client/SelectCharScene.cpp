@@ -3,7 +3,16 @@
 SelectCharScene::SelectCharScene(Buffer * P)
 {
 	SlotSelect = 0;
+
+	ButtonFocus = Start;
+
 	UpdateCharList(P, 12); // Skip 12 bytes (Dates)
+
+}
+
+SelectCharScene::~SelectCharScene()
+{
+
 }
 
 void SelectCharScene::Draw(SDL_Surface *Dest)
@@ -61,6 +70,7 @@ void SelectCharScene::Draw(SDL_Surface *Dest)
 		default:
 			;
 	}
+
 	for (int i = 0; i < CharCount; i++)
 	{
 		char Txt[11];
@@ -83,6 +93,8 @@ void SelectCharScene::Draw(SDL_Surface *Dest)
 	}
 
 	Font::PutAlignedText(Dest, 122, 456, 315-122, "Test Server", 0, 0, 0);
+
+	Game::DrawVersion(Dest);
 }
 
 void SelectCharScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
@@ -140,11 +152,6 @@ void SelectCharScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 	}
 }
 
-SelectCharScene::~SelectCharScene()
-{
-
-}
-
 void SelectCharScene::UpdateCharList(Buffer * B, int Skip)
 {
 	if (Skip > 0)
@@ -175,5 +182,4 @@ void SelectCharScene::UpdateCharList(Buffer * B, int Skip)
 	}
 #endif
 }
-
 

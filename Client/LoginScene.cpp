@@ -16,6 +16,11 @@ LoginScene::LoginScene(const std::string &WS)
 	WorldServerName = WS;
 }
 
+LoginScene::~LoginScene()
+{
+
+}
+
 void LoginScene::Draw(SDL_Surface *Dest)
 {
 	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0, SPRID_LOGIN_BACKGROUND);
@@ -42,7 +47,7 @@ void LoginScene::Draw(SDL_Surface *Dest)
 	ConnectingBox.Draw(Dest);
 	DlgBox.Draw(Dest);
 
-	Scene::DrawVersion(Dest);
+	Game::DrawVersion(Dest);
 }
 
 void LoginScene::OnEvent(SDL_Event *EventSource)
@@ -53,6 +58,8 @@ void LoginScene::OnEvent(SDL_Event *EventSource)
 		LoginEdit.OnEvent(EventSource);
 	if (LoginFocus == Password)
 		PasswordEdit.OnEvent(EventSource);
+
+	ConnectingBox.OnEvent(EventSource);
 }
 
 void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
@@ -196,6 +203,10 @@ void LoginScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool R
 		DlgBox.OnMouseMove(X, Y, RelX, RelY, Left, Right, Middle);
 		return;
 	}
+
+	if(ConnectingBox.IsEnabled())
+		return;
+
 	if (Y > 282 && Y < (282 + 20))
 	{
 		if (X > 80 && X < (80 + 84))
@@ -221,6 +232,10 @@ void LoginScene::OnLButtonDown(int X, int Y)
 		DlgBox.OnLButtonDown(X, Y);
 		return;
 	}
+
+	if(ConnectingBox.IsEnabled())
+		return;
+
 	if (X > 170 && X < (170 + 160))
 	{
 		if (Y > 160 && Y < (160 + 20)) // LoginEdit
@@ -262,16 +277,10 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		DlgBox.OnKeyDown(Sym, Mod, Unicode);
 		return;
 	}
-	if (ConnectingBox.IsEnabled())
-	{
-		if (Sym == SDLK_ESCAPE)
-		{
-			ConnectingBox.SetEnabled(false);
-			if (MLSocket != 0)
-				Disconnect();
-		}
+
+	if(ConnectingBox.IsEnabled())
 		return;
-	}
+
 	if (Sym == SDLK_ESCAPE)
 	{
 		_Cancel();
@@ -370,11 +379,6 @@ void LoginScene::_Cancel()
 #else
 	Game::GetInstance().ChangeScene(new MenuScene);
 #endif
-}
-
-LoginScene::~LoginScene()
-{
-
 }
 
 void LoginScene::__PasswordMismatch()

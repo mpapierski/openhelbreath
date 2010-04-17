@@ -4,37 +4,42 @@
 #include "Event.h"
 #include "Surface.h"
 
-class Widget : public Event
+namespace gui
 {
-public:
-	Widget();
-	~Widget();
 
-	virtual void Draw(SDL_Surface *Dest);
+	class Widget: public Event
+	{
+		public:
+			Widget();
+			~Widget();
 
-	void OnEvent(SDL_Event *EventSource);
+			virtual void Draw(SDL_Surface *Dest);
 
-	void SetPosition(int X, int Y);
+			virtual void OnEvent(SDL_Event *EventSource);
 
-	void SetSurface(SDL_Surface *Source);
+			void SetPosition(int X, int Y);
 
-	SDL_Surface *GetSurface() const;
+			void SetSurface(SDL_Surface *Source);
 
-	int X() const;
+			SDL_Surface *GetSurface() const;
 
-	int Y() const;
+			int X() const;
 
-private:
-	SDL_Surface *WidgetSurface;
+			int Y() const;
 
-	int PosX;
+		private:
+			SDL_Surface *WidgetSurface;
 
-	int PosY;
-};
+			int PosX;
 
-inline SDL_Surface *Widget::GetSurface() const
-{
-	return WidgetSurface;
-}
+			int PosY;
+	};
+
+	inline SDL_Surface *Widget::GetSurface() const
+	{
+		return WidgetSurface;
+	}
+
+} //namespace gui
 
 #endif // WIDGET_H

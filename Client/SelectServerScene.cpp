@@ -23,7 +23,7 @@ void SelectServerScene::Draw(SDL_Surface *Dest)
 		break;
 	}
 
-	Scene::DrawVersion(Dest);
+	Game::DrawVersion(Dest);
 }
 
 void SelectServerScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)

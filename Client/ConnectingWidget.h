@@ -1,11 +1,11 @@
-#ifndef MESSAGEBOX_H
-#define MESSAGEBOX_H
+#ifndef CONNECTINGWIDGET_H
+#define CONNECTINGWIDGET_H
 
 #include "Widget.h"
 #include "Font.h"
 #include "Timer.h"
 
-class ConnectingWidget: public Widget
+class ConnectingWidget: public gui::Widget
 {
 	public:
 		ConnectingWidget();
@@ -31,4 +31,4 @@ class ConnectingWidget: public Widget
 		int State;
 };
 
-#endif // MESSAGEBOX_H
+#endif // CONNECTINGWIDGET_H

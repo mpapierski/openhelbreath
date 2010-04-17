@@ -1,21 +1,11 @@
-#ifndef DIALOGBOXBUTTONS_H_
-#define DIALOGBOXBUTTONS_H_
+#ifndef DIALOGBOXBUTTONS_H
+#define DIALOGBOXBUTTONS_H
 
-#include "SpriteID.h"
-#include "GlobalDef.h"
 #include "Widget.h"
 #include "Font.h"
 
-class DialogBoxButtons: public Widget
+class DialogBoxButtons: public gui::Widget
 {
-	private:
-		int _X, _Y;
-		bool Enabled;
-		int LeftButton;
-		int RightButton;
-		int Focus;
-		std::string Title;
-		std::vector<std::string> Text;
 	public:
 		DialogBoxButtons();
 		virtual ~DialogBoxButtons();
@@ -29,6 +19,15 @@ class DialogBoxButtons: public Widget
 		void SetTitle(const std::string &NewTitle);
 		void ClearText();
 		void AddText(const std::string &Txt);
+
+	private:
+		int _X, _Y;
+		bool Enabled;
+		int LeftButton;
+		int RightButton;
+		int Focus;
+		std::string Title;
+		std::vector<std::string> Text;
 };
 
-#endif /* DIALOGBOXBUTTONS_H_ */
+#endif // DIALOGBOXBUTTONS_H

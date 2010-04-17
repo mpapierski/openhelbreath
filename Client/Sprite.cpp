@@ -20,7 +20,6 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 
 	int tmp, tmp2;
 
-	int TotalFrames;
 	int BitmapFileStartLoc;
 	int BmpSize;
 	char *BmpFile;
@@ -39,31 +38,37 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 	fseek(pakFile, tmp + 100, SEEK_SET);
 	fread(&TotalFrames, 1, 4, pakFile);
 
-	Frames.resize(TotalFrames);
+	Cords.resize(TotalFrames);
 
 	for (int i = 0; i < TotalFrames; i++)
 	{
 		tmp2 = (tmp + 104 + (i * 12));
 		fseek(pakFile, tmp2, SEEK_SET);
-		fread(&Frames[i].x, 1, 2, pakFile);
+		fread(&Cords[i].X, 1, 2, pakFile);
 
 		fseek(pakFile, tmp2 + 2, SEEK_SET);
-		fread(&Frames[i].y, 1, 2, pakFile);
+		fread(&Cords[i].Y, 1, 2, pakFile);
 
 		fseek(pakFile, tmp2 + 4, SEEK_SET);
-		fread(&Frames[i].w, 1, 2, pakFile);
+		fread(&Cords[i].W, 1, 2, pakFile);
 
 		fseek(pakFile, tmp2 + 6, SEEK_SET);
-		fread(&Frames[i].h, 1, 2, pakFile);
+		fread(&Cords[i].H, 1, 2, pakFile);
+
+		fseek(pakFile, tmp2 + 8, SEEK_SET);
+		fread(&Cords[i].Vx, 1, 2, pakFile);
+
+		fseek(pakFile, tmp2 + 10, SEEK_SET);
+		fread(&Cords[i].Vy, 1, 2, pakFile);
 	}
 
 	int max = 0;
 	for (int i = 0; i < TotalFrames; i++)
 	{
-		if (Frames[i].h > Frames[max].h)
+		if (Cords[i].H > Cords[max].H)
 			max = i;
 	}
-	MaxFrameH = Frames[max].h;
+	MaxFrameH = Cords[max].H;
 
 	BitmapFileStartLoc = tmp + (108 + (12 * TotalFrames));
 
@@ -79,7 +84,7 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 	SDL_RWops *rw = SDL_RWFromMem(BmpFile, BmpSize);
 	Image = SDL_LoadBMP_RW(rw, 1);
 
-	delete[] BmpFile;
+	delete [] BmpFile;
 
 	fclose(pakFile);
 
@@ -88,12 +93,12 @@ bool Sprite::LoadFromFile(const std::string &FileName, int Number)
 
 bool Sprite::Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int Frame)
 {
-	return Surface::Draw(Dest, SpriteSrc.GetSurface(), X, Y, SpriteSrc.GetFrame(Frame).x, SpriteSrc.GetFrame(Frame).y, SpriteSrc.GetFrame(Frame).w, SpriteSrc.GetFrame(Frame).h);
+	return Surface::Draw(Dest, SpriteSrc.GetSurface(), X, Y, SpriteSrc.GetCord(Frame).X, SpriteSrc.GetCord(Frame).Y, SpriteSrc.GetCord(Frame).W, SpriteSrc.GetCord(Frame).H);
 }
 
 bool Sprite::Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int W, int H, int Frame)
 {
-	return Surface::Draw(Dest, SpriteSrc.GetSurface(), X, Y, SpriteSrc.GetFrame(Frame).x, SpriteSrc.GetFrame(Frame).y, W, H);
+	return Surface::Draw(Dest, SpriteSrc.GetSurface(), X, Y, SpriteSrc.GetCord(Frame).X, SpriteSrc.GetCord(Frame).Y, W, H);
 }
 
 SDL_Surface *Sprite::GetSurface() const
@@ -101,17 +106,20 @@ SDL_Surface *Sprite::GetSurface() const
 	return Image;
 }
 
-SDL_Rect Sprite::GetFrame(int Number) const
+Cord Sprite::GetCord(int Number) const
 {
-	SDL_Rect Empty =
-	{ 0, 0, 0, 0 };
-
-	if (Frames.size() != 0)
+	if(!Cords.size())
 	{
-		return Frames.at(Number);
+		Cord EmptyCord = {0, 0, 0, 0, 0, 0};
+		return EmptyCord;
 	}
 	else
-		return Empty;
+		return Cords.at(Number);
+}
+
+int Sprite::GetTotalFrames() const
+{
+	return TotalFrames;
 }
 
 int Sprite::GetMaxFrameH() const
@@ -124,8 +132,8 @@ void Sprite::SetColorKey()
 	SDL_Color color;
 	Uint8 index;
 
-	index= *((Uint8*)Image->pixels);
-	color=Image->format->palette->colors[index];
+	index = *((Uint8*)Image->pixels);
+	color = Image->format->palette->colors[index];
 
 	Surface::SetTransparent(Image, color.r, color.g, color.b);
 }

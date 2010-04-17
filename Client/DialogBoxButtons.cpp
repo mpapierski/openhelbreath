@@ -6,8 +6,8 @@ DialogBoxButtons::DialogBoxButtons()
 	SetSurface(Surface::CreateSurface(640, 480, 0, 0, 0, 128));
 	Enabled = false;
 	Focus = 0;
-	_X = 320 - (Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetFrame(INTERFACE_DIALOG_MESSAGEBOX).w / 2);
-	_Y = 240 - (Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetFrame(INTERFACE_DIALOG_MESSAGEBOX).h / 2);
+	_X = 320 - (Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetCord(INTERFACE_DIALOG_MESSAGEBOX).W / 2);
+	_Y = 240 - (Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetCord(INTERFACE_DIALOG_MESSAGEBOX).H / 2);
 	Focus = -1;
 }
 
