@@ -124,10 +124,10 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 #endif
 							Disconnect();
 							if ((Lower == DEF_LOWERVERSION) && (Upper == DEF_UPPERVERSION))
-								Game::GetInstance().ChangeScene(new SelectCharScene);
+								Game::GetInstance().ChangeScene(new SelectCharScene(data));
 #ifdef DEF_CHECKVERSION
 							else
-							Game::GetInstance().ChangeScene(new VersionNotMatchScene);
+								Game::GetInstance().ChangeScene(new VersionNotMatchScene);
 #endif
 							return;
 						}

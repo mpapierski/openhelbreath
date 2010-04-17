@@ -133,10 +133,6 @@ void Game::OnEvent(SDL_Event *EventSource)
 void Game::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
 #ifdef DEBUG
-	if (Sym == SDLK_F11)
-	{
-		ChangeScene(new SelectCharScene);
-	}
 	if (Sym == SDLK_F12)
 	{
 		ChangeScene(new DebugScene);

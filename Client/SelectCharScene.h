@@ -3,10 +3,27 @@
 
 #include "Scene.h"
 
+#pragma pack(1)
+
+typedef struct
+{
+		char Name[10];
+		char _Unused;
+		short Appr1, Appr2, Appr3, Appr4;
+		short Gender, Skin;
+		unsigned int Level, Experience;
+		short Strength, Vitality, Dexterity, Intelligence,Magic, Agility;
+		short Year, Month, Day, Hour, Minute, Second;
+		char MapLoc[10];
+} CCharacter;
+typedef CCharacter CCharList[4];
+
+#pragma pack(0)
+
 class SelectCharScene: public Scene
 {
 	public:
-		SelectCharScene();
+		SelectCharScene(Buffer * P);
 		~SelectCharScene();
 
 		void Draw(SDL_Surface *Dest);
@@ -24,6 +41,9 @@ class SelectCharScene: public Scene
 		} ButtonFocus;
 
 		int SlotSelect;
+		int CharCount;
+		CCharList CharList;
+		void UpdateCharList(Buffer * B, int Skip = 0);
 };
 
 #endif // SELECTCHARSCENE_H
