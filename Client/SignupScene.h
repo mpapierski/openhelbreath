@@ -17,7 +17,7 @@ class SignupScene: public Scene
 {
 	public:
 		SignupScene();
-		~SignupScene();
+		virtual ~SignupScene();
 		void Draw(SDL_Surface *Dest);
 		void OnEvent(SDL_Event *EventSource);
 		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);

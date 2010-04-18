@@ -14,154 +14,164 @@ void Event::OnEvent(SDL_Event *EventSource)
 {
 	switch (EventSource->type)
 	{
-	case SDL_ACTIVEEVENT:
-	{
-		switch (EventSource->active.state)
+		case SDL_ACTIVEEVENT:
 		{
-		case SDL_APPMOUSEFOCUS:
-		{
-			if(EventSource->active.gain) OnMouseFocus();
-			else OnMouseBlur();
+			switch (EventSource->active.state)
+			{
+				case SDL_APPMOUSEFOCUS:
+				{
+					if (EventSource->active.gain)
+						OnMouseFocus();
+					else
+						OnMouseBlur();
+					break;
+				}
+				case SDL_APPINPUTFOCUS:
+				{
+					if (EventSource->active.gain)
+						OnInputFocus();
+					else
+						OnInputBlur();
+					break;
+				}
+				case SDL_APPACTIVE:
+				{
+					if (EventSource->active.gain)
+						OnRestore();
+					else
+						OnMinimize();
+					break;
+				}
+			}
 			break;
 		}
-		case SDL_APPINPUTFOCUS:
+
+		case SDL_KEYDOWN:
 		{
-			if(EventSource->active.gain) OnInputFocus();
-			else OnInputBlur();
+			OnKeyDown(EventSource->key.keysym.sym, EventSource->key.keysym.mod, EventSource->key.keysym.unicode);
 			break;
 		}
-		case SDL_APPACTIVE:
+
+		case SDL_KEYUP:
 		{
-			if(EventSource->active.gain) OnRestore();
-			else OnMinimize();
+			OnKeyUp(EventSource->key.keysym.sym, EventSource->key.keysym.mod, EventSource->key.keysym.unicode);
 			break;
 		}
-		}
-		break;
-	}
 
-	case SDL_KEYDOWN:
-	{
-		OnKeyDown(EventSource->key.keysym.sym, EventSource->key.keysym.mod, EventSource->key.keysym.unicode);
-		break;
-	}
-
-	case SDL_KEYUP:
-	{
-		OnKeyUp(EventSource->key.keysym.sym, EventSource->key.keysym.mod, EventSource->key.keysym.unicode);
-		break;
-	}
-
-	case SDL_MOUSEMOTION:
-	{
-		OnMouseMove(EventSource->motion.x, EventSource->motion.y, EventSource->motion.xrel, EventSource->motion.yrel, (EventSource->motion.state&SDL_BUTTON(SDL_BUTTON_LEFT))!=0, (EventSource->motion.state&SDL_BUTTON(SDL_BUTTON_RIGHT))!=0, (EventSource->motion.state&SDL_BUTTON(SDL_BUTTON_MIDDLE))!=0);
-		break;
-	}
-
-	case SDL_MOUSEBUTTONDOWN:
-	{
-		switch(EventSource->button.button)
+		case SDL_MOUSEMOTION:
 		{
-		case SDL_BUTTON_LEFT:
-		{
-			OnLButtonDown(EventSource->button.x, EventSource->button.y);
+			OnMouseMove(EventSource->motion.x, EventSource->motion.y, EventSource->motion.xrel, EventSource->motion.yrel, (EventSource->motion.state
+					& SDL_BUTTON(SDL_BUTTON_LEFT)) != 0, (EventSource->motion.state & SDL_BUTTON(SDL_BUTTON_RIGHT)) != 0, (EventSource->motion.state
+					& SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0);
 			break;
 		}
-		case SDL_BUTTON_RIGHT:
+
+		case SDL_MOUSEBUTTONDOWN:
 		{
-			OnRButtonDown(EventSource->button.x, EventSource->button.y);
+			switch (EventSource->button.button)
+			{
+				case SDL_BUTTON_LEFT:
+				{
+					OnLButtonDown(EventSource->button.x, EventSource->button.y);
+					break;
+				}
+				case SDL_BUTTON_RIGHT:
+				{
+					OnRButtonDown(EventSource->button.x, EventSource->button.y);
+					break;
+				}
+				case SDL_BUTTON_MIDDLE:
+				{
+					OnMButtonDown(EventSource->button.x, EventSource->button.y);
+					break;
+				}
+			}
 			break;
 		}
-		case SDL_BUTTON_MIDDLE:
+
+		case SDL_MOUSEBUTTONUP:
 		{
-			OnMButtonDown(EventSource->button.x, EventSource->button.y);
+			switch (EventSource->button.button)
+			{
+				case SDL_BUTTON_LEFT:
+				{
+					OnLButtonUp(EventSource->button.x, EventSource->button.y);
+					break;
+				}
+				case SDL_BUTTON_RIGHT:
+				{
+					OnRButtonUp(EventSource->button.x, EventSource->button.y);
+					break;
+				}
+				case SDL_BUTTON_MIDDLE:
+				{
+					OnMButtonUp(EventSource->button.x, EventSource->button.y);
+					break;
+				}
+			}
 			break;
 		}
-		}
-		break;
-	}
 
-	case SDL_MOUSEBUTTONUP:
-	{
-		switch (EventSource->button.button)
+		case SDL_JOYAXISMOTION:
 		{
-		case SDL_BUTTON_LEFT:
-		{
-			OnLButtonUp(EventSource->button.x, EventSource->button.y);
+			OnJoyAxis(EventSource->jaxis.which, EventSource->jaxis.axis, EventSource->jaxis.value);
 			break;
 		}
-		case SDL_BUTTON_RIGHT:
+
+		case SDL_JOYBALLMOTION:
 		{
-			OnRButtonUp(EventSource->button.x, EventSource->button.y);
+			OnJoyBall(EventSource->jball.which, EventSource->jball.ball, EventSource->jball.xrel, EventSource->jball.yrel);
 			break;
 		}
-		case SDL_BUTTON_MIDDLE:
+
+		case SDL_JOYHATMOTION:
 		{
-			OnMButtonUp(EventSource->button.x, EventSource->button.y);
+			OnJoyHat(EventSource->jhat.which, EventSource->jhat.hat, EventSource->jhat.value);
 			break;
 		}
+		case SDL_JOYBUTTONDOWN:
+		{
+			OnJoyButtonDown(EventSource->jbutton.which, EventSource->jbutton.button);
+			break;
 		}
-		break;
-	}
 
-	case SDL_JOYAXISMOTION:
-	{
-		OnJoyAxis(EventSource->jaxis.which, EventSource->jaxis.axis, EventSource->jaxis.value);
-		break;
-	}
+		case SDL_JOYBUTTONUP:
+		{
+			OnJoyButtonUp(EventSource->jbutton.which, EventSource->jbutton.button);
+			break;
+		}
 
-	case SDL_JOYBALLMOTION:
-	{
-		OnJoyBall(EventSource->jball.which, EventSource->jball.ball, EventSource->jball.xrel, EventSource->jball.yrel);
-		break;
-	}
+		case SDL_QUIT:
+		{
+			OnExit();
+			break;
+		}
 
-	case SDL_JOYHATMOTION:
-	{
-		OnJoyHat(EventSource->jhat.which, EventSource->jhat.hat, EventSource->jhat.value);
-		break;
-	}
-	case SDL_JOYBUTTONDOWN:
-	{
-		OnJoyButtonDown(EventSource->jbutton.which, EventSource->jbutton.button);
-		break;
-	}
+		case SDL_SYSWMEVENT:
+		{
+			//Ignore
+			break;
+		}
 
-	case SDL_JOYBUTTONUP:
-	{
-		OnJoyButtonUp(EventSource->jbutton.which, EventSource->jbutton.button);
-		break;
-	}
+		case SDL_VIDEORESIZE:
+		{
+			OnResize(EventSource->resize.w, EventSource->resize.h);
+			break;
+		}
 
-	case SDL_QUIT:
-	{
-		OnExit();
-		break;
-	}
-
-	case SDL_SYSWMEVENT:
-	{
-		//Ignore
-		break;
-	}
-
-	case SDL_VIDEORESIZE:
-	{
-		OnResize(EventSource->resize.w, EventSource->resize.h);
-		break;
-	}
-
-	case SDL_VIDEOEXPOSE:
-	{
-		OnExpose();
-		break;
-	}
-
-	default:
-	{
-		OnUser(EventSource->user.type, EventSource->user.code, EventSource->user.data1, EventSource->user.data2);
-		break;
-	}
+		case SDL_VIDEOEXPOSE:
+		{
+			OnExpose();
+			break;
+		}
+		case SDL_USEREVENT:
+			OnUser(EventSource->user.type, EventSource->user.code, EventSource->user.data1, EventSource->user.data2);
+			break;
+		default:
+		{
+			fprintf(stderr, "Unknown SDL event : %d\n", EventSource->type);
+			break;
+		}
 	}
 }
 

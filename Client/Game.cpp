@@ -78,18 +78,18 @@ bool Game::OnInitialize()
 	Audio = new AudioManager();
 
 	//Load some Sprites before Loading
-	Sprites[SPRID_CURSOR].LoadFromFile("interface.pak", 0);
+	Sprites[SPRID_CURSOR].Init("interface.pak", 0);
 	Sprites[SPRID_CURSOR].SetColorKey();
 
-	Sprites[SPRID_SPRFONT_NUM].LoadFromFile("interface2.pak", 0);
+	Sprites[SPRID_SPRFONT_NUM].Init("interface2.pak", 0);
 	Sprites[SPRID_SPRFONT_NUM].SetColorKey();
 
-	Sprites[SPRID_SPRFONT].LoadFromFile("SPRFONTS.PAK", 0);
+	Sprites[SPRID_SPRFONT].Init("SPRFONTS.PAK", 0);
 	Sprites[SPRID_SPRFONT].SetColorKey();
-	Sprites[SPRID_SPRFONT2].LoadFromFile("SPRFONTS.PAK", 1);
+	Sprites[SPRID_SPRFONT2].Init("SPRFONTS.PAK", 1);
 	Sprites[SPRID_SPRFONT2].SetColorKey();
 
-	Sprites[SPRID_LOADING].LoadFromFile("New-Dialog.pak", 0);
+	Sprites[SPRID_LOADING].Init("New-Dialog.pak", 0);
 
 	return true;
 }
@@ -102,7 +102,6 @@ void Game::OnLoop()
 void Game::OnDraw()
 {
 	CurrentScene->Draw(MainWindow.GetSurface());
-
 	MouseCursor.Draw(MainWindow.GetSurface());
 }
 
@@ -133,6 +132,23 @@ void Game::OnEvent(SDL_Event *EventSource)
 void Game::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
 #ifdef DEBUG
+#ifdef DEF_CACHE
+	if (Sym == SDLK_F11)
+	{
+		printf("Cache listing:\n");
+		for (unsigned int i = 0; i < Sprite::Cache.size(); i++)
+		{
+			printf("%s:%d (Locked: %s RAM: %s)\n", Sprite::Cache[i]->Name.c_str(), Sprite::Cache[i]->ID, Sprite::Cache[i]->Locked ? "true" : "false", Sprite::Cache[i]->getImage() == 0 ? "false" : "true");
+		}
+		printf("OK.\n");
+	}
+	if (Sym == SDLK_F10)
+	{
+		printf("Releasing unused sprites...\n");
+		Sprite::ReleaseUnused();
+		printf("\nDone\n");
+	}
+#endif
 	if (Sym == SDLK_F12)
 	{
 		ChangeScene(new DebugScene);
@@ -161,8 +177,15 @@ void Game::OnCleanup()
 
 void Game::ChangeScene(Scene *NewScene)
 {
+#ifdef DEF_CACHE
+	Sprite::ReleaseUnused();
+	for (unsigned int i = 0; i < Sprite::Cache.size(); i++)
+	{
+		Sprite::Cache[i]->Locked = false;
+		Sprite::Cache[i]->Priority = 0;
+	}
+#endif
 	delete CurrentScene;
-
 	CurrentScene = NewScene;
 }
 

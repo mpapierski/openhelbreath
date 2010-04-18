@@ -278,11 +278,14 @@ void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 		return;
 	}
 
-	if(ConnectingBox.IsEnabled())
-		return;
 
 	if (Sym == SDLK_ESCAPE)
 	{
+		if(ConnectingBox.IsEnabled())
+		{
+			ConnectingBox.SetEnabled(false);
+			return;
+		}
 		_Cancel();
 	}
 

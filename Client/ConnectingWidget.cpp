@@ -48,10 +48,7 @@ void ConnectingWidget::Draw(SDL_Surface *Dest)
 
 void ConnectingWidget::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
 {
-	if(Sym == SDLK_ESCAPE)
-	{
-		Game::GetInstance().ChangeScene(new MenuScene);
-	}
+
 }
 
 void ConnectingWidget::SetEnabled(bool Enable)

@@ -19,6 +19,7 @@
 #define DEF_MAKEACCOUNT // Enable account creation from Client
 #define DEF_CONSOLE  // Relocate stdout to console Window (Win32)
 #define DEF_CHECKVERSION // Server version check
+#define DEF_CACHE // Save RAM by release unused sprites
 ///////////////////////////////////////////////////////////////////////////////
 
 #define DEF_SERVER_ADDR "localhost" // Server address (Default address)

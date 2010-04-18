@@ -6,49 +6,68 @@
 #include <vector>
 
 #include "Surface.h"
+#include "GlobalDef.h"
 
 struct Cord
 {
-	short X;
-	short Y;
-	short W;
-	short H;
-	short Vx;
-	short Vy;
+		short X;
+		short Y;
+		short W;
+		short H;
+		short Vx;
+		short Vy;
 };
 
 class Sprite
 {
-public:
-	Sprite();
-	~Sprite();
+	public:
+#ifdef DEF_CACHE
+		int Priority;
+		int ID;
+		bool Locked;
+		std::string Name;
+		static std::vector<Sprite*> Cache;
+		static void ReleaseUnused();
+#endif
+		Sprite();
+		~Sprite();
+		Sprite(const std::string & FileName, int Number);
+		bool Init(const std::string & FileName, int Number);
+		inline bool LoadFromFile(const std::string & FileName, int Number);
+		static bool Draw(SDL_Surface *Dest, Sprite & SpriteSrc, int X, int Y, int Frame);
+		static bool Draw(SDL_Surface *Dest, Sprite & SpriteSrc, int X, int Y, int W, int H, int Frame);
+		SDL_Surface *GetSurface() const;
+		Cord GetCord(int Number) const;
+		int GetTotalFrames() const;
+		int GetMaxFrameH() const;
+		void SetColorKey();
 
-	Sprite(const std::string &FileName, int Number);
+		inline bool getTransparent() const
+		{
+			return Transparent;
+		}
 
-	bool LoadFromFile(const std::string &FileName, int Number);
+		void setTransparent(bool Transparent)
+		{
+			this->Transparent = Transparent;
+		}
 
-	static bool Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int Frame);
+		SDL_Surface *getImage() const
+		{
+			return Image;
+		}
 
-	static bool Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int W, int H, int Frame);
+		void setImage(SDL_Surface *Image)
+		{
+			this->Image = Image;
+		}
 
-	SDL_Surface *GetSurface() const;
-
-	Cord GetCord(int Number) const;
-
-	int GetTotalFrames() const;
-
-	int GetMaxFrameH() const;
-
-	void SetColorKey();
-
-private:
-	SDL_Surface *Image;
-
-	std::vector<Cord>Cords;
-
-	int TotalFrames;
-
-	int MaxFrameH;
+	private:
+		SDL_Surface *Image;
+		std::vector<Cord> Cords;
+		int TotalFrames;
+		int MaxFrameH;
+		bool Transparent;
 };
 
 #endif // SPRITE_H
