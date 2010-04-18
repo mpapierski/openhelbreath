@@ -90,14 +90,17 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 		{
 			// Socket is connected to server
 			ConnectingBox.SetState(1);
+			char * WS = strdup(WorldServerName.c_str()); // WHY.
 #ifdef DEBUG
 			puts("CONNECTED");
-			printf("Log in : %s/%s at %s\n", LoginEdit.GetText().c_str(), PasswordEdit.GetText().c_str(), WorldServerName.c_str());
+			printf("Log in : %s/%s at %s\n", LoginEdit.GetText().c_str(), PasswordEdit.GetText().c_str(), WS);
 #endif
 			Packet p1(MSGID_REQUEST_LOGIN, DEF_MSGTYPE_CONFIRM);
+
 			p1.push<char> (LoginEdit.GetText().c_str(), 10);
 			p1.push<char> (PasswordEdit.GetText().c_str(), 10);
-			p1.push<char> (WorldServerName.c_str(), 30);
+			p1.push<char> (WS, 30);
+			delete WS;
 			p1.send((NetSock*) Data1);
 		}
 			break;

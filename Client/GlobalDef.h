@@ -62,4 +62,7 @@
 #define SDL_CLICKED_LEFT		0x0000000A
 #define SDL_CLICKED_RIGHT		0x0000000B
 
+// Delete previous scene
+#define SDL_DELETE_SCENE		0x0000000C
+
 #endif // GLOBALDEF_H

@@ -112,6 +112,10 @@ void Game::OnEvent(SDL_Event *EventSource)
 	{
 		switch (EventSource->user.code)
 		{
+			case SDL_DELETE_SCENE:
+				Scene * prev = static_cast<Scene*>(EventSource->user.data1);
+				delete prev;
+				break;
 			case SDL_THREAD_START:
 			{
 				printf("Thread started (ID: " INT_FMT ")\n", reinterpret_cast<INT>(EventSource->user.data2));
@@ -185,7 +189,12 @@ void Game::ChangeScene(Scene *NewScene)
 		Sprite::Cache[i]->Priority = 0;
 	}
 #endif
-	delete CurrentScene;
+	SDL_Event Ev;
+	Ev.type = SDL_USEREVENT;
+	Ev.user.code = SDL_DELETE_SCENE;
+	Ev.user.data1 = CurrentScene;
+	Ev.user.data2 = 0;
+	SDL_PushEvent(&Ev);
 	CurrentScene = NewScene;
 }
 
