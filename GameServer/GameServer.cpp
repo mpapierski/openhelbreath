@@ -1,133 +1,156 @@
+/*
+ This file is part of OpenHelbreath.
+ OpenHelbreath is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ OpenHelbreath is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with OpenHelbreath.  If not, see <http://www.gnu.org/licenses/>.
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "GameServer.h"
 
-bool
-GameServer::bInitialize()
+bool GameServer::Initialize()
 {
-
-	PutLog("openhelbreath Game Server beta");
-	
-	if (!bReadMainConfig())
+	if (!ReadMainConfig())
 		return false;
 
 #ifdef WIN32
 	WSADATA wsdat;
-	memset(&wsdat,0,sizeof(wsdat));
-	if(WSAStartup(0x0101,&wsdat))
+	memset(&wsdat, 0, sizeof(wsdat));
+	if (WSAStartup(0x0101, &wsdat))
 	{
 		PutLog("WSAStartup() failed.");
 		return false;
 	}
 #endif
 
-	m_pGateConnector = new CGateConnector();
-	m_pGateConnector->start();
+	GateConnector = new CGateConnector();
+	GateConnector->Start();
 	return true;
 }
 
-bool
-GameServer::bReadMainConfig()
+bool GameServer::ReadMainConfig()
 {
 	CIniFile * cfg;
 	cfg = new CIniFile(DEF_MAINCONFIGFILE);
-	
-	if (!cfg->bLoadIni())
+
+	if (!cfg->LoadIni())
 	{
 		PutLog("(!) Cannot open configuration file.");
 		return false;
 	}
 
-	m_sServerName = cfg->sGetValue("CONFIG", "game-server-name", "");
-	if (m_sServerName == "")
+	ServerName = cfg->sGetValue("CONFIG", "game-server-name", "");
+	if (ServerName == "")
 		return false;
-		
-	if (m_sServerName.length() > 10)
+
+	if (ServerName.length() > 10)
 	{
-		PutLog("(!!!) Game server name(" + m_sServerName + ") must within 10 chars!");
+		PutLog("(!!!) Game server name(" + ServerName + ") must within 10 chars!");
 		return false;
 	}
-	PutLog("(*) Game server name : "+ m_sServerName);
 
-	m_sGameServerAddr = cfg->sGetValue("CONFIG","game-server-address", "");
-	if (m_sGameServerAddr == "")
+	PutLog("(*) Game server name : " + ServerName);
+
+	GameServerAddr = cfg->sGetValue("CONFIG", "game-server-address", "");
+	if (GameServerAddr == "")
 	{
 		PutLog("(*) You must specify game server bind address!");
 		return false;
 	}
 
-	m_iGameServerPort = cfg->iGetValue("CONFIG", "game-server-port", -1);
-	if ( (m_iGameServerPort < 0) || (m_iGameServerPort > 65535) )
-		return false;
-		
-	PutLog("(*) Game server port : " + toString<int>(m_iGameServerPort));
-	
-	m_sGateServerAddr = cfg->sGetValue("CONFIG", "gate-server-address", "");
-	if (m_sGateServerAddr == "")
-		return false;
-		
-	PutLog("(*) Gate server address : " + m_sGateServerAddr);
-	
-	m_iGateServerPort = cfg->iGetValue("CONFIG", "gate-server-port", -1);
-	if ( (m_iGateServerPort < 0) || (m_iGateServerPort > 65535) )
+	GameServerPort = cfg->iGetValue("CONFIG", "game-server-port", -1);
+	if ((GameServerPort < 0) || (GameServerPort > 65535))
 		return false;
 
-	PutLog("(*) Gate server port : " + toString<int>(m_iGateServerPort));
+	PutLog("(*) Game server port : " + toString<int> (GameServerPort));
 
-	vector<string> sMapList = cfg->pGetValuesByName("MAPS", "game-server-map");
+	GateServerAddr = cfg->sGetValue("CONFIG", "gate-server-address", "");
+	if (GateServerAddr == "")
+		return false;
+
+	PutLog("(*) Gate server address : " + GateServerAddr);
+
+	GateServerPort = cfg->iGetValue("CONFIG", "gate-server-port", -1);
+	if ((GateServerPort < 0) || (GateServerPort > 65535))
+		return false;
+
+	PutLog("(*) Gate server port : " + toString<int> (GateServerPort));
+
+	vector<string> sMapList = cfg->GetValuesByName("MAPS", "game-server-map");
 
 	for (unsigned int i = 0; i < sMapList.size(); i++)
 	{
 		PutLog("(*) Add map (" + sMapList[i] + ") - Loading map info files...");
-		if (!bRegisterMap(sMapList[i]))
+		if (!RegisterMap(sMapList[i]))
 		{
 			PutLog("(!!!) Data file loading fail!");
 			return false;
 		}
-		const CMap & pLoaded = m_pMapList[iGetMapIndex(sMapList[i])];
-		PutLog("(*) Data file loading success. Map:" + pLoaded.m_sMapName + " Width:" + toString<int>(pLoaded.m_iSizeX) + " Height:" + toString<int>(pLoaded.m_iSizeY));
+		const CMap & pLoaded = MapList[GetMapIndex(sMapList[i])];
+		PutLog("(*) Data file loading success. Map:" + pLoaded.m_sMapName + " Width:" + toString<int> (pLoaded.m_iSizeX) + " Height:"
+				+ toString<int> (pLoaded.m_iSizeY));
 	}
-	
+
 	delete cfg;
 	return true;
 }
 
-bool
-GameServer::bRegisterMap(string sMapName)
+bool GameServer::RegisterMap(string sMapName)
 {
 	CMap pMapFile(sMapName);
 	if (!pMapFile.bReadMapFile())
 		return false;
-	m_pMapList.push_back(pMapFile);
+	MapList.push_back(pMapFile);
 	return true;
 }
 
-int
-GameServer::iGetMapIndex(string sMapName)
+int GameServer::GetMapIndex(string sMapName)
 {
-	for (unsigned int i = 0; i < m_pMapList.size(); i++)
-	{
-		if (m_pMapList[i].m_sMapName == sMapName)
+	int idx = -1;
+	for (unsigned int i = 0; i < MapList.size(); i++)
+		if (MapList[i].m_sMapName == sMapName)
 		{
-			return i;
+			idx = i;
+			break;
 		}
-	}
-	return -1;
+	return idx;
 }
 
-void
-GameServer::Execute()
+void GameServer::Execute()
 {
 	int iRegisterTimeout = 0;
 	while (true)
 	{
-		if (m_pGateConnector && m_pGateConnector->m_bIsConnected)
+		if (GateConnector && GateConnector->IsConnected)
 		{
 			PutLog("(***) Game Server activated!");
 			break;
 		}
-		if (!m_pGateConnector->m_bIsConnected)
+		if (!GateConnector->IsConnected)
 		{
 			if (iRegisterTimeout == DEF_REGISTERTIMEOUT)
 			{
@@ -143,34 +166,34 @@ GameServer::Execute()
 	}
 	TimerLoop();
 }
-	
-void
-GameServer::TimerLoop()
+
+void GameServer::TimerLoop()
 {
 	while (true)
 	{
 		//TODO: Reimplement
 		sleep(3);
-		if (!m_pGateConnector->m_bIsConnected)
+		if (!GateConnector->IsConnected)
 		{
 			PutLog("(!!!) No connection to Gate Server!");
-			continue;
+			DeadCount++;
+			if (DeadCount > 10)
+				break;
 		}
 		Packet p(MSGID_GAMESERVERALIVE, DEF_MSGTYPE_CONFIRM);
-		p.push<short>(0); //Total Players
-		m_pGateConnector->pGetSock()->Write((unsigned char*)p.data(), p.size());
+		p.push<short> (0); //Total Players
+		p.send(GateConnector->GetSock());
 	}
 }
 
-void
-GameServer::PutLog(string sMessage, int iLogType)
+void GameServer::PutLog(string sMessage, int iLogType)
 {
 	if (iLogType == LOGTYPE_LOCAL)
 	{
 		time_t rawtime;
 		struct tm * timeinfo;
-		time ( &rawtime );
-		timeinfo = localtime( &rawtime );
+		time(&rawtime);
+		timeinfo = localtime(&rawtime);
 		char s_time[20];
 		strftime(s_time, sizeof(s_time), "%Y:%m:%d %H:%M:%S", timeinfo);
 		FILE * log = fopen("GameServer.log", "ab");
@@ -187,9 +210,7 @@ GameServer::PutLog(string sMessage, int iLogType)
 		return;
 	}
 
-	if (!m_pGateConnector->m_bIsConnected && (iLogType == LOGTYPE_GAMEMASTER ||
-				iLogType == LOGTYPE_ITEM ||
-				iLogType == LOGTYPE_CRUSADE))
+	if (!GateConnector->IsConnected && (iLogType == LOGTYPE_GAMEMASTER || iLogType == LOGTYPE_ITEM || iLogType == LOGTYPE_CRUSADE))
 		return;
 
 	Packet * p;
@@ -206,7 +227,7 @@ GameServer::PutLog(string sMessage, int iLogType)
 			p = new Packet(MSGID_GAMECRUSADELOG, DEF_MSGTYPE_CONFIRM);
 			break;
 	}
-	p->push<char>(sMessage.c_str(), sMessage.length());
-	m_pGateConnector->pGetSock()->Write((unsigned char*)p->data(), p->size());
+	p->push<char> (sMessage.c_str(), sMessage.length());
+	p->send(GateConnector->GetSock());
 	delete p;
 }

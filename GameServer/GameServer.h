@@ -1,3 +1,32 @@
+/*
+ This file is part of OpenHelbreath.
+ OpenHelbreath is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ OpenHelbreath is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with OpenHelbreath.  If not, see <http://www.gnu.org/licenses/>.
+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef GAMESERVER_H
 #define GAMESERVER_H
 #include <time.h>
@@ -19,15 +48,18 @@
 class GameServer
 {
 	private:
-		int m_iAliveCount;
-		GameServer() {
-			m_pGateConnector = NULL;
-			m_iAliveCount = 0;
+		int AliveCount;
+		int DeadCount;
+
+		GameServer() :
+			AliveCount(0), DeadCount(0), GateConnector(0)
+		{
+
 		}
 		~GameServer()
 		{
-			if (m_pGateConnector != NULL)
-				delete m_pGateConnector;
+			if (GateConnector != 0)
+				delete GateConnector;
 		}
 
 		GameServer(const GameServer &);
@@ -39,27 +71,27 @@ class GameServer
 			return instance;
 		}
 
-		CGateConnector * m_pGateConnector;	
-		string m_sServerName; // server name, it is sent to gate server
-		string m_sGameServerAddr; // bind address list
-		int m_iGameServerPort; // bind address port (ports?)
-		string m_sGateServerAddr; // login server address
-		int m_iGateServerPort; // gate server port
+		CGateConnector * GateConnector;
+		string ServerName; // server name, it is sent to gate server
+		string GameServerAddr; // bind address list
+		int GameServerPort; // bind address port (ports?)
+		string GateServerAddr; // login server address
+		int GateServerPort; // gate server port
 
-		vector<CMap> m_pMapList;
-		map<int, CItem> m_pItemConfig;
-		vector<CNpc> m_pNpcConfig;
-		map<int, CMagic> m_pMagicConfig;
-		map<int, CSkill> m_pSkillConfig;
-		vector<CBuildItem> m_pBuildItemConfig;
-		vector<CPotion> m_pPotionConfig;
-		vector<CQuest> m_pQuestConfig;
+		vector<CMap> MapList;
+		map<int, CItem> ItemConfig;
+		vector<CNpc> NpcConfig;
+		map<int, CMagic> MagicConfig;
+		map<int, CSkill> SkillConfig;
+		vector<CBuildItem> BuildItemConfig;
+		vector<CPotion> PotionConfig;
+		vector<CQuest> QuestConfig;
 
-		bool bInitialize();
+		bool Initialize();
 
-		bool bReadMainConfig();
-		bool bRegisterMap(string sMapName);
-		int iGetMapIndex(string sMapName);
+		bool ReadMainConfig();
+		bool RegisterMap(string sMapName);
+		int GetMapIndex(string sMapName);
 		void Execute();
 		void TimerLoop();
 		void PutLog(string sMessage, int iLogType = LOGTYPE_LOCAL);
