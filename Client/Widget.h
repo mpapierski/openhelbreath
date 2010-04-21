@@ -27,12 +27,24 @@ namespace gui
 
 			int Y() const;
 
+			int getTag() const
+			{
+				return Tag;
+			}
+
+			void setTag(int Tag)
+			{
+				this->Tag = Tag;
+			}
+
 		private:
 			SDL_Surface *WidgetSurface;
 
 			int PosX;
 
 			int PosY;
+
+			int Tag;
 	};
 
 	inline SDL_Surface *Widget::GetSurface() const

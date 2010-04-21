@@ -3,7 +3,8 @@
 namespace gui
 {
 
-	Widget::Widget()
+	Widget::Widget() :
+		Tag(-1)
 	{
 		WidgetSurface = NULL;
 
