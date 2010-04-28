@@ -93,5 +93,24 @@ void MainWindow::action_saveAs()
 void MainWindow::action_about()
 {
     QMessageBox::information(this, TITLEBAR, TITLEBAR "\nby openhelbreath Team:\nhttp://code.google.com/p/openhelbreath");
+}
 
+void MainWindow::action_sprite_add()
+{
+    if (!ui->mdiArea->activeSubWindow())
+        return;
+    ChildWin * Active = static_cast<ChildWin*>(ui->mdiArea->activeSubWindow()->widget());
+    foreach (QString File, QFileDialog::getOpenFileNames(this, TITLEBAR, "", "BMP (*.bmp)\nPNG (*.png)"))
+    {
+        Active->addSprite(File);
+    }
+}
+
+void MainWindow::action_sprite_remove()
+{
+    if (!ui->mdiArea->activeSubWindow())
+        return;
+    ChildWin * Active = static_cast<ChildWin*>(ui->mdiArea->activeSubWindow()->widget());
+    qDebug("Remove Sprite ID : %d", Active->getSpriteID());
+    Active->removeSprite(Active->getSpriteID());
 }

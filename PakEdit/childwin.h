@@ -29,6 +29,11 @@ typedef struct
 class Sprite
 {
 public:
+    Sprite() :
+        Offset(-1)
+    {
+    }
+
     QList<SpriteFrame> Frames;
     QImage BMP;
     int framesCount() const
@@ -53,6 +58,8 @@ public:
     bool saveToFile(QString fileName);
     void refresh();
     void refresh_title();
+    void removeSprite(int SpriteID);
+    void addSprite(QString FileName);
 
     inline bool isChanged() const
     {
@@ -64,6 +71,9 @@ public:
         Changed = v;
         refresh_title();
     }
+
+    int getFrameID();
+    int getSpriteID();
 
     QList<Sprite> Sprites;
     QString pakFileName;

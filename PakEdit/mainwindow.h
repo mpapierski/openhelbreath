@@ -27,6 +27,8 @@ public slots:
     void action_save();
     void action_saveAs();
     void action_about();
+    void action_sprite_add();
+    void action_sprite_remove();
 protected:
     void changeEvent(QEvent *e);
     void showEvent (QShowEvent *e);

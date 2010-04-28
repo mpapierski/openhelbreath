@@ -49,9 +49,9 @@ bool ChildWin::loadFromFile(QString fileName)
 
     struct
     {
-            int Offset;
-            int Unk;
-        } Offsets[SprCount];
+        int Offset;
+        int Unk;
+    } Offsets[SprCount];
 
     fread(&Offsets, 8, SprCount, fin);
 
@@ -116,16 +116,14 @@ void ChildWin::refresh()
     for (int i = 0; i < Sprites.count(); i++)
     {
         QTreeWidgetItem * Root = new QTreeWidgetItem(ui->treeWidget);
-        QString txt("%1");
-        QString sOff;
-        Root->setText(0, sOff.sprintf("%d", i));
-        Root->setText(1, sOff.sprintf("0x%08X", Sprites[i].Offset));
+        Root->setText(0, QString().sprintf("%d", i));
+        Root->setText(1, Sprites[i].Offset > -1 ? QString().sprintf("0x%08X", Sprites[i].Offset) : "?");
         for (int j = 0; j < Sprites[i].framesCount(); j++)
         {
             QTreeWidgetItem * Child = new QTreeWidgetItem(Root);
-            QString Txt;
-            Child->setText(0, Txt.sprintf("%d", j));
-            Child->setText(1,"");
+
+            Child->setText(0, QString().sprintf("%d", j));
+            Child->setText(1, "");
         }
     }
     refresh_title();
@@ -133,14 +131,26 @@ void ChildWin::refresh()
 
 void ChildWin::on_treeWidget_itemClicked(QTreeWidgetItem* item, int column)
 {
-    if (item->parent())
-        return;
-    bool OK;
-    int ID = (item->text(0).toInt(&OK, 10));
-    if (!OK)
-        return;
+    int SpriteID = getSpriteID(), FrameID = getFrameID();
+    qDebug("SpriteID:%d FrameID:%d", SpriteID, FrameID);
     QGraphicsScene * view = new QGraphicsScene;
-    view->addPixmap(QPixmap().fromImage(Sprites[ID].BMP));
+    view->addPixmap(QPixmap().fromImage(Sprites[SpriteID].BMP));
+    if (FrameID > -1)
+    {
+        for (int i = 0; i < Sprites[SpriteID].framesCount(); i++)
+        {
+            SpriteFrame SF = Sprites[SpriteID].Frames[i];
+            QPen P(QColor(255, 0, 0));
+            QBrush B;
+            if (i == FrameID)
+            {
+                P.setColor(QColor(255, 255, 0));
+                B.setColor(P.color());
+                B.setStyle(Qt::BDiagPattern);
+            }
+            view->addRect(SF.X, SF.Y, SF.Width, SF.Height, P, B);
+        }
+    }
     ui->graphicsView->setScene(view);
 }
 
@@ -240,4 +250,43 @@ void ChildWin::refresh_title()
         T = "*";
     T.append(this->pakFileName);
     setWindowTitle(T);
+}
+
+int ChildWin::getFrameID()
+{
+    QTreeWidgetItem *Item = ui->treeWidget->currentItem();
+    bool OK;
+    return Item->parent() ? Item->text(0).toInt(&OK, 10) : -1;
+}
+
+int ChildWin::getSpriteID()
+{
+    QTreeWidgetItem *Item = ui->treeWidget->currentItem();
+    bool OK;
+    return Item->parent() ? Item->parent()->text(0).toInt(&OK, 10) : Item->text(0).toInt(&OK, 10);
+}
+
+void ChildWin::removeSprite(int SpriteID)
+{
+    if (SpriteID < 0 || SpriteID > Sprites.count())
+        return;
+    Sprites.removeAt(SpriteID);
+    setChanged(true);
+    refresh();
+}
+
+void ChildWin::addSprite(QString FileName)
+{
+    Sprite New;
+    New.BMP.load(FileName);
+    const QSize Dim = New.BMP.size();
+    SpriteFrame Fr;
+    Fr.X = 0;
+    Fr.Y = 0;
+    Fr.Width = Dim.width();
+    Fr.Height = Dim.height();
+    New.Frames.append(Fr);
+    Sprites.append(New);
+    setChanged(true);
+    refresh();
 }
