@@ -36,6 +36,18 @@ exists = lambda fn : os.path.exists(fn) and os.path.isfile(fn)
 DEF_PAKSIG = "<Pak file header>"
 DEF_SPRSIG = "<Sprite File Header>"
 
+class Frame:
+	def __init__(self, *args):
+		(self.X, self.Y, self.W, self.H, self.FX, self.FY) = args[0]
+
+class Sprite:
+	def __init__(self):
+		self.frames = []
+		self.image = None
+		
+	def add_frame(self, fr):
+		self.frames += [Frame(fr)]
+	
 class HBPak(object):
 	"""
 		Usage:
@@ -59,42 +71,33 @@ class HBPak(object):
 			
 			(c1, ) = struct.unpack('<I', fs.read(4))
 			
-			Sprites = []
+			self.sprites = []
 			for i in range(c1):
 				(off, ) = struct.unpack('<I', fs.read(4))
 				fs.seek(4, os.SEEK_CUR)
 				SprOffsets += [off]
 				
-			CRect = namedtuple('CRect', 'X Y Width Height FX FY')
-
 			for i in range(len(SprOffsets)):
 				offset = SprOffsets[i]
 				offset_size = SprOffsets[i+1] if i < len(SprOffsets)-1 else fs.size()
+				offset_size -= offset
 				
 				fs.seek(offset, 0)
 				head = fs.read(100)
 				assert head[:len(DEF_SPRSIG)] == DEF_SPRSIG
 				
 				(c2, ) = struct.unpack('<I', fs.read(4))
+				Spr = Sprite()
 				for j in range(c2):
-					Rect = CRect._make(struct.unpack('<4H2h', fs.read(12))) #4 unsigned 16bit integers + 2 signed 16bit integers
-					print offset, j, ".",Rect.X, Rect.Y, Rect.Width, Rect.Height, Rect.FX, Rect.FY
-				
+					Spr.add_frame(struct.unpack('<4H2h', fs.read(12))) #4 unsigned 16bit integers + 2 signed 16bit integers
 				fs.seek(4, os.SEEK_CUR) #4 padding zeros
-				
 				# Obviously PIL tries to reset file stream so Image.open(fs) does not load image
 				# so we need to trick it, calculate image size, copy it from fs to StringIO and pass it to Image.open
 				# Happily this "hack" does not affect speed too much
-				
-				im = Image.open(StringIO.StringIO(fs.read(offset_size))).convert("RGBA")
-				im.save("%d_%d.png" % (i,j), "PNG")
-				del im
-								
+				Spr.image = Image.open(StringIO.StringIO(fs.read(offset_size))).convert("RGBA")
+				self.sprites += [Spr]
 		finally:
 			fs.close()
 			f.close()
 						
 		return True
-		
-pak = HBPak("D:\Games\Helbreath USA\Sprites\Wyvern.pak")
-pak.load()
