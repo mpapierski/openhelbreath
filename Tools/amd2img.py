@@ -30,7 +30,8 @@
 
 from hb_pak import HBPak
 import re, struct, sys, os
-from PIL import Image
+from PIL import Image, ImageDraw, ImageMath
+from optparse import OptionParser
 
 TileCfg = [("maptiles1", 0, 32, True),	#Reversed from HelGame 4.10 (HBUsa)
 			("structures1", 50, 15, False),
@@ -76,13 +77,18 @@ class Array2d():
 		self.w = w
 		self.h = h
 		
-	def get(self, x,y):
+	def __getitem__(self, v):
+		assert isinstance(v, tuple)
+		(x,y) = v
 		return self.a[x][y]
 		
-	def set(self, x,y,v):
+	def __setitem__(self, key, v):
+		assert isinstance(key, tuple)
+		(x,y) = key
 		if x not in self.a:
 			self.a[x]={}
 		self.a[x][y]=v
+		
 
 class Tile(object):
 	def __init__(self, TS, TSF, OS, OSF, OPT):
@@ -111,25 +117,60 @@ class HBMap(Array2d):
 		for y in range(self.MAPSIZEY):
 			for x in range(self.MAPSIZEX):
 				T = Tile(*struct.unpack('<hhhhh', cpMapData[pos:pos+10]))
-				self.set(x,y, T)
+				self[x,y] = T
 				pos += 10
 
+def color2alpha(img, color):
+	img = img.convert("RGBA")
+	datas = img.getdata()
+	newData = list()
+	for item in datas:
+		if item == color:
+			newData.append((255, 255, 255, 0))
+		else:
+			newData.append(item)
+	img.putdata(newData)
+	return img
+	
 if __name__ == "__main__":
-	print "OpenHelbreath amd2img v1.0"
+	print "OpenHelbreath amd2img v1.1"
 	print "Copyright (C) 2010 by openhelbreath team"
 	print "This program comes with ABSOLUTELY NO WARRANTY."
 	print "This is free software, and you are welcome to redistribute it under certain conditions."
 	print
-	if len(sys.argv) < 4:
-		print "Usage: amd2img.py format mapname.amd c:\\path\\to\\Helbreath"
-		print "Format - BMP PNG JPEG"
+	parser = OptionParser()
+	parser.add_option("-a", "--amd", 
+					dest = "mapname",
+					help="Input map name",
+					metavar="MAPNAME")
+	parser.add_option("-p", "--path",
+					dest="path",
+					help="Path to Helbreath install directory",
+					metavar="PATH",
+					default="")
+	parser.add_option("-o", "--output",
+					dest = "output",
+					help = "Image file name",
+					metavar="OUTPUT")
+	parser.add_option("-s", "--scale",
+					dest ="scale",
+					help = "Scale output",
+					metavar="ASPECT",
+					default="1")
+	(options, args) = parser.parse_args()
+	options.scale = float(options.scale)
+	
+	if not options.mapname or not options.path or \
+			options.scale > 1 or options.scale < 0:
+		parser.print_help()
 		sys.exit(1)
-	format = sys.argv[1]
-	if format.upper() not in ["BMP", "PNG", "JPEG"]:
-		print "Unknown file format: %s" % format.upper()
-		sys.exit(1)
-	mapname = sys.argv[2]
-	path = " ".join(sys.argv[3:])
+		
+	if not options.output:
+		(file, ext) = os.path.splitext(options.mapname)
+		options.output = file + ".png"
+		
+	mapname = options.mapname
+	path = options.path
 	print "Loading map file %s..." % mapname
 	m = HBMap(path + "\\mapdata\\" + mapname)
 	print "OK. %dx%dx%d" % (m.w, m.h, m.TILESIZE)
@@ -137,11 +178,14 @@ if __name__ == "__main__":
 	print "Generating necessary pak list..."
 	for y in range(m.h):
 		for x in range(m.w):
-			tile = m.get(x,y)
-			name = filter(lambda x: (x[1] < tile.TileSprite < x[1]+x[2]) or (x[1] < tile.ObjectSprite < x[1]+x[2]), TileCfg)
-			if len(name) == 1:
-				need |= set(name)
-	print "OK... %d" % len(need)
+			tile = m[x,y]
+			name = filter(lambda x: 
+							(tile.TileSprite >= x[1] and tile.TileSprite <= x[1]+x[2]) or
+							(tile.ObjectSprite >= x[1] and tile.ObjectSprite <= x[1]+x[2])
+						, TileCfg)
+			for n in name:
+				need |= set([n])
+	print "Need %d pak files." % len(need)
 	Tiles = {}
 	for (i, (name, start, count, alpha)) in enumerate(need):
 		print " Loading %s..." % name
@@ -152,20 +196,44 @@ if __name__ == "__main__":
 			Tiles[start+i] = spr
 		print " Done... %d" % len(pak.sprites)
 	print "Total tiles: %d" % len(Tiles)
-	print "Create canvas. %dx%d" % (m.w * 32, m.h*32)
-	Output = Image.new("RGBA", (m.w*32, m.h*32))
-	print "Painting..."
+	print "New image (%dx%d)" % (m.w << 5, m.h << 5)
+	Output = Image.new("RGB", (m.w << 5, m.h << 5))
+	print "Rendering background..."
 	for y in range(m.h):
 		for x in range(m.w):
-			tile = m.get(x,y)
+			tile = m[x,y]
 			(spr, sprf, obj, objf) = (tile.TileSprite, tile.TileSpriteFrame, tile.ObjectSprite, tile.ObjectSpriteFrame)
 			if spr in Tiles.keys():
 				fr = Tiles[spr].frames[sprf]
-				img = Tiles[spr].image.crop((fr.X, fr.Y, fr.X + fr.W, fr.Y + fr.H))
-				Output.paste(img, (x*32, y*32))
-							
-	print "Done. Resize..."
-	Output.thumbnail((int(Output.size[0]*0.5),int(Output.size[1]*0.5)), Image.ANTIALIAS)
+				img = Tiles[spr].image.crop((fr.X, fr.Y, fr.X + min(fr.W, 640), fr.Y + min(fr.H, 480)))
+				Output.paste(img, (x << 5, y << 5))
+	print "Rendering objects..."
+	objects = 0
+	for y in range(m.h):
+		for x in range(m.w):
+			tile = m[x,y]
+			(spr, sprf, obj, objf) = (tile.TileSprite, tile.TileSpriteFrame, tile.ObjectSprite, tile.ObjectSpriteFrame)
+			if obj <= 0:
+				continue
+			if obj not in Tiles.keys():
+				print "Object (%d) not found" % obj
+				continue
+			try:
+				fr = Tiles[obj].frames[objf]
+			except:
+				print "Object (%d) frame (%d) not found" % (obj, objf)
+				continue
+			img = Tiles[obj].image.crop((fr.X, fr.Y, fr.X + fr.W, fr.Y +fr.H))
+			img = color2alpha(img, Tiles[obj].image.getpixel((0,0)))
+			Output.paste(img, ((x << 5) + fr.FX, (y << 5) + fr.FY), img)
+			if img.size[0] > 32 or img.size[1] > 32:
+				objects+=1
+	print "Done (objects=%d)." % objects
+	if options.scale != 1:
+		print "Rescale by %.2f..." % (options.scale)
+		Output.thumbnail(map(lambda v: int(v * options.scale), Output.size), Image.ANTIALIAS)
+		print "... %dx%d" % Output.size
+	print "Saving..."
 	file, ext = os.path.splitext(mapname)
-	Output.save("%s.%s" % (file, format.lower()), format.upper())
-	print "Saved to %s.%s." % (file, format.lower())
+	Output.save(options.output)
+	print "Saved to %s." % (options.output)

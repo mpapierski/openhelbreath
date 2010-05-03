@@ -62,39 +62,31 @@ class HBPak(object):
 		f = open(self.PakFileName, "r+b")
 		fs = mmap.mmap(f.fileno(), 0)
 		try:
-			
 			CheckChar = fs[:len(DEF_PAKSIG)]
 			if CheckChar != DEF_PAKSIG:
 				return False
 			fs.seek(20)
 			SprOffsets = []
-			
-			(c1, ) = struct.unpack('<I', fs.read(4))
-			
+			(c1, ) = struct.unpack('<I', fs.read(4)) #SprCount
 			self.sprites = []
 			for i in range(c1):
-				(off, ) = struct.unpack('<I', fs.read(4))
-				fs.seek(4, os.SEEK_CUR)
-				SprOffsets += [off]
-				
+				(off, size) = struct.unpack('<II', fs.read(8))
+				SprOffsets += [(off, size)]
 			for i in range(len(SprOffsets)):
-				offset = SprOffsets[i]
-				offset_size = SprOffsets[i+1] if i < len(SprOffsets)-1 else fs.size()
-				offset_size -= offset
-				
+				(offset, size) = SprOffsets[i]
 				fs.seek(offset, 0)
 				head = fs.read(100)
 				assert head[:len(DEF_SPRSIG)] == DEF_SPRSIG
-				
 				(c2, ) = struct.unpack('<I', fs.read(4))
 				Spr = Sprite()
 				for j in range(c2):
-					Spr.add_frame(struct.unpack('<4H2h', fs.read(12))) #4 unsigned 16bit integers + 2 signed 16bit integers
+					Spr.add_frame(struct.unpack('<6h', fs.read(12)))
 				fs.seek(4, os.SEEK_CUR) #4 padding zeros
 				# Obviously PIL tries to reset file stream so Image.open(fs) does not load image
 				# so we need to trick it, calculate image size, copy it from fs to StringIO and pass it to Image.open
 				# Happily this "hack" does not affect speed too much
-				Spr.image = Image.open(StringIO.StringIO(fs.read(offset_size))).convert("RGBA")
+				data = StringIO.StringIO(fs.read(size))
+				Spr.image = Image.open(data).convert("RGBA")
 				self.sprites += [Spr]
 		finally:
 			fs.close()
