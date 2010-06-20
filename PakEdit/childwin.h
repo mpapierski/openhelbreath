@@ -12,6 +12,7 @@
 #include <QImage>
 #include <QFileDialog>
 
+#include "framedlg.h"
 #include "GlobalDef.h"
 
 typedef struct
@@ -87,6 +88,7 @@ private:
     bool Changed;
 
 private slots:
+    void on_treeWidget_itemDoubleClicked(QTreeWidgetItem* item, int column);
     void on_treeWidget_itemClicked(QTreeWidgetItem* item, int column);
 };
 

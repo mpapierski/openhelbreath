@@ -172,7 +172,7 @@ if __name__ == "__main__":
 	mapname = options.mapname
 	path = options.path
 	print "Loading map file %s..." % mapname
-	m = HBMap(path + "\\mapdata\\" + mapname)
+	m = HBMap(path + "/MAPDATA/" + mapname)
 	print "OK. %dx%dx%d" % (m.w, m.h, m.TILESIZE)
 	need = set([])
 	print "Generating necessary pak list..."
@@ -189,7 +189,7 @@ if __name__ == "__main__":
 	Tiles = {}
 	for (i, (name, start, count, alpha)) in enumerate(need):
 		print " Loading %s..." % name
-		pakpath = path + "\\sprites\\" + name + ".pak"
+		pakpath = path + "/SPRITES/" + name + ".pak"
 		pak = HBPak(pakpath)
 		assert pak.load()
 		for (i, spr) in enumerate(pak.sprites):

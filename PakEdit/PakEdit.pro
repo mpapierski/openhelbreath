@@ -5,9 +5,12 @@ TARGET = PakEdit
 TEMPLATE = app
 SOURCES += main.cpp \
     mainwindow.cpp \
-    childwin.cpp
+    childwin.cpp \
+    framedlg.cpp
 HEADERS += mainwindow.h \
     childwin.h \
-    GlobalDef.h
+    GlobalDef.h \
+    framedlg.h
 FORMS += mainwindow.ui \
-    childwin.ui
+    childwin.ui \
+    framedlg.ui

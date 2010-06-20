@@ -290,3 +290,14 @@ void ChildWin::addSprite(QString FileName)
     setChanged(true);
     refresh();
 }
+
+void ChildWin::on_treeWidget_itemDoubleClicked(QTreeWidgetItem* item, int column)
+{
+    if (getFrameID() == -1)
+        return;
+    //FrameDlg * Edit = new FrameDlg(this, &Sprites[getSpriteID()].Frames[getFrameID()]);
+    //if (Edit->exec())
+    ///{
+    //    qDebug() << "Tak";
+    //}
+}
