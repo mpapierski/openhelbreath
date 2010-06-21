@@ -44,9 +44,7 @@ fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
 packet_format = lambda x: nozeros(x) if type(x) != int else x
 
 class CGameServer(object):
-	
 	GS_Lock = Semaphore()
-	
 	def __init__(self, id, sock):
 		self.AliveResponseTime = time.time()
 		self.GSID = id
@@ -116,6 +114,13 @@ class CLoginServer(object):
 		elif tok[0].lower() == "shutdown":
 			self.ProcessShutdown()
 			return
+		# TODO: kill with optional parameters (kill gameservername, kill all etc)
+		elif tok[0].lower() == "kill":
+			for (id, gs) in self.GameServer.items():
+				gs.socket.disconnect()
+			return
+		elif tok[0].lower() == "exit":
+			sys.exit()
 		elif tok[0].lower() == "help":
 			print "usage: [command] [argument]"
 			print "help\t\t: Print this help message"
@@ -160,20 +165,31 @@ class CLoginServer(object):
 	def GateServer_OnDisconnected(self, sender):
 		"""
 			Triggered when any client disconnects from Gate Server.
-		"""	
+			Check if Sender (ClientSocket class) is registered as sub-log-socket
+			or Gate Server Socket. Unfortunatelly we can unregister sub-log-socket from
+			registered Gate Server, but can't unload whole Game Server.
+			Because Main GS socket disconnects at first.
+			TODO: Inject Gate Server method in Sender's callbacks
+		"""
 		for (k, i) in self.GameServer.items():
 			if i.socket == sender:
-				PutLogList("(*) Game Server %s -> Lost connection" % (i.Data['ServerName']), Logfile.ERROR)
+				PutLogList("(*) Game Server %s -> Lost connection", Logfile.ERROR)
 			else:
 				for j in i.GameServerSocket:
 					if j == sender:
-						PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d]" % (i.Data['ServerName'],i.GSID), Logfile.ERROR)
+						PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d]" % (i.Data['ServerName'], i.GSID))
 						i.GameServerSocket.remove(sender)
 						if i.GameServerSocket == []:
 							self.GameServer.pop(k)
 						return
-						
+			for j in i.GameServerSocket:
+				if j == sender:
+					PutLogList("(!) Lost connection to sub log socket on %s [GSID: %d]" % (i.Data['ServerName'],i.GSID), Logfile.ERROR)
+					i.GameServerSocket.remove(sender)
+					return
+		
 	def GateServer_OnListen(self, sender):
+		
 		"""
 			When socket is ready to accept connections
 		"""
@@ -486,10 +502,8 @@ class CLoginServer(object):
 			Sending data to Game Server
 		"""
 		cKey = 0
-		
-		dwSize = len(data)+3
+		dwSize = len(data) + 3
 		Buffer = chr(cKey) + struct.pack('<H', dwSize) + data
-		
 		if cKey > 0:
 			for i in range(dwSize):
 				Buffer[3+i] = chr(ord(Buffer[3+i]) + (i ^ cKey))
@@ -552,7 +566,6 @@ class CLoginServer(object):
 	def MainSocket_OnReceive(self, sender, buffer):
 		size = len(buffer)
 		PutLogList("(*) MainSocket -> Received %d bytes" % size)
-		
 		try:
 			format = '<Bh'
 			header_size = struct.calcsize(format)
@@ -1403,7 +1416,6 @@ class CLoginServer(object):
 		return True
 		
 	def __gameserver_alive(self):
-		#print "gameserver check alive"
 		CGameServer.GS_Lock.acquire()
 		for (k, v) in self.GameServer.items():
 			if abs(v.AliveResponseTime - time.time()) >= 5:
@@ -1411,11 +1423,7 @@ class CLoginServer(object):
 				while v.GameServerSocket != []:
 					s = v.GameServerSocket.pop(0)
 					s.disconnect()
-				#SL.disconnect()
-				#v.GameServerSocket.remove(SL)
-				v.socket.disconnect()				
-				self.GameServer.pop(k)
-				
+				v.socket.disconnect()
 		CGameServer.GS_Lock.release()
 		return True
 		

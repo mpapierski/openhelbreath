@@ -43,9 +43,6 @@ class ServerSocket(Thread):
 		self.backlog = 5
 		self.size = 8192
 		self.server = None
-		#self.threads = []
-		#self.callbacks = Callbacks(callbacks)
-		#self.callbacks['onDisconnected'] += [self.client_disconnect] #injecting own disconnect callback
 		self.running = False
 		self.callbacks = Callbacks(callbacks)
 		self.socket_list = []
@@ -72,37 +69,26 @@ class ServerSocket(Thread):
 		"""
 		try:
 			self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #important!
+			self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			#3self.server.setblocking(0)
 			self.server.bind((self.host, self.port))
 			self.server.listen(10)
-			
 		except socket.error, (value,message):
 			if self.server:
 				self.server.close()
 			print "Could not open socket: " + message
 			sys.exit(1)
 		self.callbacks('onListen', self)
-		
-	def client_disconnect(self, which):
-		"""
-			Here is the injected callback for Disconnecting.
-			Simply we are removing thread that just stopped
-		"""
-		if which in self.threads:
-			self.threads.remove(which)
-		
+	
 	def run(self):
 		global ClientLocker
-
 		self.open_socket()
 		self.running = True
 		
 		while self.running:
-			
 			ClientLocker.acquire()
 			input = [self.server]
-			input += map(lambda cs: cs.client, self.socket_list)
+			input += self.socket_list
 			ClientLocker.release()
 			try:
 				inputready, outputready, exceptready = select.select(input, [], [])
@@ -117,27 +103,19 @@ class ServerSocket(Thread):
 					self.callbacks('onConnected', newclient)
 				else:
 					try:
-						data = s.recv(1024*32)
+						data = s.client.recv(1024*32)
 					except:
 						data = ""
-						
 					if data == "":
-						ClientLocker.acquire()
-						for sl in self.socket_list:
-							if sl.client == s:
-								self.callbacks('onDisconnected', sl)
-								
-								self.socket_list.remove(sl)
+						self.callbacks('onDisconnected', s)
+						ClientLocker.acquire()	
+						self.socket_list.remove(s)
 						ClientLocker.release()
 					else:
-						ClientLocker.acquire()
-						for sl in self.socket_list:
-							if sl.client == s:
-								self.callbacks('onReceive', sl, data)
-						ClientLocker.release()
+						self.callbacks('onReceive', s, data)	
 		self.server.close()
 
-class ClientSocket():
+class ClientSocket(object):
 	def __init__(self, (client, address)):
 		self.client = client
 		self.address = address[0]
@@ -147,3 +125,6 @@ class ClientSocket():
 		ClientLocker.acquire()
 		self.client.close()
 		ClientLocker.release()
+		
+	def fileno(self):
+		return self.client.fileno()

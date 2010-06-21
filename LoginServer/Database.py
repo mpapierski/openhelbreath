@@ -34,6 +34,7 @@ class DatabaseDriver(object):
 			return False
 		
 		self.Ready = True
+		
 		if not self.CheckDatabase():
 			PutLogList("(!) Database tables are corrupted!", Logfile.MYSQL)
 			return False
@@ -94,6 +95,7 @@ class DatabaseDriver(object):
 			
 		return d
 		
+	
 	def CheckDatabase(self):
 		if not self.Ready:
 			raise Exception('Database driver not ready!')
@@ -101,21 +103,15 @@ class DatabaseDriver(object):
 		if not self.ExecuteSQL("SHOW TABLES"):
 			return False
 			
-		r = self.db.store_result()		
+		r = self.db.store_result()
+		
 		Tables = ('account_database',
 					'bank_item',
 					'char_database',
 					'guild',
 					'guild_member',
 					'item',
-					'skill',
-					'builditem_config',
-					'skill_config',
-					'item_config',
-					'magic_config',
-					'npc_config',
-					'potion_config',
-					'quest_config')
+					'skill')
 
 		PlayerDB = []
 		while True:
