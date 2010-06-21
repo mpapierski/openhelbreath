@@ -129,18 +129,6 @@ class CLoginServer(object):
 			print "update\t\t: Send updated configuration files to all servers"
 			print "exit\t\t: Instant quit"
 			return
-		elif tok[0].lower() == "kill":
-			for (id, gs) in self.GameServer.items():
-				#print id
-				gs.socket.disconnect()
-				#for i in gs.GameServerSocket:
-				#	i.disconnect()
-				#del gs.socket
-				
-			return
-		elif tok[0].lower() == "exit":
-			sys.exit(1)
-			return
 		print "(***) Unknown command: %s" % tok[0].upper()
 		
 	def DoInitialSetup(self):
@@ -173,7 +161,7 @@ class CLoginServer(object):
 		"""
 		for (k, i) in self.GameServer.items():
 			if i.socket == sender:
-				PutLogList("(*) Game Server %s -> Lost connection", Logfile.ERROR)
+				PutLogList("(*) Game Server %s -> Lost connection" % i.Data['ServerName'], Logfile.ERROR)
 			else:
 				for j in i.GameServerSocket:
 					if j == sender:
@@ -207,7 +195,8 @@ class CLoginServer(object):
 		for i in self.GameServer.values():
 			for j in i.GameServerSocket:
 				if j == sender:
-					return i    
+					return i
+		
 				
 	def GateServer_OnReceive(self, sender, buffer):
 		"""
@@ -302,12 +291,13 @@ class CLoginServer(object):
 			GS = self.SockToGS(sender)
 			if GS != None and GS.IsRegistered:
 				self.GuildHandler(MsgID, buffer, GS)
+				
 		else:
 			if MsgID in Packets:
 				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
 			else:
 				PutLogFileList("MsgID: 0x%08X %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
-		
+				
 	def GateServer_OnClose(self, sender, size):
 		"""
 			Triggered when Gate Server thread is closed
@@ -349,31 +339,19 @@ class CLoginServer(object):
 		PutLogList("(*) Login server sucessfully started!")
 		
 		return True
-		
-	def __serialize(self, data, fmt):
-		_out = struct.pack('<i', len(data))
-		for l in data:
-			l = map(lambda x: int(x) if str(x).isdigit() else x, l)
-			_out += struct.pack(fmt, *l)
-		return _out		
-		
+			
 	def bReadAllConfig(self):
 		"""
-			Last modified: 03-03-2010 by Drajwer
-			Ask Database to load config files, and store it as serialized data
+			Reading HG cfgs in order
 		"""
-		config_list = (('Item',	'<i30s9bh3bihh2hb2h3b', Packets.MSGID_ITEMCONFIGURATIONCONTENTS), 
-						('Npc', '<30s5hi11hi6hi', Packets.MSGID_NPCCONFIGURATIONCONTENTS),
-						('Magic', '<i30s19i', Packets.MSGID_MAGICCONFIGURATIONCONTENTS),
-						('Quest', '<21i30s5i', Packets.MSGID_QUESTCONFIGURATIONCONTENTS), 
-						('Skill', '<i30s7i', Packets.MSGID_SKILLCONFIGURATIONCONTENTS),
-						('BuildItem', '<i30s23i', Packets.MSGID_BUILDITEMCONFIGURATIONCONTENTS),
-						('Potion', '<i30s14i', Packets.MSGID_PORTIONCONFIGURATIONCONTENTS))
-								
+		Files = ["Item.cfg", "Item2.cfg", "Item3.cfg", "Item4.cfg", "BuildItem.cfg",
+				"DupItemID.cfg", "Magic.cfg", "noticement.txt", 
+				"NPC.cfg", "Potion.cfg", "Quest.cfg", "Skill.cfg",
+				"AdminSettings.cfg", "Settings.cfg"]
 		self.Config = {}
-		for (name, fmt, config) in config_list:
-			self.Config[config] = self.__serialize(self.Database.ReadConfig(config), fmt)
-			PutLogList("(*) Loading %s configuration data... %d bytes." % (name, len(self.Config[config])))
+		for n in Files:
+			if not self.ReadConfig("Config/%s" % n):
+				return False
 		return True
 		
 	def ReadProgramConfigFile(self, cFn):
@@ -427,6 +405,22 @@ class CLoginServer(object):
 		finally:
 			fin.close()
 		return True
+			
+	def ReadConfig(self, FileName):
+		"""
+			Read contents of file to Config dict
+		"""
+		if not os.path.exists(FileName) and not os.path.isfile(FileName):
+			PutLogList("(!) Cannot open configuration file [%s]." % FileName)
+			return False
+		key = FileName.split('/')[-1].split(".")[0]
+		fin = open(FileName,'r')
+		PutLogList("(*) Reading configuration file [%s] -> {'%s'}..." % (FileName, key))
+		try:
+			self.Config[key] = fin.read()
+		finally:
+			fin.close()
+		return True
 		
 	def RegisterGameServer(self, sender, data):
 		"""
@@ -456,7 +450,6 @@ class CLoginServer(object):
 			TODO: Detect more security vuln
 			Returns: Tuple ( OK/Fail, GS_ID/-1, CGameServer instance/None)
 		"""
-		
 		global nozeros
 		Read = {}
 		Request = struct.unpack('h', data[:2])[0]
@@ -508,17 +501,34 @@ class CLoginServer(object):
 			for i in range(dwSize):
 				Buffer[3+i] = chr(ord(Buffer[3+i]) + (i ^ cKey))
 				Buffer[3+i] = chr(ord(Buffer[3+i]) ^ (cKey ^ (dwSize - i)))
-		try:
-			GS.socket.client.send(Buffer)
-		except:
-			pass
-			
+		GS.socket.client.send(Buffer)
+		
 	def SendConfigToGS(self, GS):
 		"""
 			Send config to Game Server. Much shorter than in Arye's src!
 		"""
-		for (id, data) in self.Config.items():
-			SendCfgData = struct.pack('<Lh', id, 0) + data#self.__serialize(data)
+		Order = (
+					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item'),
+					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item2'),
+					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item3'),
+					(Packets.MSGID_ITEMCONFIGURATIONCONTENTS, 'Item4'),
+					(Packets.MSGID_BUILDITEMCONFIGURATIONCONTENTS, 'BuildItem'),
+					(Packets.MSGID_DUPITEMIDFILECONTENTS, 'DupItemID'),
+					(Packets.MSGID_MAGICCONFIGURATIONCONTENTS, 'Magic'),
+					(Packets.MSGID_NOTICEMENTFILECONTENTS, 'noticement'),
+					(Packets.MSGID_NPCCONFIGURATIONCONTENTS, 'NPC'),
+					(Packets.MSGID_PORTIONCONFIGURATIONCONTENTS, 'Potion'),
+					(Packets.MSGID_QUESTCONFIGURATIONCONTENTS, 'Quest'),
+					(Packets.MSGID_SKILLCONFIGURATIONCONTENTS, 'Skill'), 
+					(Packets.MSGID_ADMINSETTINGSCONFIGURATIONCONTENTS, 'AdminSettings'),
+					(Packets.MSGID_SETTINGSCONFIGURATIONCONTENTS, 'Settings')
+				)
+				
+		for packet_id, key in Order:
+			if not key in self.Config:
+				PutLogList("%s config not loaded!" % key, Logfile.ERROR)
+				break
+			SendCfgData = struct.pack('Lh', packet_id, 0) + self.Config[key]
 			self.SendMsgToGS(GS, SendCfgData)
 
 	def RegisterGameServerSocket(self, sender, data):
@@ -757,7 +767,6 @@ class CLoginServer(object):
 			
 		CharList = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
 		Stat = [getattr(Packet, x) for x in ['Str','Vit','Dex','Int','Mag','Agi']]
-		print Stat
 		if filter(lambda x: x not in [10,11,12,13,14], Stat) < 6: #test if requested Stats are not in valid values
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
@@ -929,8 +938,10 @@ class CLoginServer(object):
 						SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_FORCEDISCONN)
 						self.SendMsgToClient(sender, SendData)
 					else:
-						#SAFEDELETE(ClientSocket[ClientID]);
-						print "TODO: DEF_ENTERGAMEMSGTYPE_NOENTER_FORCEDISCONN delete ClientSocket[] (?)"
+						# This is supposed to be called when HG kills player too soon after login
+						# TODO: auto remove dead(idle) accounts
+						self.Clients.remove(self.Clients[ID])
+						print "DEF_ENTERGAMEMSGTYPE_NOENTER_FORCEDISCONN delete ClientSocket[] (?)"
 
 			elif Packet.MsgType == Packets.DEF_ENTERGAMEMSGTYPE_CHANGINGSERVER:
 				# Removed ip check - Aryes made request here to getpeeraddress and compare with self.clients
@@ -1156,7 +1167,8 @@ class CLoginServer(object):
 		buffer = buffer[1:]
 
 		if ID == Packets.GSM_DISCONNECT:
-			PlayerName = struct.unpack('<10s', buffer[:10])
+			PlayerName, = struct.unpack('<10s', buffer[:10])
+			PlayerName = nozeros(PlayerName)
 			ok = False
 			for i in self.Clients:
 				if i['CharName'] == PlayerName:
@@ -1418,7 +1430,7 @@ class CLoginServer(object):
 	def __gameserver_alive(self):
 		CGameServer.GS_Lock.acquire()
 		for (k, v) in self.GameServer.items():
-			if abs(v.AliveResponseTime - time.time()) >= 5:
+			if abs(v.AliveResponseTime - time.time()) >= 10:
 				PutLogList("(*) Game Server : %s@%s:%d (%d maps) is not responding!" % (v.Data['ServerName'], v.Data['ServerIP'], v.Data['ServerPort'], len(v.MapName)))
 				while v.GameServerSocket != []:
 					s = v.GameServerSocket.pop(0)
@@ -1449,7 +1461,6 @@ class CLoginServer(object):
 			Data = map(packet_format, struct.unpack(fmt, buffer))
 			Packet = namedtuple('Packet', 'CharName AccountName AccountPassword GuildName GuildLoc')._make(Data)
 			(OK, GUID) = self.Database.CreateNewGuild(*Data)
-			print (OK, GUID)
 			if OK:
 				PutLogList("(O) Guild[ %s ] registration success. Player[ %s ]" % (Packet.GuildName, Packet.CharName))
 				SendData = struct.pack('<Lh10sI', Packets.MSGID_RESPONSE_CREATENEWGUILD, Packets.DEF_LOGRESMSGTYPE_CONFIRM, Packet.CharName, GUID)

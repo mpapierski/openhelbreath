@@ -70,7 +70,6 @@ class ServerSocket(Thread):
 		try:
 			self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			#3self.server.setblocking(0)
 			self.server.bind((self.host, self.port))
 			self.server.listen(10)
 		except socket.error, (value,message):
@@ -84,7 +83,6 @@ class ServerSocket(Thread):
 		global ClientLocker
 		self.open_socket()
 		self.running = True
-		
 		while self.running:
 			ClientLocker.acquire()
 			input = [self.server]
