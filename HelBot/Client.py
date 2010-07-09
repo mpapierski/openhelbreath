@@ -1,4 +1,3 @@
-from Enum import Enum
 from NetMessages import Packets
 from Socket import clientSocket
 from threading import Thread
@@ -133,10 +132,10 @@ class Helbreath():
 			elif MsgID == Packets.MSGID_RESPONSE_NOTICEMENT:
 				self.ResponseNoticementHandler(buffer)
 			else:
-				if MsgID in Packets:
-					print "MsgID: %s" % (Packets.reverse_lookup_without_mask(MsgID))
-				else:
-					print "MsgID: 0x%08X %db" % (MsgID, len(data))
+				#if MsgID in Packets:
+				#	print "MsgID: %s" % (Packets.reverse_lookup_without_mask(MsgID))
+				#else:
+				print "MsgID: 0x%08X %db" % (MsgID, len(data))
 	def RequestNoticement(self):
 		try:
 			f = open("CONTENTS\\contents1000.txt", "r")
@@ -239,5 +238,5 @@ class Helbreath():
 			print Packets.reverse_lookup_without_mask(MsgType)
 			return False
 			
-Acc = Helbreath({'IP': '91.121.0.57', 'Port': 9501, 'WorldServerName': 'WS1', 'Account': 'Drajwer', 'Password': 'qwertyuiop', 'CharName': 'Drajwer'})
+Acc = Helbreath({'IP': '212.191.65.218', 'Port': 2848, 'WorldServerName': 'WS1', 'Account': 'Drajwer', 'Password': 'openhb', 'CharName': 'Drajwer'})
 Acc.run()
