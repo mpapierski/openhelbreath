@@ -7,13 +7,12 @@ class LoadingScene: public Scene
 {
 	public:
 		LoadingScene();
-
-		void OnLoop();
-
-		void Draw(SDL_Surface *Dest);
+		virtual ~LoadingScene();
+		void onLoop();
+		void onDraw(SDL_Surface* dest);
 
 	private:
-		int Percent;
+		int percent;
 };
 
 #endif // LOADINGSCENE_H

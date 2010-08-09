@@ -7,10 +7,9 @@ class Scene: public Event
 {
 	public:
 		Scene();
-
-		virtual void OnLoop();
-
-		virtual void Draw(SDL_Surface *Dest);
+		virtual ~Scene();
+		virtual void onLoop();
+		virtual void onDraw(SDL_Surface* dest);
 };
 
 #endif // SCENE_H

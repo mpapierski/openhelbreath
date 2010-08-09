@@ -5,12 +5,17 @@ Scene::Scene()
 
 }
 
-void Scene::OnLoop()
+Scene::~Scene()
 {
 
 }
 
-void Scene::Draw(SDL_Surface *Dest)
+void Scene::onLoop()
+{
+
+}
+
+void Scene::onDraw(SDL_Surface* dest)
 {
 
 }

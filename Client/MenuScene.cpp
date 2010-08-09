@@ -2,135 +2,141 @@
 
 MenuScene::MenuScene()
 {
-	MenuFocus = Login;
+	menuFocus = LOGIN;
 }
 
-void MenuScene::Draw(SDL_Surface *Dest)
+MenuScene::~MenuScene()
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 0, 0, SPRID_MAINMENU_BACKGROUND);
 
-	switch (MenuFocus)
+}
+
+void MenuScene::onDraw(SDL_Surface* dest)
+{
+	SpriteBank::manager.draw(dest, 0, 0, SPRID_NEWDIALOG_MAINMENU, MAINMENU_BACKGROUND);
+
+	switch (menuFocus)
 	{
-		case Login:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 385, 178, SPRID_MAINMENU_LOGIN);
+		case LOGIN:
+			SpriteBank::manager.draw(dest, 385, 178, SPRID_NEWDIALOG_MAINMENU, MAINMENU_LOGIN);
 			break;
-		case NewAccount:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 385, 216, SPRID_MAINMENU_NEWACCOUNT);
+		case NEW_ACCOUNT:
+			SpriteBank::manager.draw(dest, 385, 216, SPRID_NEWDIALOG_MAINMENU, MAINMENU_NEWACCOUNT);
 			break;
-		case Exit:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_MAINMENU], 385, 255, SPRID_MAINMENU_EXIT);
+		case EXIT:
+			SpriteBank::manager.draw(dest, 385, 255, SPRID_NEWDIALOG_MAINMENU, MAINMENU_EXIT);
 			break;
 	}
 
-	Game::DrawVersion(Dest);
+	Game::drawVersion(dest);
 }
 
-void MenuScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
+void MenuScene::onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle)
 {
-	if (X > 385 && X < (385 + 164))
+	if (x > 385 && x < (385 + 164))
 	{
-		if (Y > 178 && Y < (178 + 22))
-			MenuFocus = Login;
-		if (Y > 216 && Y < (216 + 22))
-			MenuFocus = NewAccount;
-		if (Y > 255 && Y < (255 + 22))
-			MenuFocus = Exit;
+		if (y > 178 && y < (178 + 22))
+			menuFocus = LOGIN;
+		if (y > 216 && y < (216 + 22))
+			menuFocus = NEW_ACCOUNT;
+		if (y > 255 && y < (255 + 22))
+			menuFocus = EXIT;
 	}
 }
 
-void MenuScene::OnLButtonDown(int X, int Y)
+void MenuScene::onLButtonDown(int x, int y)
 {
-	if (X > 385 && X < (385 + 164)) // Login Button
+	if (x > 385 && x < (385 + 164)) // Login Button
 	{
-		if (Y > 178 && Y < (178 + 22))
-			_Login();
+		if (y > 178 && y < (178 + 22))
+			login();
 
 #ifdef DEF_MAKEACCOUNT
-		if (Y > 216 && Y < (216 + 22))
-			_NewAccount();
+		if (y > 216 && y < (216 + 22))
+			newAccount();
 #endif
-		if (Y > 255 && Y < (255 + 22))
-			_Exit();
+
+		if (y > 255 && y < (255 + 22))
+			onExit();
 	}
 }
 
-void MenuScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
+void MenuScene::onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
 {
-	if (Sym == SDLK_ESCAPE)
+	if (sym == SDLK_ESCAPE)
 	{
-		Game::GetInstance().ChangeScene(new ExitScene);
+		onExit();
 	}
 
-	if (Sym == SDLK_RETURN)
+	if (sym == SDLK_RETURN)
 	{
-		switch (MenuFocus)
+		switch (menuFocus)
 		{
-			case Login:
-				_Login();
+			case LOGIN:
+				login();
 				break;
+			case NEW_ACCOUNT:
 #ifdef DEF_MAKEACCOUNT
-			case NewAccount:
-				_NewAccount();
-				break;
+				newAccount();
 #endif
-			case Exit:
-				_Exit();
+				break;
+			case EXIT:
+				onExit();
 				break;
 		}
 	}
 
-	if (Sym == SDLK_UP)
+	if (sym == SDLK_UP)
 	{
-		switch (MenuFocus)
+		switch (menuFocus)
 		{
-			case Login:
-				MenuFocus = Exit;
+			case LOGIN:
+				menuFocus = EXIT;
 				break;
-			case NewAccount:
-				MenuFocus = Login;
+			case NEW_ACCOUNT:
+				menuFocus = LOGIN;
 				break;
-			case Exit:
-				MenuFocus = NewAccount;
+			case EXIT:
+				menuFocus = NEW_ACCOUNT;
 				break;
 		}
 	}
 
-	if (Sym == SDLK_DOWN || Sym == SDLK_TAB)
+	if (sym == SDLK_DOWN || sym == SDLK_TAB)
 	{
-		switch (MenuFocus)
+		switch (menuFocus)
 		{
-			case Login:
-				MenuFocus = NewAccount;
+			case LOGIN:
+				menuFocus = NEW_ACCOUNT;
 				break;
-			case NewAccount:
-				MenuFocus = Exit;
+			case NEW_ACCOUNT:
+				menuFocus = EXIT;
 				break;
-			case Exit:
-				MenuFocus = Login;
+			case EXIT:
+				menuFocus = LOGIN;
 				break;
 		}
 	}
 }
 
-void MenuScene::_NewAccount()
+void MenuScene::onExit()
 {
-	Game::GetInstance().Audio->Play("E14");
-	Game::GetInstance().ChangeScene(new SignupScene);
+	SoundBank::manager.play("E14");
+	Game::getInstance().changeScene(new ExitScene);
 }
 
-void MenuScene::_Exit()
+void MenuScene::newAccount()
 {
-	Game::GetInstance().Audio->Play("E14");
-	Game::GetInstance().ChangeScene(new ExitScene);
+	SoundBank::manager.play("E14");
+	Game::getInstance().changeScene(new SignupScene);
 }
 
-void MenuScene::_Login()
+void MenuScene::login()
 {
-	Game::GetInstance().Audio->Play("E14");
+	SoundBank::manager.play("E14");
 #ifdef DEF_SELECTSERVER
-	Game::GetInstance().ChangeScene(new SelectServerScene);
+	Game::getInstance().changeScene(new SelectServerScene);
 #else
-	Game::GetInstance().ChangeScene(new LoginScene);
+	Game::getInstance().changeScene(new LoginScene);
 #endif
 }
 

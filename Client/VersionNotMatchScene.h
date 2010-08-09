@@ -1,7 +1,6 @@
-#ifndef VERSIONNOTMATCHSCENE_H_
-#define VERSIONNOTMATCHSCENE_H_
+#ifndef VERSIONNOTMATCHSCENE_H
+#define VERSIONNOTMATCHSCENE_H
 
-#include "ExitScene.h"
 #include "Scene.h"
 #include "Timer.h"
 
@@ -10,9 +9,13 @@ class VersionNotMatchScene: public Scene
 	public:
 		VersionNotMatchScene();
 		virtual ~VersionNotMatchScene();
-		void Draw(SDL_Surface *Dest);
-		void OnLButtonDown(int X, int Y);
-		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+		void onLoop();
+		void onDraw(SDL_Surface* dest);
+		void onLButtonDown(int x, int y);
+		void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
+
+	private:
+		Timer exitTimer;
 };
 
-#endif /* VERSIONNOTMATCHSCENE_H_ */
+#endif // VERSIONNOTMATCHSCENE_H

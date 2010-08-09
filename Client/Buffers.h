@@ -115,8 +115,7 @@ class Buffer
 		}
 		inline bool receive(NetSock * sock)
 		{
-			int bytes = sock->Read((unsigned char*) writeptr(),
-					spaceAvailable());
+			int bytes = sock->Read((unsigned char*) writeptr(), spaceAvailable());
 			if (bytes > 0)
 				_written(bytes);
 			//printf("bytes read: %d\n", bytes);
@@ -124,7 +123,7 @@ class Buffer
 		}
 };
 
-class Packet: public Buffer
+class Packet : public Buffer
 {
 	private:
 		unsigned short dwSize;

@@ -37,50 +37,49 @@ using namespace std;
 
 class NetSock
 {
-private:
-  unsigned int    ip;
-  unsigned short  port;
+	private:
+		unsigned int ip;
+		unsigned short port;
 
-  unsigned int    bindip;
-  unsigned int    bindport;
+		unsigned int bindip;
+		unsigned int bindport;
 
-  int   mode;
+		int mode;
 
-  char  str_ip[16], str_bindip[16];
+		char str_ip[16], str_bindip[16];
 
-  bool  isUDP;
+		bool isUDP;
 
-public:
-  NetSock();
-  ~NetSock();
-  int   socket;
-  static const int SYNCHRONIC;
-  static const int ASYNCHRONIC;
+	public:
+		NetSock();
+		~NetSock();
+		int socket;
+		static const int SYNCHRONIC;
+		static const int ASYNCHRONIC;
 
-  bool ListenUDP(unsigned short bindport, const char *bindhost);
-  bool ListenAllUDP(unsigned short bindport);
+		bool ListenUDP(unsigned short bindport, const char *bindhost);
+		bool ListenAllUDP(unsigned short bindport);
 
-  bool Connect(const char* host, unsigned short port);
-  bool Connect(unsigned int ip, unsigned short port);
-  bool SetMode(int mode);
-  bool Disconnect();
-  bool Listen(unsigned short port, const char *bindip);
-  bool ListenAll(unsigned short port);
-  NetSock *Accept();
-  int Read(unsigned char *Buffer, int Size);
-  int Write(unsigned char *Buffer, int Size);
-  
-  int WriteUDP(const char* host, unsigned short port, void *buffer, int size);
-  int ReadUDP(void *buffer, int size, char *srchost, unsigned short *srcport);
+		bool Connect(const char* host, unsigned short port);
+		bool Connect(unsigned int ip, unsigned short port);
+		bool SetMode(int mode);
+		bool Disconnect();
+		bool Listen(unsigned short port, const char *bindip);
+		bool ListenAll(unsigned short port);
+		NetSock *Accept();
+		int Read(unsigned char *Buffer, int Size);
+		int Write(unsigned char *Buffer, int Size);
 
-  unsigned short GetPort() const;
-  unsigned int GetIP() const;
-  const char *GetStrIP();
+		int WriteUDP(const char* host, unsigned short port, void *buffer, int size);
+		int ReadUDP(void *buffer, int size, char *srchost, unsigned short *srcport);
 
-  unsigned short GetBindPort() const;
-  unsigned int GetBindIP() const;
-  const char *GetStrBindIP();
+		unsigned short GetPort() const;
+		unsigned int GetIP() const;
+		const char *GetStrIP();
 
+		unsigned short GetBindPort() const;
+		unsigned int GetBindIP() const;
+		const char *GetStrBindIP();
 
 };
 

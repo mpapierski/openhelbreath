@@ -5,31 +5,21 @@
 
 class Timer
 {
-public:
-	Timer();
+	public:
+		Timer();
+		void start();
+		void stop();
+		void pause();
+		void unPause();
+		int getTicks();
+		bool isStarted();
+		bool isPaused();
 
-	void Start();
-
-	void Stop();
-
-	void Pause();
-
-	void Unpause();
-
-	int GetTicks();
-
-	bool IsStarted();
-
-	bool IsPaused();
-
-private:
-	int StartTicks;
-
-	int PausedTicks;
-
-	bool Paused;
-
-	bool Started;
+	private:
+		int startTicks;
+		int pausedTicks;
+		bool paused;
+		bool started;
 };
 
 #endif // TIMER_H

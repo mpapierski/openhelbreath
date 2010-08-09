@@ -2,42 +2,43 @@
 #define SIGNUPSCENE_H
 
 #include "Scene.h"
+#include "Label.h"
 #include "TextEdit.h"
-#include "Buffers.h"
-
-#define DEF_INPUTTOTAL 6
+#include "ConnectingWidget.h"
+#include "MessageDialog.h"
 
 struct FormItem
 {
-		std::string Label;
-		gui::TextEdit Input;
-		std::string Info[3];
+		gui::Label name;
+		gui::Label tip;
+		gui::TextEdit input;
 };
 
-class SignupScene: public Scene
+class SignupScene : public Scene
 {
 	public:
 		SignupScene();
 		virtual ~SignupScene();
-		void Draw(SDL_Surface *Dest);
-		void OnEvent(SDL_Event *EventSource);
-		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
-		void OnLButtonDown(int X, int Y);
-		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
-		void OnUser(Uint8 Type, int Code, void *Data1, void *Data2);
+		void onDraw(SDL_Surface* dest);
+		void onEvent(SDL_Event* eventSource);
+		void onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle);
+		void onLButtonDown(int x, int y);
+		void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
+		void onUser(Uint8 Type, int Code, void* Data1, void* Data2);
+
 	private:
-		void Disconnect();
-		void SetFocus(int NewId);
-		void _Cancel();
-		void _Ok();
-		void _Reset();
+		void setFocus(int newId);
+		void connect();
+		void disconnect();
+		void cancel();
+		void reset();
 
-		FormItem Form[DEF_INPUTTOTAL];
-		int FormFocus;
+		FormItem form[6];
+		int formFocus;
 
-		Socket * MLSocket;
-		ConnectingWidget ConnectingBox;
-		DialogBoxButtons DlgBox;
+		Socket* MLSocket;
+		gui::ConnectingWidget connectingBox;
+		gui::MessageDialog dlgBox;
 };
 
-#endif
+#endif // SIGNUPSCENE_H

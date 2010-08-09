@@ -1,28 +1,22 @@
 #ifndef SURFACE_H
 #define SURFACE_H
 
+#include <string>
+
 #include <SDL.h>
 #include <SDL_image.h>
-#include <string>
 
 class Surface
 {
-public:
-	Surface();
-
-	static SDL_Surface *LoadFromImage(const std::string &FileName);
-
-	static SDL_Surface *CreateSurface(int W, int H, int R, int G, int B, int Alpha);
-
-	static bool Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y);
-
-	static bool Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y, int X2, int Y2, int W, int H);
-
-	static bool SetTransparent(SDL_Surface *Dest, int R, int G, int B);
-
-	static Uint32 GetPixel32(SDL_Surface *Src, int X, int Y);
-
-	static void ReplaceColor(SDL_Surface *Dest, Uint32 A, Uint32 B);
+	public:
+		Surface();
+		static SDL_Surface* loadFromImage(const std::string& fileName);
+		static SDL_Surface* createSurface(int w, int h, int r, int g, int b, int alpha);
+		static bool draw(SDL_Surface* dest, SDL_Surface* src, int x, int y);
+		static bool draw(SDL_Surface* dest, SDL_Surface* Src, int x, int y, int x2, int y2, int w, int h);
+		static bool setColorKey(SDL_Surface* dest, int r, int g, int b);
+		static Uint32 getPixel32(SDL_Surface* src, int x, int y);
+		static void replaceColor(SDL_Surface* dest, Uint32 a, Uint32 b);
 };
 
 #endif // SURFACE_H

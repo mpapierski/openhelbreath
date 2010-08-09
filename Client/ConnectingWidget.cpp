@@ -1,79 +1,75 @@
 #include "ConnectingWidget.h"
-#include "Game.h"
+#include "SpriteBank.h"
 
-ConnectingWidget::ConnectingWidget()
-{
-	SetSurface(Surface::CreateSurface(640, 480, 0, 0, 0, 128));
-	Enabled = false;
-	SetState(0);
-}
-
-ConnectingWidget::~ConnectingWidget()
+namespace gui
 {
 
-}
-
-void ConnectingWidget::Draw(SDL_Surface *Dest)
-{
-	if (!Enabled)
-		return;
-	Surface::Draw(Dest, GetSurface(), 0, 0);
-
-	int X = 320 - (Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetCord(INTERFACE_DIALOG_MESSAGEBOX).W / 2);
-	int Y = 240 - (Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].GetCord(INTERFACE_DIALOG_MESSAGEBOX).H / 2);
-
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3], X, Y, INTERFACE_DIALOG_MESSAGEBOX);
-
-	char Descr[100];
-	switch (State)
+	ConnectingWidget::ConnectingWidget()
 	{
-		case 0:
-			sprintf(Descr, "Connecting to server... %d sec.", MessageTimer.GetTicks() / 1000);
-			Font::PutAlignedSprText(Dest, 180, 190, 283, Descr);
-			break;
-		case 1:
-			sprintf(Descr, "Waiting for response... %d sec.", MessageTimer.GetTicks() / 1000);
-			Font::PutAlignedSprText(Dest, 180, 190, 283, Descr);
-			break;
+		setSurface(Surface::createSurface(640, 480, 0, 0, 0, 128));
+		setVisible(false);
+		setEnabled(false);
+		setState(0);
 	}
 
-	if (MessageTimer.GetTicks() > 7000)
+	ConnectingWidget::~ConnectingWidget()
 	{
-		Font::PutAlignedText(Dest, 180, 225, 283, "Press ESC key during long time of no", 0, 0, 0);
-		Font::PutAlignedText(Dest, 180, 240, 283, "connection and return to the main menu.", 0, 0, 0);
+
 	}
-	else
-		Font::PutAlignedText(Dest, 180, 225, 283, "Connecting to server. Please wait...", 0, 0, 0);
-}
 
-void ConnectingWidget::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
-{
-
-}
-
-void ConnectingWidget::SetEnabled(bool Enable)
-{
-	Enabled = Enable;
-
-	if (Enabled)
+	void ConnectingWidget::draw(SDL_Surface* dest)
 	{
-		SetState(0);
-		MessageTimer.Start();
+		if (!isVisible())
+			return;
+
+		Surface::draw(dest, getSurface(), 0, 0);
+
+		int x = 320 - (SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).getFrameRect(INTERFACE_DIALOG_MESSAGEBOX).w / 2);
+		int y = 240 - (SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).getFrameRect(INTERFACE_DIALOG_MESSAGEBOX).h / 2);
+
+		SpriteBank::manager.draw(dest, x, y, SPRID_GAMEDIALOG_3, INTERFACE_DIALOG_MESSAGEBOX);
+
+		char Descr[100];
+		switch (state)
+		{
+			case 0:
+				sprintf(Descr, "Connecting to server... %d sec.", messageTimer.getTicks() / 1000);
+				Font::putAlignedSprText(dest, x, y + 30, 315, Descr);
+				break;
+			case 1:
+				sprintf(Descr, "Waiting for response... %d sec.", messageTimer.getTicks() / 1000);
+				Font::putAlignedSprText(dest, x, y + 30, 315, Descr);
+				break;
+		}
+
+		if (messageTimer.getTicks() > 7000)
+		{
+			Font::putAlignedText(dest, x, y + 75, 315, "Press ESC key during long time of no", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, x, y + 90, 315, "connection and return to the main menu.", Font::NORMAL, 0, 0, 0);
+		}
+		else
+			Font::putAlignedText(dest, x, y + 75, 315, "Connecting to server. Please wait...", Font::NORMAL, 0, 0, 0);
 	}
-}
 
-void ConnectingWidget::SetState(int State)
-{
-	this->State = State;
-	MessageTimer.Start();
-}
+	void ConnectingWidget::setVisible(bool visible)
+	{
+		Widget::setVisible(visible);
+		if (isVisible())
+		{
+			setState(0);
+			messageTimer.start();
+		}
+	}
 
-int ConnectingWidget::GetState() const
-{
-	return this->State;
-}
+	void ConnectingWidget::setState(int state)
+	{
+		this->state = state;
+		messageTimer.start();
+	}
 
-bool ConnectingWidget::IsEnabled() const
-{
-	return Enabled;
-}
+	int ConnectingWidget::getState() const
+	{
+		return this->state;
+	}
+
+} //namespace gui

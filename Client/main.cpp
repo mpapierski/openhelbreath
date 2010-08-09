@@ -30,5 +30,6 @@ int main(int argc, char** argv)
 #ifdef DEF_CONSOLE
 	ActivateConsole();
 #endif
-	return Game::GetInstance().OnExecute();
+
+	return Game::getInstance().onExecute();
 }

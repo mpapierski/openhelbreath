@@ -11,47 +11,35 @@ namespace gui
 	{
 		public:
 			Widget();
-			~Widget();
-
-			virtual void Draw(SDL_Surface *Dest);
-
-			virtual void OnEvent(SDL_Event *EventSource);
-
-			void SetPosition(int X, int Y);
-
-			void SetSurface(SDL_Surface *Source);
-
-			SDL_Surface *GetSurface() const;
-
-			int X() const;
-
-			int Y() const;
-
-			int getTag() const
-			{
-				return Tag;
-			}
-
-			void setTag(int Tag)
-			{
-				this->Tag = Tag;
-			}
+			virtual ~Widget();
+			virtual void draw(SDL_Surface* dest);
+			virtual void onEvent(SDL_Event* eventSource);
+			virtual void setPosition(int x, int y);
+			void setSurface(SDL_Surface* source);
+			SDL_Surface *getSurface() const;
+			int x() const;
+			int y() const;
+			bool isEnabled() const;
+			virtual void setEnabled(bool enabled);
+			bool isVisible() const;
+			virtual void setVisible(bool visible);
 
 		private:
-			SDL_Surface *WidgetSurface;
-
-			int PosX;
-
-			int PosY;
-
-			int Tag;
+			SDL_Surface* widgetSurface;
+			int posX;
+			int posY;
+			bool enabled;
+			bool visible;
 	};
 
-	inline SDL_Surface *Widget::GetSurface() const
+	inline SDL_Surface* Widget::getSurface() const
 	{
-		return WidgetSurface;
+		if (widgetSurface != NULL)
+			return widgetSurface;
+		else
+			return NULL;
 	}
 
-} //namespace gui
+} // namespace gui
 
 #endif // WIDGET_H

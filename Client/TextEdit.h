@@ -13,34 +13,32 @@ namespace gui
 		public:
 			TextEdit();
 			~TextEdit();
-			TextEdit(const std::string &Text);
-			void Draw(SDL_Surface *Dest);
-			void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
-			void OnLButtonDown(int X, int Y);
-			void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
-			const std::string &GetText();
-			void SetEnabled(bool Enable);
-			void SetCursorVisible(bool Visible);
-			void SetCursorPosition(int Position);
-			void SetMaxLength(int Length);
-			void SetPasswordMode(bool Visible);
-			void SetText(const std::string &Text);
-			void Update();
+			TextEdit(const std::string& text);
+			void draw(SDL_Surface* dest);
+			void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
+			void setEnabled(bool enabled);
+			void setText(const std::string& text);
+			const std::string& getText();
+			void setCursorVisible(bool visible);
+			void setCursorPosition(int position);
+			void setMaxLength(int length);
+			void setPasswordMode(bool visible);
+			void clear();
+			void update();
 
 		private:
-			void Create();
+			void create();
 
-			SDL_Surface *CursorSurface;
-			std::string WidgetText;
-			bool Enabled;
-			bool PasswordMode;
-			bool CursorVisible;
-			int CursorPosition;
-			int CursorPositionX;
-			unsigned int MaxLength;
-			Timer BlinkTimer;
+			SDL_Surface *cursorSurface;
+			std::string widgetText;
+			bool passwordMode;
+			bool cursorVisible;
+			int cursorPosition;
+			int cursorPositionX;
+			unsigned int maxLength;
+			Timer blinkTimer;
 	};
 
-} //namespace gui
+} // namespace gui
 
 #endif // TEXTEDIT_H

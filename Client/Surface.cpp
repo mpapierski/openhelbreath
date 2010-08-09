@@ -5,114 +5,114 @@ Surface::Surface()
 
 }
 
-SDL_Surface *Surface::LoadFromImage(const std::string &FileName)
+SDL_Surface* Surface::loadFromImage(const std::string& fileName)
 {
-	SDL_Surface *Temp = NULL;
-	SDL_Surface *Return = NULL;
+	SDL_Surface* temp = NULL;
+	SDL_Surface* returnSurface = NULL;
 
-	if((Temp = IMG_Load(FileName.c_str())) == NULL)
+	if((temp = IMG_Load(fileName.c_str())) == NULL)
 	{
-		printf("Unable to load: %s", FileName.c_str());
+		printf("Unable to load: %s", fileName.c_str());
 		return NULL;
 	}
 
-	Return = SDL_DisplayFormat(Temp);
-	SDL_FreeSurface(Temp);
+	returnSurface = SDL_DisplayFormat(temp);
+	SDL_FreeSurface(temp);
 
-	return Return;
+	return returnSurface;
 }
 
-SDL_Surface *Surface::CreateSurface(int W, int H, int R, int G, int B, int Alpha)
+SDL_Surface* Surface::createSurface(int w, int h, int r, int g, int b, int alpha)
 {
-	SDL_Surface *ReturnSurface = NULL;
+	SDL_Surface* returnSurface = NULL;
 
-	ReturnSurface = SDL_CreateRGBSurface(SDL_HWSURFACE, W, H, 32, 0, 0, 0, 0);
+	returnSurface = SDL_CreateRGBSurface(SDL_HWSURFACE, w, h, 32, 0, 0, 0, 0);
 
-	if(ReturnSurface == NULL)
+	if(returnSurface == NULL)
 	{
 		fprintf(stderr, "CreateRGBSurface failed: %s\n", SDL_GetError());
 		exit(1);
 	}
 
-	SDL_FillRect(ReturnSurface, NULL, SDL_MapRGB(ReturnSurface->format, R, G, B));
+	SDL_FillRect(returnSurface, NULL, SDL_MapRGB(returnSurface->format, r, g, b));
 
-	SDL_SetAlpha(ReturnSurface, SDL_SRCALPHA | SDL_RLEACCEL, Alpha);
+	SDL_SetAlpha(returnSurface, SDL_SRCALPHA | SDL_RLEACCEL, alpha);
 
-	return ReturnSurface;
+	return returnSurface;
 }
 
-bool Surface::Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y)
+bool Surface::draw(SDL_Surface* dest, SDL_Surface* src, int x, int y)
 {
-	if (Dest == NULL || Src == NULL)
+	if (dest == NULL || src == NULL)
 	{
 		return false;
 	}
 
-	SDL_Rect DestR;
+	SDL_Rect destR;
 
-	DestR.x = X;
-	DestR.y = Y;
+	destR.x = x;
+	destR.y = y;
 
-	SDL_BlitSurface(Src, NULL, Dest, &DestR);
+	SDL_BlitSurface(src, NULL, dest, &destR);
 
 	return true;
 }
 
-bool Surface::Draw(SDL_Surface *Dest, SDL_Surface *Src, int X, int Y, int X2, int Y2, int W, int H)
+bool Surface::draw(SDL_Surface* dest, SDL_Surface* src, int x, int y, int x2, int y2, int w, int h)
 {
-	if(Dest == NULL || Src == NULL)
+	if(dest == NULL || src == NULL)
 	{
 		return false;
 	}
 
-	SDL_Rect DestR;
+	SDL_Rect destR;
 
-	DestR.x = X;
-	DestR.y = Y;
+	destR.x = x;
+	destR.y = y;
 
-	SDL_Rect SrcR;
+	SDL_Rect srcR;
 
-	SrcR.x = X2;
-	SrcR.y = Y2;
-	SrcR.w = W;
-	SrcR.h = H;
+	srcR.x = x2;
+	srcR.y = y2;
+	srcR.w = w;
+	srcR.h = h;
 
-	SDL_BlitSurface(Src, &SrcR, Dest, &DestR);
+	SDL_BlitSurface(src, &srcR, dest, &destR);
 
 	return true;
 }
 
-bool Surface::SetTransparent(SDL_Surface *Dest, int R, int G, int B)
+bool Surface::setColorKey(SDL_Surface* dest, int r, int g, int b)
 {
-	if(Dest == NULL)
+	if(dest == NULL)
 	{
 		return false;
 	}
 
-	SDL_SetColorKey(Dest, SDL_SRCCOLORKEY | SDL_RLEACCEL, SDL_MapRGB(Dest->format, R, G, B));
+	SDL_SetColorKey(dest, SDL_SRCCOLORKEY | SDL_RLEACCEL, SDL_MapRGB(dest->format, r, g, b));
 
 	return true;
 }
 
-Uint32 Surface::GetPixel32(SDL_Surface *Src, int X, int Y)
+Uint32 Surface::getPixel32(SDL_Surface* src, int x, int y)
 {
 	//Convert the pixels to 32 bit
-	Uint32 *pixels = (Uint32 *)Src->pixels;
+	Uint32* pixels = (Uint32 *)src->pixels;
 	//Get the requested pixel
-	return pixels[ ( Y * Src->w ) + X ];
+	return pixels[ ( y * src->w ) + x ];
 }
 
-void Surface::ReplaceColor(SDL_Surface *Dest, Uint32 A, Uint32 B)
+void Surface::replaceColor(SDL_Surface* dest, Uint32 a, Uint32 b)
 {
-	int bpp = Dest->format->BytesPerPixel;
-	if (SDL_MUSTLOCK(Dest))
-		SDL_LockSurface(Dest);
-	for (int x = 0; x < Dest->w; x++)
-		for (int y = 0; y < Dest->h; y++)
-			if (*(Uint32 *) ((Uint8 *) Dest->pixels + y * Dest->pitch + x
-					* bpp) == A)
-				*(Uint32 *) ((Uint8 *) Dest->pixels + y * Dest->pitch + x
-						* bpp) = B;
-	if (SDL_MUSTLOCK(Dest))
-		SDL_UnlockSurface(Dest);
+	int bpp = dest->format->BytesPerPixel;
+	if (SDL_MUSTLOCK(dest))
+		SDL_LockSurface(dest);
+	for (int x = 0; x < dest->w; x++)
+		for (int y = 0; y < dest->h; y++)
+			if (*(Uint32 *) ((Uint8 *) dest->pixels + y * dest->pitch + x
+					* bpp) == a)
+				*(Uint32 *) ((Uint8 *) dest->pixels + y * dest->pitch + x
+						* bpp) = b;
+	if (SDL_MUSTLOCK(dest))
+		SDL_UnlockSurface(dest);
 }

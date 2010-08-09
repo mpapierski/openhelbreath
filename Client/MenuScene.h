@@ -2,31 +2,27 @@
 #define MENUSCENE_H
 
 #include "Scene.h"
+#include "Widget.h"
 
 class MenuScene: public Scene
 {
 	public:
 		MenuScene();
-
-		void Draw(SDL_Surface *Dest);
-
-		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
-
-		void OnLButtonDown(int X, int Y);
-
-		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+		~MenuScene();
+		void onDraw(SDL_Surface* dest);
+		void onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle);
+		void onLButtonDown(int x, int y);
+		void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
+		void onExit();
 
 	private:
-		void _Login();
-
-		void _NewAccount();
-
-		void _Exit();
+		void login();
+		void newAccount();
 
 		enum Focus
 		{
-			Login, NewAccount, Exit
-		} MenuFocus;
+			LOGIN, NEW_ACCOUNT, EXIT
+		} menuFocus;
 };
 
 #endif // MENUSCENE_H

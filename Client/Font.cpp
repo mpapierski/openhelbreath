@@ -1,80 +1,103 @@
 #include "Font.h"
-#include "Game.h"
+#include "SpriteBank.h"
 
-SDL_Surface *Font::Text(const std::string &Text, int R, int G, int B)
+TTF_Font* Font::smallFont;
+TTF_Font* Font::normalFont;
+
+SDL_Surface* Font::text(const std::string& text, FontSize size, int r, int g, int b)
 {
-	if (Text.empty())
+	if (text.empty())
 		return NULL;
 
-	SDL_Surface *ReturnSurface = NULL;
+	SDL_Surface* returnSurface = NULL;
 
-	SDL_Color Color;
-	Color.r = R;
-	Color.g = G;
-	Color.b = B;
+	SDL_Color color;
+	color.r = r;
+	color.g = g;
+	color.b = b;
 
-	ReturnSurface = TTF_RenderUTF8_Solid(Game::GetInstance().Font, Text.c_str(), Color);
+	switch (size)
+	{
+		case SMALL:
+			returnSurface = TTF_RenderUTF8_Solid(smallFont, text.c_str(), color);
+			break;
+		case NORMAL:
+			returnSurface = TTF_RenderUTF8_Solid(normalFont, text.c_str(), color);
+			break;
+		case LARGE:
+			break;
+	}
 
-	return ReturnSurface;
+	return returnSurface;
 
 }
 
-SDL_Surface *Font::TextShaded(const std::string &Text, int R, int G, int B)
+SDL_Surface* Font::textShaded(const std::string& text, FontSize size, int r, int g, int b)
 {
-	if (Text.empty())
-	{
+	if (text.empty())
 		return NULL;
+
+	SDL_Surface* shadowSurface = NULL;
+	SDL_Surface* textSurface = NULL;
+
+	SDL_Color shadowColor = { 0, 0, 0 };
+	SDL_Color textColor = { r, g, b };
+
+	switch (size)
+	{
+		case SMALL:
+			shadowSurface = TTF_RenderUTF8_Solid(smallFont, text.c_str(), shadowColor);
+			break;
+		case NORMAL:
+			shadowSurface = TTF_RenderUTF8_Solid(normalFont, text.c_str(), shadowColor);
+			break;
+		case LARGE:
+			break;
 	}
 
-	SDL_Surface *ShadowSurface = NULL;
-	SDL_Surface *TextSurface = NULL;
+	SDL_Surface* temp = Surface::createSurface(shadowSurface->w, shadowSurface->h, 128, 128, 128,
+			255);
 
-	SDL_Color ShadowColor =
-	{ 0, 0, 0 };
+	Surface::setColorKey(temp, 128, 128, 128);
 
-	SDL_Color TextColor;
-	TextColor.r = R;
-	TextColor.g = G;
-	TextColor.b = B;
+	Surface::draw(temp, shadowSurface, 0, 0);
 
-	ShadowSurface = TTF_RenderUTF8_Solid(Game::GetInstance().Font,
-			Text.c_str(), ShadowColor);
+	switch (size)
+	{
+		case SMALL:
+			textSurface = TTF_RenderUTF8_Solid(smallFont, text.c_str(), textColor);
+			break;
+		case NORMAL:
+			textSurface = TTF_RenderUTF8_Solid(normalFont, text.c_str(), textColor);
+			break;
+		case LARGE:
+			break;
+		}
 
-	SDL_Surface *Temp = Surface::CreateSurface(ShadowSurface->w, ShadowSurface->h, 128, 128, 128, 255);
+	Surface::draw(temp, textSurface, -1, -1);
 
-	Surface::SetTransparent(Temp, 128, 128, 128);
+	SDL_FreeSurface(shadowSurface);
+	SDL_FreeSurface(textSurface);
 
-	Surface::Draw(Temp, ShadowSurface, 0, 0);
-
-	TextSurface = TTF_RenderUTF8_Solid(Game::GetInstance().Font, Text.c_str(), TextColor);
-
-	Surface::Draw(Temp, TextSurface, -1, -1);
-
-	SDL_FreeSurface(ShadowSurface);
-	SDL_FreeSurface(TextSurface);
-
-	return Temp;
+	return temp;
 }
 
+static char Space[] = { 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 8, 7, 8, 8, 9, 10, 9, 7,
+		8, 8, 8, 8, 8, 8, 8, 15, 16, 12, 17, 14, 15, 14, 16, 10, 13, 19, 10, 17, 17, 15, 14, 15,
+		16, 13, 17, 16, 16, 20, 17, 16, 14, 8, 8, 8, 8, 8, 8, 8, 6, 7, 8, 7, 7, 7, 7, 4, 7, 7, 4,
+		11, 7, 8, 8, 7, 8, 6, 5, 8, 9, 14, 8, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
 
-static char Space[] =
-{ 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 6, 8, 7, 8, 8, 9, 10, 9, 7, 8, 8, 8, 8, 8, 8, 8, 15, 16, 12, 17, 14, 15, 14, 16, 10, 13, 19, 10,
-		17, 17, 15, 14, 15, 16, 13, 17, 16, 16, 20, 17, 16, 14, 8, 8, 8, 8, 8, 8, 8, 6, 7, 8, 7, 7, 7, 7, 4, 7, 7, 4, 11, 7, 8, 8, 7, 8, 6, 5, 8, 9,
-		14, 8, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
-
-SDL_Surface *Font::SprText(const std::string &Text)
+SDL_Surface* Font::sprText(const std::string& text)
 {
-	if (Text.empty())
-	{
+	if (text.empty())
 		return NULL;
-	}
 
 	int Pos = 0;
 	int Width = 0;
 
-	for (unsigned int i = 0; i < Text.size(); i++)
+	for (unsigned int i = 0; i < text.size(); i++)
 	{
-		int Number = static_cast<char> (Text.at(i));
+		int Number = static_cast<char> (text.at(i));
 		if ((Number >= 33) && (Number <= 122))
 		{
 			Width += Space[Number - 33];
@@ -83,99 +106,121 @@ SDL_Surface *Font::SprText(const std::string &Text)
 			Width += 5;
 	}
 
-	SDL_Surface *ReturnSurface = NULL;
+	SDL_Surface* returnSurface = NULL;
 
-	ReturnSurface = Surface::CreateSurface(Width, Game::GetInstance().Sprites[SPRID_SPRFONT].GetMaxFrameH(), 128, 128, 128, 255);
+	returnSurface = Surface::createSurface(Width,
+			SpriteBank::manager.getSprite(SPRID_SPRFONT).getMaxFrameH(), 128, 128, 128, 255);
 
-	if (ReturnSurface == NULL)
+	if (returnSurface == NULL)
 	{
 		return NULL;
 	}
 
-	for (unsigned int i = 0; i < Text.size(); i++)
+	for (unsigned int i = 0; i < text.size(); i++)
 	{
-		int Number = static_cast<char> (Text.at(i));
+		int Number = static_cast<char> (text.at(i));
 		if ((Number >= 33) && (Number <= 122))
 		{
 
-			Sprite::Draw(ReturnSurface, Game::GetInstance().Sprites[SPRID_SPRFONT], Pos, 0, (Number - 33));
+			SpriteBank::manager.draw(returnSurface, Pos, 0, SPRID_SPRFONT, (Number - 33));
 			Pos += Space[Number - 33];
 		}
 		else
 			Pos += 5;
 	}
 
-	Surface::SetTransparent(ReturnSurface, 128, 128, 128);
+	Surface::setColorKey(returnSurface, 128, 128, 128);
 
-	return ReturnSurface;
+	return returnSurface;
 }
 
-int Font::TextWidth(const std::string &Text)
+int Font::textWidth(const std::string& text, FontSize size)
 {
-	if (Text.empty())
+	if (text.empty())
 		return 0;
 
-	int W;
-	TTF_SizeUTF8(Game::GetInstance().Font, Text.c_str(), &W, NULL);
-	return W;
+	int w;
+	switch (size)
+	{
+		case SMALL:
+			TTF_SizeUTF8(smallFont, text.c_str(), &w, NULL);
+			break;
+		case NORMAL:
+			TTF_SizeUTF8(normalFont, text.c_str(), &w, NULL);
+			break;
+		case LARGE:
+			break;
+	}
+
+	return w;
 }
 
-int Font::TextHeight(const std::string &Text)
+int Font::textHeight(const std::string& text, FontSize size)
 {
-	if (Text.empty())
+	if (text.empty())
 		return 0;
 
-	int H;
-	TTF_SizeUTF8(Game::GetInstance().Font, Text.c_str(), NULL, &H);
-	return H;
+	int h;
+	switch (size)
+	{
+		case SMALL:
+			TTF_SizeUTF8(smallFont, text.c_str(), NULL, &h);
+			break;
+		case NORMAL:
+			TTF_SizeUTF8(normalFont, text.c_str(), NULL, &h);
+			break;
+		case LARGE:
+			break;
+	}
+
+	return h;
 }
 
-void Font::PutText(SDL_Surface *Dest, int X, int Y, const std::string &Text, int R, int G, int B)
+void Font::putText(SDL_Surface* dest, int x, int y, const std::string& text, FontSize size, int r, int g, int b)
 {
-	SDL_Surface * _txt = Font::Text(Text, R, G, B);
-	Surface::Draw(Dest, _txt, X, Y);
-	SDL_FreeSurface(_txt);
+	SDL_Surface* txt = Font::text(text, size, r, g, b);
+	Surface::draw(dest, txt, x, y);
+	SDL_FreeSurface(txt);
 }
 
-void Font::PutTextShaded(SDL_Surface *Dest, int X, int Y, const std::string &Text, int R, int G, int B)
+void Font::putTextShaded(SDL_Surface* dest, int x, int y, const std::string& text, FontSize size, int r, int g, int b)
 {
-	SDL_Surface * _txt = Font::TextShaded(Text, R, G, B);
-	Surface::Draw(Dest, _txt, X, Y);
-	SDL_FreeSurface(_txt);
+	SDL_Surface* txt = Font::textShaded(text, size, r, g, b);
+	Surface::draw(dest, txt, x, y);
+	SDL_FreeSurface(txt);
 }
 
-void Font::PutAlignedText(SDL_Surface *Dest, int X, int Y, int Width, const std::string & Text, int R, int G, int B)
+void Font::putAlignedText(SDL_Surface* dest, int x, int y, int width, const std::string& text, FontSize size, int r, int g, int b)
 {
-	Font::PutText(Dest, X + ((Width - Font::TextWidth(Text)) / 2), Y, Text, R, G, B);
+	Font::putText(dest, (x + (width / 2) - (Font::textWidth(text, size) / 2)), y, text, size, r, g, b);
 }
 
-void Font::PutSprText(SDL_Surface *Dest, int X, int Y, const std::string &Text)
+void Font::putSprText(SDL_Surface* dest, int x, int y, const std::string& text)
 {
-	SDL_Surface * _txt = Font::SprText(Text);
-	Surface::Draw(Dest, _txt, X, Y);
-	SDL_FreeSurface(_txt);
+	SDL_Surface* txt = Font::sprText(text);
+	Surface::draw(dest, txt, x, y);
+	SDL_FreeSurface(txt);
 }
 
-void Font::PutAlignedSprText(SDL_Surface *Dest, int X, int Y, int Width, const std::string &Text)
+void Font::putAlignedSprText(SDL_Surface* dest, int x, int y, int width, const std::string& text)
 {
-	SDL_Surface * _txt = Font::SprText(Text);
-	if(_txt != NULL)
-		Surface::Draw(Dest, _txt, X + ((Width - _txt->w) / 2), Y);
+	SDL_Surface* txt = Font::sprText(text);
+	if (txt != NULL)
+		Surface::draw(dest, txt, (x + (width / 2) - (txt->w / 2)), y);
 
-	SDL_FreeSurface(_txt);
+	SDL_FreeSurface(txt);
 }
 
-void Font::PutTextSprF(SDL_Surface *Dest, int X, int Y, const std::string &Text)
+void Font::putTextSprF(SDL_Surface* dest, int x, int y, const std::string& text)
 {
-	char __cSpace2[] =
-	{ 6, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6 };
+	char __cSpace2[] = { 6, 4, 6, 6, 6, 6, 6, 6, 6, 6, 6 };
 	unsigned int iCnt;
 	int xpos = 0;
 	int W = 0;
 
-	for (iCnt = 0; iCnt < Text.length(); iCnt++)
+	for (iCnt = 0; iCnt < text.length(); iCnt++)
 	{
-		char tmp = Text.at(iCnt);
+		char tmp = text.at(iCnt);
 		if ((tmp >= '0') && (tmp <= '9'))
 			tmp = tmp - '0' + 6;
 		else if (tmp == '!')
@@ -189,10 +234,10 @@ void Font::PutTextSprF(SDL_Surface *Dest, int X, int Y, const std::string &Text)
 		W += tmp < (int) sizeof(__cSpace2) ? __cSpace2[(int) tmp] : (tmp == 19 ? 19 + 3 : 6);
 	}
 
-	SDL_Surface *Output = Surface::CreateSurface(W, 10, 27, 88, 153, 200);
-	for (iCnt = 0; iCnt < Text.length(); iCnt++)
+	SDL_Surface* output = Surface::createSurface(W, 10, 27, 88, 153, 200);
+	for (iCnt = 0; iCnt < text.length(); iCnt++)
 	{
-		char tmp = Text.at(iCnt);
+		char tmp = text.at(iCnt);
 		if ((tmp >= '0') && (tmp <= '9'))
 			tmp = tmp - '0' + 6;
 		else if (tmp == '!')
@@ -203,12 +248,12 @@ void Font::PutTextSprF(SDL_Surface *Dest, int X, int Y, const std::string &Text)
 			tmp = 19;
 		else
 			continue;
-		Sprite::Draw(Output, Game::GetInstance().Sprites[SPRID_SPRFONT_NUM], xpos, 0, tmp);
+		SpriteBank::manager.draw(output, xpos, 0, SPRID_INTERFACE2, tmp);
 		xpos += tmp < (int) sizeof(__cSpace2) ? __cSpace2[(int) tmp] : (tmp == 19 ? 19 + 3 : 6);
 	}
-	Surface::ReplaceColor(Output, SDL_MapRGB(Output->format, 0, 0, 0), SDL_MapRGB(Output->format, 140, 140, 140));
-	Surface::SetTransparent(Output, 27, 88, 153);
-	Surface::Draw(Dest, Output, X, Y);
-	SDL_FreeSurface(Output);
+	Surface::replaceColor(output, SDL_MapRGB(output->format, 0, 0, 0), SDL_MapRGB(output->format,
+			255, 255, 255));
+	Surface::setColorKey(output, 27, 88, 153);
+	Surface::draw(dest, output, x, y);
+	SDL_FreeSurface(output);
 }
-

@@ -1,82 +1,263 @@
 #include "Game.h"
 
-LoginScene::LoginScene(const std::string &WS)
+LoginScene::LoginScene(const std::string& serverName)
 {
-	LoginFocus = Login;
-	LoginEdit.SetPosition(180, 162);
-	LoginEdit.SetMaxLength(10);
+	loginFocus = LOGIN;
 
-	PasswordEdit.SetPosition(180, 185);
-	PasswordEdit.SetCursorVisible(false);
-	PasswordEdit.SetMaxLength(10);
-	PasswordEdit.SetPasswordMode(true);
+	loginEdit.setPosition(180, 162);
+	loginEdit.setMaxLength(10);
 
-	DlgBox.SetMode(-1, INTERFACE_BUTTON_OK);
+	passwordEdit.setPosition(180, 185);
+	passwordEdit.setMaxLength(10);
+	passwordEdit.setPasswordMode(true);
+	passwordEdit.setEnabled(false);
+
+	int x = 320 - (SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).getFrameRect(
+			INTERFACE_DIALOG_MESSAGEBOX).w / 2);
+	int y = 240 - (SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).getFrameRect(
+			INTERFACE_DIALOG_MESSAGEBOX).h / 2);
+	msgBox.setPosition(x, y);
+	msgBox.setButtons(gui::MessageDialog::OK);
+	msgBox.setVisible(false);
+	msgBox.setEnabled(false);
+
 	MLSocket = 0;
-	WorldServerName = WS;
+	worldServerName = serverName;
+
+	form = Surface::createSurface(SpriteBank::manager.getSprite(SPRID_LOGINDIALOG).getFrameRect(
+			LOGIN_FRAME).w, SpriteBank::manager.getSprite(SPRID_LOGINDIALOG).getFrameRect(
+			LOGIN_FRAME).h, 255, 255, 255, 0);
+
+	Surface::draw(form, SpriteBank::manager.getSprite(SPRID_LOGINDIALOG).getSurface(), 0, 0,
+			SpriteBank::manager.getSprite(SPRID_LOGINDIALOG).getFrameRect(LOGIN_FRAME).x,
+			SpriteBank::manager.getSprite(SPRID_LOGINDIALOG).getFrameRect(LOGIN_FRAME).y,
+			SpriteBank::manager.getSprite(SPRID_LOGINDIALOG).getFrameRect(LOGIN_FRAME).w,
+			SpriteBank::manager.getSprite(SPRID_LOGINDIALOG).getFrameRect(LOGIN_FRAME).h);
+
+	alpha = 0;
+	formTimer.start();
 }
 
 LoginScene::~LoginScene()
 {
-
+	SDL_FreeSurface(form);
 }
 
-void LoginScene::Draw(SDL_Surface *Dest)
+void LoginScene::onLoop()
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0, SPRID_LOGIN_BACKGROUND);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 39, 121, SPRID_LOGIN_FRAME);
-
-	switch (LoginFocus)
+	if (formTimer.getTicks() > 3)
 	{
-		case Login:
-		case Password:
-		case Connect:
-			if (PasswordEdit.GetText().size() && LoginEdit.GetText().size())
+		if (alpha < 254)
+		{
+			alpha += 1;
+			SDL_SetAlpha(form, SDL_SRCALPHA, alpha);
+			formTimer.start();
+		}
+	}
+}
+
+void LoginScene::onDraw(SDL_Surface* dest)
+{
+	SpriteBank::manager.draw(dest, 0, 0, SPRID_LOGINDIALOG, LOGIN_BACKGROUND);
+	Surface::draw(dest, form, 39, 121);
+
+	switch (loginFocus)
+	{
+		case LOGIN:
+		case PASSWORD:
+		case CONNECT:
+			if (passwordEdit.getText().size() && loginEdit.getText().size())
 			{
-				Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 80, 282, SPRID_LOGIN_BUTTON_CONNECT);
+				SpriteBank::manager.draw(dest, 80, 282, SPRID_LOGINDIALOG, LOGIN_BUTTON_CONNECT);
 			}
 			break;
-		case Cancel:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 256, 282, SPRID_LOGIN_BUTTON_CANCEL);
+		case CANCEL:
+			SpriteBank::manager.draw(dest, 256, 282, SPRID_LOGINDIALOG, LOGIN_BUTTON_CANCEL);
 			break;
 	}
 
-	LoginEdit.Draw(Dest);
-	PasswordEdit.Draw(Dest);
+	loginEdit.draw(dest);
+	passwordEdit.draw(dest);
 
-	ConnectingBox.Draw(Dest);
-	DlgBox.Draw(Dest);
+	connectingBox.draw(dest);
+	msgBox.draw(dest);
 
-	Game::DrawVersion(Dest);
+	Game::drawVersion(dest);
 }
 
-void LoginScene::OnEvent(SDL_Event *EventSource)
+void LoginScene::onEvent(SDL_Event* eventSource)
 {
-	Event::OnEvent(EventSource);
-
-	if (LoginFocus == Login)
-		LoginEdit.OnEvent(EventSource);
-	if (LoginFocus == Password)
-		PasswordEdit.OnEvent(EventSource);
-
-	ConnectingBox.OnEvent(EventSource);
-}
-
-void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
-{
-	switch (Code)
+	if (!msgBox.isEnabled())
 	{
-		case SDL_CLICKED_RIGHT:
-			//DlgBox onclick event
-			Game::GetInstance().ChangeScene(new MenuScene);
-			break;
+		Event::onEvent(eventSource);
 
+		if (loginFocus == LOGIN)
+			loginEdit.onEvent(eventSource);
+		if (loginFocus == PASSWORD)
+			passwordEdit.onEvent(eventSource);
+	}
+
+	msgBox.onEvent(eventSource);
+}
+
+void LoginScene::onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle)
+{
+	if (connectingBox.isVisible())
+		return;
+
+	if (y > 282 && y < (282 + 20))
+	{
+		if (x > 80 && x < (80 + 84))
+		{
+			if (passwordEdit.getText().size() && loginEdit.getText().size())
+			{
+				loginFocus = CONNECT;
+			}
+		}
+		if (x > 256 && x < (256 + 76))
+		{
+			loginEdit.setEnabled(false);
+			passwordEdit.setEnabled(false);
+			loginFocus = CANCEL;
+		}
+	}
+}
+
+void LoginScene::onLButtonDown(int x, int y)
+{
+	if (connectingBox.isVisible())
+		return;
+
+	if (x > 170 && x < (170 + 160))
+	{
+		if (y > 160 && y < (160 + 20)) // LoginEdit
+		{
+			SoundBank::manager.play("E14");
+			loginEdit.setEnabled(true);
+			passwordEdit.setEnabled(false);
+			loginFocus = LOGIN;
+		}
+		if (y > 180 && y < (180 + 20)) // passwordEdit
+		{
+			SoundBank::manager.play("E14");
+			loginEdit.setEnabled(false);
+			passwordEdit.setEnabled(true);
+			loginFocus = PASSWORD;
+		}
+	}
+
+	if (y > 282 && y < (282 + 20))
+	{
+		if (x > 80 && x < (80 + 84)) // Connect Button
+		{
+			if (passwordEdit.getText().size() && loginEdit.getText().size())
+			{
+				connect();
+			}
+		}
+		if (x > 256 && x < (256 + 76)) // Cancel Button
+		{
+			cancel();
+		}
+	}
+}
+
+void LoginScene::onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
+{
+	if (sym == SDLK_ESCAPE)
+	{
+		if (connectingBox.isVisible())
+		{
+			connectingBox.setVisible(false);
+			return;
+		}
+		cancel();
+	}
+
+	if (connectingBox.isVisible())
+		return;
+
+	if (sym == SDLK_RETURN)
+	{
+		switch (loginFocus)
+		{
+			case LOGIN:
+				SoundBank::manager.play("E14");
+				loginEdit.setEnabled(false);
+				passwordEdit.setEnabled(true);
+				loginFocus = PASSWORD;
+				break;
+			case PASSWORD:
+				passwordEdit.setEnabled(false);
+			case CONNECT:
+				if (passwordEdit.getText().size() && loginEdit.getText().size())
+				{
+					connect();
+				}
+				break;
+			case CANCEL:
+				cancel();
+				break;
+		}
+	}
+
+	if (sym == SDLK_UP)
+	{
+		switch (loginFocus)
+		{
+			case LOGIN:
+				loginEdit.setEnabled(false);
+				loginFocus = CANCEL;
+				break;
+			case PASSWORD:
+				passwordEdit.setEnabled(false);
+				loginEdit.setEnabled(true);
+				loginFocus = LOGIN;
+				break;
+			case CONNECT:
+				passwordEdit.setEnabled(true);
+				loginFocus = PASSWORD;
+				break;
+			case CANCEL:
+				loginFocus = CONNECT;
+				break;
+		}
+	}
+
+	if (sym == SDLK_DOWN || sym == SDLK_TAB)
+	{
+		switch (loginFocus)
+		{
+			case LOGIN:
+				loginEdit.setEnabled(false);
+				passwordEdit.setEnabled(true);
+				loginFocus = PASSWORD;
+				break;
+			case PASSWORD:
+				passwordEdit.setEnabled(false);
+				loginFocus = CONNECT;
+				break;
+			case CONNECT:
+				loginFocus = CANCEL;
+				break;
+			case CANCEL:
+				loginEdit.setEnabled(true);
+				loginFocus = LOGIN;
+				break;
+		}
+	}
+}
+
+void LoginScene::onUser(Uint8 type, int code, void* data1, void* data2)
+{
+	switch (code)
+	{
 		case SDL_NETWORK_INIT:
 			// Socket thread initialized
 #ifdef DEBUG
 			puts("INIT");
 #endif
-			ConnectingBox.SetEnabled(true);
+			connectingBox.setVisible(true);
 			break;
 
 		case SDL_NETWORK_ERROR:
@@ -89,32 +270,33 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 		case SDL_NETWORK_CONNECTED:
 		{
 			// Socket is connected to server
-			ConnectingBox.SetState(1);
-			char * WS = strdup(WorldServerName.c_str()); // WHY.
+			connectingBox.setState(1);
+			char * WS = strdup(worldServerName.c_str()); // WHY.
 #ifdef DEBUG
 			puts("CONNECTED");
-			printf("Log in : %s/%s at %s\n", LoginEdit.GetText().c_str(), PasswordEdit.GetText().c_str(), WS);
+			printf("Log in : %s/%s at %s\n", loginEdit.getText().c_str(),
+					passwordEdit.getText().c_str(), WS);
 #endif
 			Packet p1(MSGID_REQUEST_LOGIN, DEF_MSGTYPE_CONFIRM);
 
-			p1.push<char> (LoginEdit.GetText().c_str(), 10);
-			p1.push<char> (PasswordEdit.GetText().c_str(), 10);
+			p1.push<char> (loginEdit.getText().c_str(), 10);
+			p1.push<char> (passwordEdit.getText().c_str(), 10);
 			p1.push<char> (WS, 30);
 			delete WS;
-			p1.send((NetSock*) Data1);
+			p1.send(reinterpret_cast<NetSock*> (data1));
 		}
 			break;
 
 		case SDL_NETWORK_RECEIVE:
 		{
 			// Got data
-
-			Buffer *data = (Buffer*) Data2;
+			Buffer* data = reinterpret_cast<Buffer*> (data2);
 
 			unsigned int MsgID = data->next<int> ();
 			unsigned short MsgType = data->next<unsigned short> ();
 #ifdef DEBUG
-			printf("Size:%d Received -> MsgID: 0x%08X MsgType: 0x%04X\n", data->size(), MsgID, MsgType);
+			printf("Size:%d Received -> MsgID: 0x%08X MsgType: 0x%04X\n", data->size(), MsgID,
+					MsgType);
 #endif
 			switch (MsgID)
 			{
@@ -130,23 +312,25 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 							unsigned short Upper = data->next<unsigned char> ();
 							unsigned short AccountStatus = data->next<unsigned short> ();
 #ifdef DEBUG
-							printf("Login OK! Server version: %d.%d (Client version: %d.%d) Account Status: %d\n", Lower, Upper, DEF_LOWERVERSION, DEF_UPPERVERSION, AccountStatus);
+							printf(
+									"Login OK! Server version: %d.%d (Client version: %d.%d) Account Status: %d\n",
+									Lower, Upper, DEF_LOWERVERSION, DEF_UPPERVERSION, AccountStatus);
 #endif
-							Disconnect();
+							disconnect();
 							if ((Lower == DEF_LOWERVERSION) && (Upper == DEF_UPPERVERSION))
-								Game::GetInstance().ChangeScene(new SelectCharScene(data));
+								Game::getInstance().changeScene(new SelectCharScene(data));
 #ifdef DEF_CHECKVERSION
 							else
-								Game::GetInstance().ChangeScene(new VersionNotMatchScene);
+							Game::getInstance().ChangeScene(new VersionNotMatchScene);
 #endif
 							return;
 						}
 							break;
 						case DEF_LOGRESMSGTYPE_PASSWORDMISMATCH:
-							__PasswordMismatch();
+							passwordMismatch();
 							break;
 						case DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT:
-							__NotExistingAccount();
+							notExistingAccount();
 							break;
 						case DEF_LOGRESMSGTYPE_REJECT:
 						{
@@ -158,7 +342,7 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 #ifdef DEBUG
 							printf("Account banned till %04d-%02d-%02d\n", A, B, C);
 #endif
-							__AccountBlocked(A, B, C);
+							accountBlocked(A, B, C);
 						}
 							break;
 						case DEF_LOGRESMSGTYPE_NOTEXISTINGWORLDSERVER:
@@ -166,11 +350,11 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 #ifdef DEBUG
 							puts("World server is not activated.");
 #endif
-							__WorldNotActivated();
+							worldNotActivated();
 						}
 							break;
 					}
-					Disconnect();
+					disconnect();
 					break;
 			}
 
@@ -188,7 +372,7 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 #ifdef DEBUG
 			puts("FINISH");
 #endif
-			Disconnect();
+			disconnect();
 			break;
 		case SDL_NETWORK_BUSY:
 			// Socket is connected and waits for data
@@ -199,177 +383,13 @@ void LoginScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
 	}
 }
 
-void LoginScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
+void LoginScene::connect()
 {
-	if (DlgBox.IsEnabled())
-	{
-		DlgBox.OnMouseMove(X, Y, RelX, RelY, Left, Right, Middle);
-		return;
-	}
-
-	if(ConnectingBox.IsEnabled())
-		return;
-
-	if (Y > 282 && Y < (282 + 20))
-	{
-		if (X > 80 && X < (80 + 84))
-		{
-			if (PasswordEdit.GetText().size() && LoginEdit.GetText().size())
-			{
-				LoginFocus = Connect;
-			}
-		}
-		if (X > 256 && X < (256 + 76))
-		{
-			LoginEdit.SetEnabled(false);
-			PasswordEdit.SetEnabled(false);
-			LoginFocus = Cancel;
-		}
-	}
-}
-
-void LoginScene::OnLButtonDown(int X, int Y)
-{
-	if (DlgBox.IsEnabled())
-	{
-		DlgBox.OnLButtonDown(X, Y);
-		return;
-	}
-
-	if(ConnectingBox.IsEnabled())
-		return;
-
-	if (X > 170 && X < (170 + 160))
-	{
-		if (Y > 160 && Y < (160 + 20)) // LoginEdit
-		{
-			Game::GetInstance().Audio->Play("E14");
-			LoginEdit.SetEnabled(true);
-			PasswordEdit.SetEnabled(false);
-			LoginFocus = Login;
-		}
-		if (Y > 180 && Y < (180 + 20)) // PasswordEdit
-		{
-			Game::GetInstance().Audio->Play("E14");
-			PasswordEdit.SetEnabled(true);
-			LoginEdit.SetEnabled(false);
-			LoginFocus = Password;
-		}
-	}
-
-	if (Y > 282 && Y < (282 + 20))
-	{
-		if (X > 80 && X < (80 + 84)) // Connect Button
-		{
-			if (PasswordEdit.GetText().size() && LoginEdit.GetText().size())
-			{
-				_Connect();
-			}
-		}
-		if (X > 256 && X < (256 + 76)) // Cancel Button
-		{
-			_Cancel();
-		}
-	}
-}
-
-void LoginScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
-{
-	if (DlgBox.IsEnabled())
-	{
-		DlgBox.OnKeyDown(Sym, Mod, Unicode);
-		return;
-	}
-
-
-	if (Sym == SDLK_ESCAPE)
-	{
-		if(ConnectingBox.IsEnabled())
-		{
-			ConnectingBox.SetEnabled(false);
-			return;
-		}
-		_Cancel();
-	}
-
-	if (Sym == SDLK_RETURN)
-	{
-		switch (LoginFocus)
-		{
-			case Login:
-				Game::GetInstance().Audio->Play("E14");
-				LoginEdit.SetEnabled(false);
-				PasswordEdit.SetEnabled(true);
-				LoginFocus = Password;
-				break;
-			case Password:
-				PasswordEdit.SetEnabled(false);
-			case Connect:
-				if (PasswordEdit.GetText().size() && LoginEdit.GetText().size())
-				{
-					_Connect();
-				}
-				break;
-			case Cancel:
-				_Cancel();
-				break;
-		}
-	}
-
-	if (Sym == SDLK_UP)
-	{
-		switch (LoginFocus)
-		{
-			case Login:
-				LoginEdit.SetEnabled(false);
-				LoginFocus = Cancel;
-				break;
-			case Password:
-				PasswordEdit.SetEnabled(false);
-				LoginEdit.SetEnabled(true);
-				LoginFocus = Login;
-				break;
-			case Connect:
-				PasswordEdit.SetEnabled(true);
-				LoginFocus = Password;
-				break;
-			case Cancel:
-				LoginFocus = Connect;
-				break;
-		}
-	}
-
-	if (Sym == SDLK_DOWN || Sym == SDLK_TAB)
-	{
-		switch (LoginFocus)
-		{
-			case Login:
-				LoginEdit.SetEnabled(false);
-				PasswordEdit.SetEnabled(true);
-				LoginFocus = Password;
-				break;
-			case Password:
-				PasswordEdit.SetEnabled(false);
-				LoginFocus = Connect;
-				break;
-			case Connect:
-				LoginFocus = Cancel;
-				break;
-			case Cancel:
-				LoginEdit.SetEnabled(true);
-				LoginFocus = Login;
-				break;
-		}
-	}
-}
-
-void LoginScene::_Connect()
-{
+	SoundBank::manager.play("E14");
 	if (MLSocket != 0)
 		return;
-	Game::GetInstance().Audio->Play("E14");
 #ifdef DEBUG
-	printf("Login: %s Password: %s\n", LoginEdit.GetText().c_str(), PasswordEdit.GetText().c_str());
+	printf("Login: %s Password: %s\n", loginEdit.getText().c_str(), passwordEdit.getText().c_str());
 #endif
 
 	MLSocket = new Socket(DEF_SERVER_ADDR, DEF_SERVER_PORT);
@@ -377,62 +397,7 @@ void LoginScene::_Connect()
 		fprintf(stderr, "Connect() failed.\n");
 }
 
-void LoginScene::_Cancel()
-{
-	Game::GetInstance().Audio->Play("E14");
-#ifdef DEF_SELECTSERVER
-	Game::GetInstance().ChangeScene(new SelectServerScene);
-#else
-	Game::GetInstance().ChangeScene(new MenuScene);
-#endif
-}
-
-void LoginScene::__PasswordMismatch()
-{
-	ConnectingBox.SetEnabled(false);
-	DlgBox.SetEnabled(false);
-	DlgBox.ClearText();
-	DlgBox.SetTitle("Password is not correct!");
-	DlgBox.AddText("Password is not correct!");
-	DlgBox.SetEnabled(true);
-}
-
-void LoginScene::__NotExistingAccount()
-{
-	ConnectingBox.SetEnabled(false);
-	DlgBox.SetEnabled(false);
-	DlgBox.ClearText();
-	DlgBox.SetTitle("Not existing account!");
-	DlgBox.AddText("Non-existing account!");
-	DlgBox.AddText("Check your account ID.");
-	DlgBox.SetEnabled(true);
-}
-
-void LoginScene::__WorldNotActivated()
-{
-	ConnectingBox.SetEnabled(false);
-	DlgBox.SetEnabled(false);
-	DlgBox.ClearText();
-	DlgBox.SetTitle("");
-	DlgBox.AddText("World server is not active now.");
-	DlgBox.AddText("Try again a few minutes later.");
-	DlgBox.SetEnabled(true);
-}
-
-void LoginScene::__AccountBlocked(int Y, int M, int D)
-{
-	ConnectingBox.SetEnabled(false);
-	DlgBox.SetEnabled(false);
-	DlgBox.ClearText();
-	DlgBox.SetTitle("Connection Rejected!");
-	DlgBox.AddText("You can't login because account is blocked.");
-	char Txt[30];
-	sprintf(Txt, "Block date: Until %dY %dM %dD", Y, M, D);
-	DlgBox.AddText(Txt);
-	DlgBox.SetEnabled(true);
-
-}
-void LoginScene::Disconnect()
+void LoginScene::disconnect()
 {
 	if (MLSocket == 0)
 		return;
@@ -445,3 +410,53 @@ void LoginScene::Disconnect()
 	delete MLSocket;
 	MLSocket = 0;
 }
+
+void LoginScene::cancel()
+{
+	SoundBank::manager.play("E14");
+#ifdef DEF_SELECTSERVER
+	Game::getInstance().changeScene(new SelectServerScene);
+#else
+	Game::getInstance().changeScene(new MenuScene);
+#endif
+}
+
+void LoginScene::passwordMismatch()
+{
+	connectingBox.setVisible(false);
+	msgBox.setTitle("Password is not correct!");
+	msgBox.setMessage("Password is not correct!");
+	msgBox.setVisible(true);
+	msgBox.setEnabled(true);
+}
+
+void LoginScene::notExistingAccount()
+{
+	connectingBox.setVisible(false);
+	msgBox.setTitle("Not existing account!");
+	msgBox.setMessage("Non-existing account!\nCheck your account ID.");
+	msgBox.setVisible(true);
+	msgBox.setEnabled(true);
+}
+
+void LoginScene::worldNotActivated()
+{
+	connectingBox.setVisible(false);
+	msgBox.setTitle("");
+	msgBox.setMessage("World server is not active now.\nTry again a few minutes later.");
+	msgBox.setVisible(true);
+	msgBox.setEnabled(true);
+}
+
+void LoginScene::accountBlocked(int Y, int M, int D)
+{
+	connectingBox.setVisible(false);
+	msgBox.setTitle("Connection Rejected!");
+	msgBox.setMessage("You can't login because account is blocked.");
+	/*char Txt[30];
+	 sprintf(Txt, "Block date: Until %dY %dM %dD", Y, M, D);
+	 DlgBox.AddText(Txt);*/
+	msgBox.setVisible(true);
+	msgBox.setEnabled(true);
+}
+

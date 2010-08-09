@@ -114,7 +114,7 @@ void Socket::KillSocket()
 	Connected = false;
 }
 
-Socket::Socket(std::string Addr, int Port)
+Socket::Socket(const std::string& Addr, int Port)
 {
 	Connected = false;
 	Connection = 0;

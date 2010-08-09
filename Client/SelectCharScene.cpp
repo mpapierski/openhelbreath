@@ -1,13 +1,19 @@
 #include "Game.h"
 
-SelectCharScene::SelectCharScene(Buffer * P)
+SelectCharScene::SelectCharScene()
 {
-	SlotSelect = 0;
+	slotSelect = 0;
 
-	ButtonFocus = Start;
+	buttonFocus = START;
+}
 
-	UpdateCharList(P, 12); // Skip 12 bytes (Dates)
+SelectCharScene::SelectCharScene(Buffer* data)
+{
+	slotSelect = 0;
 
+	buttonFocus = START;
+
+	updateCharList(data, 12); // Skip 12 bytes (Dates)
 }
 
 SelectCharScene::~SelectCharScene()
@@ -15,170 +21,175 @@ SelectCharScene::~SelectCharScene()
 
 }
 
-void SelectCharScene::Draw(SDL_Surface *Dest)
+void SelectCharScene::onDraw(SDL_Surface* dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_GAMEDIALOG_8], 0, 0, 0);
+	SpriteBank::manager.draw(dest, 0, 0, SPRID_GAMEDIALOG_8, 0);
+	SpriteBank::manager.draw(dest, 230, 7, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CHARLIST);
 
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 230, 7, INTERFACE_BUTTON_CHARLIST);
-
-	switch (SlotSelect)
+	switch (slotSelect)
 	{
 		case 0:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 103, 54, INTERFACE_BUTTON_SLOTSELECTED);
+			SpriteBank::manager.draw(dest, 103, 54, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_SLOTSELECTED);
 			break;
 		case 1:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 212, 54, INTERFACE_BUTTON_SLOTSELECTED);
+			SpriteBank::manager.draw(dest, 212, 54, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_SLOTSELECTED);
 			break;
 		case 2:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 321, 54, INTERFACE_BUTTON_SLOTSELECTED);
+			SpriteBank::manager.draw(dest, 321, 54, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_SLOTSELECTED);
 			break;
 		case 3:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 430, 54, INTERFACE_BUTTON_SLOTSELECTED);
+			SpriteBank::manager.draw(dest, 430, 54, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_SLOTSELECTED);
 			break;
 	}
 
-	switch (ButtonFocus)
+	switch (buttonFocus)
 	{
-		case Start:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 364, 288, INTERFACE_BUTTON_START);
-			Font::PutAlignedText(Dest, 98, 305, 259, "Log in with the selected character.", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 320, 259, "You can log in by clicking the button", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 335, 259, "or pressing the enter after selecting", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 350, 259, "character.", 0, 0, 0);
+		case START:
+			SpriteBank::manager.draw(dest, 364, 288, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_START);
+			Font::putAlignedText(dest, 98, 305, 259, "Log in with the selected character.", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 320, 259, "You can log in by clicking the button", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 335, 259, "or pressing the enter after selecting", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 350, 259, "character.", Font::NORMAL, 0, 0, 0);
 			break;
-		case CreateNewChar:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 364, 318, INTERFACE_BUTTON_CREATENEWCHAR);
-			Font::PutAlignedText(Dest, 98, 320, 259, "Make a new character.", 0, 0, 0);
+		case CREATE_NEW_CHAR:
+			SpriteBank::manager.draw(dest, 364, 318, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CREATENEWCHAR);
+			Font::putAlignedText(dest, 98, 320, 259, "Make a new character.", Font::NORMAL, 0, 0, 0);
 			break;
-		case DelChar:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 364, 348, INTERFACE_BUTTON_DELCHAR);
-			Font::PutAlignedText(Dest, 98, 290, 259, "Delete the selected character. Deleted", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 305, 259, "characters cannot be recovered. You", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 320, 259, "also cannot delete a character above", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 335, 259, "level 50. If you want to delete a ", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 350, 259, "character above level 50, please send", 0, 0, 0);
-			Font::PutAlignedText(Dest, 98, 365, 259, "an e-mail to the game master.", 0, 0, 0);
+		case DELETE_CHAR:
+			SpriteBank::manager.draw(dest, 364, 348, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_DELCHAR);
+			Font::putAlignedText(dest, 98, 290, 259, "Delete the selected character. Deleted", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 305, 259, "characters cannot be recovered. You", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 320, 259, "also cannot delete a character above", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 335, 259, "level 50. If you want to delete a ", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 350, 259, "character above level 50, please send", Font::NORMAL, 0, 0, 0);
+			Font::putAlignedText(dest, 98, 365, 259, "an e-mail to the game master.", Font::NORMAL, 0, 0, 0);
 			break;
-		case ChangePasswd:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 364, 378, INTERFACE_BUTTON_CHANGEPASSWD);
-			Font::PutAlignedText(Dest, 98, 320, 259, "Change the account password.", 0, 0, 0);
+		case CHANGE_PASSWD:
+			SpriteBank::manager.draw(dest, 364, 378, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CHANGEPASSWD);
+			Font::putAlignedText(dest, 98, 320, 259, "Change the account password.", Font::NORMAL, 0, 0, 0);
 			break;
-		case Logout:
-			Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 364, 408, INTERFACE_BUTTON_LOGOUTBIG);
-			Font::PutAlignedText(Dest, 98, 320, 259, "Back to the main menu.", 0, 0, 0);
+		case LOGOUT:
+			SpriteBank::manager.draw(dest, 364, 408, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_LOGOUTBIG);
+			Font::putAlignedText(dest, 98, 320, 259, "Back to the main menu.", Font::NORMAL, 0, 0, 0);
 			break;
 		default:
 			;
 	}
 
-	for (int i = 0; i < CharCount; i++)
+	for (int i = 0; i < charCount; i++)
 	{
 		char Txt[11];
 		memset(&Txt, 0, 11);
-		memcpy(&Txt, &CharList[i].Name, 10);
-		Font::PutText(Dest, 112 + i*109, 179, Txt, 51, 0, 51);
+		memcpy(&Txt, &charList[i].Name, 10);
+		Font::putText(dest, 112 + i*109, 179, Txt, Font::NORMAL, 51, 0, 51);
 		memset(&Txt, 0, 11);
-		sprintf(Txt, "%d", CharList[i].Level);
-		Font::PutText(Dest, 138 + i*109, 195, Txt, 51, 0, 51);
+		snprintf(Txt, 11,"%d", charList[i].Level);
+		Font::putText(dest, 138 + i*109, 195, Txt, Font::NORMAL, 51, 0, 51);
 		memset(&Txt, 0, 11);
-		sprintf(Txt, "%d", CharList[i].Experience);
-		Font::PutText(Dest, 138 + i*109, 210, Txt, 51, 0, 51);
+		snprintf(Txt, 11, "%d", charList[i].Experience);
+		Font::putText(dest, 138 + i*109, 210, Txt, Font::NORMAL, 51, 0, 51);
 	}
 
-	if (strlen(CharList[SlotSelect].Name) > 0)
+	if (strlen(charList[slotSelect].Name) > 0)
 	{
 		char LogOut[30];
-		sprintf(LogOut, "Last Logout : %04d/%02d/%02d  %02d:%02d:%02d", CharList[SlotSelect].Year, CharList[SlotSelect].Month, CharList[SlotSelect].Day, CharList[SlotSelect].Hour, CharList[SlotSelect].Minute, CharList[SlotSelect].Second);
-		Font::PutAlignedText(Dest, 98, 425, 357-98, LogOut, 0, 0, 0);
+		snprintf(LogOut, 30, "Last Logout : %04d/%02d/%02d  %02d:%02d:%02d", charList[slotSelect].Year, charList[slotSelect].Month, charList[slotSelect].Day, charList[slotSelect].Hour, charList[slotSelect].Minute, charList[slotSelect].Second);
+		Font::putAlignedText(dest, 98, 425, 357-98, LogOut, Font::NORMAL, 0, 0, 0);
 	}
 
-	Font::PutAlignedText(Dest, 122, 456, 315-122, "Test Server", 0, 0, 0);
+	Font::putAlignedText(dest, 122, 456, 315-122, "Test Server", Font::NORMAL, 0, 0, 0);
 
-	Game::DrawVersion(Dest);
+	Game::drawVersion(dest);
 }
 
-void SelectCharScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
+void SelectCharScene::onMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
 {
 	if ((X > 363 && X < 540) && (Y > 287 && Y < 312))
-		ButtonFocus = Start;
+		buttonFocus = START;
 	if ((X > 363 && X < 540) && (Y > 317 && Y < 342))
-		ButtonFocus = CreateNewChar;
+		buttonFocus = CREATE_NEW_CHAR;
 	if ((X > 363 && X < 540) && (Y > 347 && Y < 372))
-		ButtonFocus = DelChar;
+		buttonFocus = DELETE_CHAR;
 	if ((X > 363 && X < 540) && (Y > 377 && Y < 402))
-		ButtonFocus = ChangePasswd;
+		buttonFocus = CHANGE_PASSWD;
 	if ((X > 363 && X < 540) && (Y > 407 && Y < 432))
-		ButtonFocus = Logout;
+		buttonFocus = LOGOUT;
 }
 
-void SelectCharScene::OnLButtonDown(int X, int Y)
+void SelectCharScene::onLButtonDown(int X, int Y)
 {
 	if (Y > 54 && Y < 240)
 	{
 		if (X > 103 && X < 210)
 		{
-			Game::GetInstance().Audio->Play("E14");
-			SlotSelect = 0;
+			SoundBank::manager.play("E14");
+			slotSelect = 0;
 		}
 		if (X > 211 && X < 319)
 		{
-			Game::GetInstance().Audio->Play("E14");
-			SlotSelect = 1;
+			SoundBank::manager.play("E14");
+			slotSelect = 1;
 		}
 		if (X > 321 && X < 427)
 		{
-			Game::GetInstance().Audio->Play("E14");
-			SlotSelect = 2;
+			SoundBank::manager.play("E14");
+			slotSelect = 2;
 		}
 		if (X > 430 && X < 536)
 		{
-			Game::GetInstance().Audio->Play("E14");
-			SlotSelect = 3;
+			SoundBank::manager.play("E14");
+			slotSelect = 3;
 		}
+	}
+
+	if ((X > 363 && X < 540) && (Y > 317 && Y < 342))
+	{
+		SoundBank::manager.play("E14");
+		Game::getInstance().changeScene(new CreateNewCharScene);
 	}
 
 	if ((X > 363 && X < 540) && (Y > 407 && Y < 432))
 	{
-		Game::GetInstance().Audio->Play("E14");
-		Game::GetInstance().ChangeScene(new MenuScene);
+		SoundBank::manager.play("E14");
+		Game::getInstance().changeScene(new MenuScene);
 	}
 }
 
-void SelectCharScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
+void SelectCharScene::onKeyDown(SDLKey sym, SDLMod Mod, Uint16 Unicode)
 {
-	if (Sym == SDLK_ESCAPE)
+	if (sym == SDLK_ESCAPE)
 	{
-		Game::GetInstance().ChangeScene(new MenuScene);
+		Game::getInstance().changeScene(new MenuScene);
 	}
 }
 
-void SelectCharScene::UpdateCharList(Buffer * B, int Skip)
+void SelectCharScene::updateCharList(Buffer* data, int skip)
 {
-	if (Skip > 0)
-		B->seek(Skip);
+	if (skip > 0)
+		data->seek(skip);
 
-	CharCount = static_cast<int>(B->next<char>());
-	if (CharCount == 0)
+	charCount = static_cast<int>(data->next<char>());
+	if (charCount == 0)
 		return;
 
-	memset(&CharList, 0, sizeof(CCharList));
-	memcpy(&CharList, B->data(), sizeof(CCharList));
+	memset(&charList, 0, sizeof(CCharList));
+	memcpy(&charList, data->data(), sizeof(CCharList));
 #ifdef DEBUG
-	for (int i = 0; i < CharCount; i++)
+	for (int i = 0; i < charCount; i++)
 	{
 		char Name[11];
 		memset(Name, 0, 11);
-		memcpy(&Name, &CharList[i].Name, 10);
+		memcpy(&Name, &charList[i].Name, 10);
 		printf(
 						"%s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %s\n",
-						Name, CharList[i]._Unused, CharList[i].Appr1, CharList[i].Appr2,
-						CharList[i].Appr3, CharList[i].Appr4, CharList[i].Gender,
-						CharList[i].Skin, CharList[i].Level, CharList[i].Experience,
-						CharList[i].Strength, CharList[i].Vitality,
-						CharList[i].Dexterity, CharList[i].Intelligence,
-						CharList[i].Magic, CharList[i].Agility, CharList[i].Year,
-						CharList[i].Month, CharList[i].Day, CharList[i].Hour,
-						CharList[i].Minute, CharList[i].Second, CharList[i].MapLoc);
+						Name, charList[i]._Unused, charList[i].Appr1, charList[i].Appr2,
+						charList[i].Appr3, charList[i].Appr4, charList[i].Gender,
+						charList[i].Skin, charList[i].Level, charList[i].Experience,
+						charList[i].Strength, charList[i].Vitality,
+						charList[i].Dexterity, charList[i].Intelligence,
+						charList[i].Magic, charList[i].Agility, charList[i].Year,
+						charList[i].Month, charList[i].Day, charList[i].Hour,
+						charList[i].Minute, charList[i].Second, charList[i].MapLoc);
 	}
 #endif
 }

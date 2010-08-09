@@ -1,77 +1,57 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include "NetSock.h"
-#include "Buffers.h"
+#include "Socket.h"
 #include "NetMessages.h"
+#include "GlobalDef.h"
 
 #include "Window.h"
-#include "Sprite.h"
-#include "SpriteID.h"
 #include "Mouse.h"
-#include "AudioManager.h"
+#include "SpriteBank.h"
+#include "SoundBank.h"
+#include "Font.h"
 
 #include "LoadingScene.h"
 #include "MenuScene.h"
 #include "ExitScene.h"
-#include "LoginScene.h"
-#include "SelectServerScene.h"
-#include "DebugScene.h"
 #include "SignupScene.h"
-#include "SelectCharScene.h"
+#include "SelectServerScene.h"
+#include "LoginScene.h"
 #include "VersionNotMatchScene.h"
-
-#include "GlobalDef.h"
+#include "SelectCharScene.h"
+#include "CreateNewCharScene.h"
 
 class Game: public Event
 {
 	public:
-		static Game &GetInstance()
+		static Game &getInstance()
 		{
 			static Game Instance;
 			return Instance;
 		}
 
-		int OnExecute();
-
-		bool OnInitialize();
-
-		void OnLoop();
-
-		void OnDraw();
-
-		void OnEvent(SDL_Event *EventSource);
-
-		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
-
-		void OnExit();
-
-		void OnQuit();
-
-		void OnCleanup();
-
-		void ChangeScene(Scene *NewScene);
-
-		static void DrawVersion(SDL_Surface *Dest);
-
-		std::vector<Sprite> Sprites;
-
-		TTF_Font *Font;
-
-		AudioManager *Audio;
+		int onExecute();
+		bool onInitialize();
+		void onLoop();
+		void onDraw();
+		void onEvent(SDL_Event *EventSource);
+		void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
+		void onExit();
+		void onQuit();
+		void onCleanup();
+		void changeScene(Scene* newScene);
+		static void drawVersion(SDL_Surface* dest);
 
 	private:
 		Game();
 		Game(const Game &);
 		Game& operator =(const Game&);
 
-		Window MainWindow;
-
-		Mouse MouseCursor;
-
-		Scene *CurrentScene;
-
-		bool Running;
+		Window mainWindow;
+		Mouse mouseCursor;
+		Scene* currentScene;
+		Scene* previousScene;
+		bool running;
 };
 
 #endif // GAME_H

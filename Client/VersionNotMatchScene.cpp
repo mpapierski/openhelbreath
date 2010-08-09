@@ -1,5 +1,4 @@
 #include "Game.h"
-#include "VersionNotMatchScene.h"
 
 VersionNotMatchScene::VersionNotMatchScene()
 {
@@ -11,22 +10,37 @@ VersionNotMatchScene::~VersionNotMatchScene()
 
 }
 
-void VersionNotMatchScene::Draw(SDL_Surface *Dest)
+void VersionNotMatchScene::onLoop()
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_EXIT], 0, 0, SPRID_EXIT_BACKGROUND);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3], 162, 125, 2);
-	Font::PutAlignedText(Dest, 168, 160, 474 - 168, "Client program version does not match with server!", 0, 0, 0);
-	Font::PutAlignedText(Dest, 168, 180, 474 - 168, "Download recent version and try again.", 0, 0, 0);
-	Font::PutAlignedText(Dest, 168, 250, 474 - 168, MSG_HOMEPAGE, 0, 0, 0);
+	if(!exitTimer.isStarted())
+	{
+		exitTimer.start();
+	}
+	if(exitTimer.getTicks() > 4000)
+	{
+		Game::getInstance().onQuit();
+	}
 }
 
-void VersionNotMatchScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
+void VersionNotMatchScene::onDraw(SDL_Surface* dest)
 {
-	Game::GetInstance().OnQuit();
+	SpriteBank::manager.draw(dest, 0, 0, SPRID_NEWDIALOG_EXIT, 0);
+	SpriteBank::manager.draw(dest, 162, 125, SPRID_GAMEDIALOG_3, 2);
+	Font::putAlignedText(dest, 168, 160, 474 - 168, "Client program version does not match with server!", Font::NORMAL, 255, 255, 255);
+	Font::putAlignedText(dest, 168, 180, 474 - 168, "Download recent version and try again.", Font::NORMAL, 255, 255, 255);
+	Font::putAlignedText(dest, 168, 250, 474 - 168, MSG_HOMEPAGE, Font::NORMAL, 255, 255, 255);
+
+	Game::drawVersion(dest);
 }
 
-void VersionNotMatchScene::OnLButtonDown(int X, int Y)
+void VersionNotMatchScene::onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
 {
-	Game::GetInstance().OnQuit();
+	if(exitTimer.getTicks() > 1000)
+		Game::getInstance().onQuit();
+}
+
+void VersionNotMatchScene::onLButtonDown(int x, int y)
+{
+	Game::getInstance().onQuit();
 }
 

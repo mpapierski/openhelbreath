@@ -3,49 +3,80 @@
 namespace gui
 {
 
-	Widget::Widget() :
-		Tag(-1)
+	Widget::Widget()
 	{
-		WidgetSurface = NULL;
-
-		PosX = 0;
-		PosY = 0;
-	}
-
-	void Widget::Draw(SDL_Surface *Dest)
-	{
-		Surface::Draw(Dest, WidgetSurface, PosX, PosY);
-	}
-
-	void Widget::OnEvent(SDL_Event *EventSource)
-	{
-		Event::OnEvent(EventSource);
-	}
-
-	void Widget::SetPosition(int X, int Y)
-	{
-		PosX = X;
-		PosY = Y;
-	}
-
-	void Widget::SetSurface(SDL_Surface *Source)
-	{
-		WidgetSurface = Source;
-	}
-
-	int Widget::X() const
-	{
-		return PosX;
-	}
-
-	int Widget::Y() const
-	{
-		return PosY;
+		widgetSurface = NULL;
+		setPosition(0, 0);
+		setEnabled(true);
+		setVisible(true);
 	}
 
 	Widget::~Widget()
 	{
-		SDL_FreeSurface(WidgetSurface);
+		SDL_FreeSurface(widgetSurface);
+	}
+
+	void Widget::draw(SDL_Surface* dest)
+	{
+		if(!visible)
+			return;
+
+		Surface::draw(dest, widgetSurface, posX, posY);
+	}
+
+	void Widget::onEvent(SDL_Event* eventSource)
+	{
+		if(!enabled)
+			return;
+
+		Event::onEvent(eventSource);
+	}
+
+	void Widget::setPosition(int x, int y)
+	{
+		posX = x;
+		posY = y;
+	}
+
+	void Widget::setSurface(SDL_Surface* source)
+	{
+		if(source != NULL)
+		{
+			widgetSurface = SDL_ConvertSurface(source, source->format, source->flags);
+			SDL_FreeSurface(source);
+		}
+		else
+			widgetSurface = NULL;
+	}
+
+	int Widget::x() const
+	{
+		return posX;
+	}
+
+	int Widget::y() const
+	{
+		return posY;
+	}
+
+	bool Widget::isEnabled() const
+	{
+		return enabled;
+	}
+
+	void Widget::setEnabled(bool enabled)
+	{
+		this->enabled = enabled;
+	}
+
+	bool Widget::isVisible() const
+	{
+		return visible;
+	}
+
+	void Widget::setVisible(bool visible)
+	{
+		this->visible = visible;
 	}
 
 } //namespace gui

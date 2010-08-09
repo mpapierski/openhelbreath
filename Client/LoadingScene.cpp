@@ -2,44 +2,39 @@
 
 LoadingScene::LoadingScene()
 {
-	Percent = 0;
+	percent = 0;
 }
 
-void LoadingScene::OnLoop()
+LoadingScene::~LoadingScene()
 {
-	switch (Percent)
+
+}
+
+void LoadingScene::onLoop()
+{
+	switch(percent)
 	{
 		case 0:
-			Game::GetInstance().Sprites[SPRID_MAINMENU].LoadFromFile("New-Dialog.pak", 1);
-			Game::GetInstance().Sprites[SPRID_EXIT].LoadFromFile("New-Dialog.pak", 2);
-			Game::GetInstance().Sprites[SPRID_LOGIN].LoadFromFile("LoginDialog.pak", 0);
-			Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].LoadFromFile("GameDialog.pak", 3);
-			Game::GetInstance().Sprites[SPRID_GAMEDIALOG_3].SetColorKey();
-			Game::GetInstance().Sprites[SPRID_GAMEDIALOG_8].LoadFromFile("GameDialog.pak", 8);
-			Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS].LoadFromFile("DialogText.pak", 1);
-			Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS].SetColorKey();
-			break;
-		case 1:
-			Game::GetInstance().Audio->Add("E14", AUDIO_SOUND);
+			SpriteBank::manager.load("GameDialog");
+			SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).setColorKey();
+			SpriteBank::manager.load("item-equipM");
+			SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_M_MODELS).setColorKey();
+			SpriteBank::manager.load("item-equipW");
+			SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_MODELS).setColorKey();
 			break;
 		case 100:
-			Game::GetInstance().ChangeScene(new MenuScene);
+			Game::getInstance().changeScene(new MenuScene);
 			break;
 	}
 
-	if (Percent <= 100)
+	if (percent <= 100)
 	{
-		Percent++;
+		percent++;
 	}
 }
 
-void LoadingScene::Draw(SDL_Surface *Dest)
+void LoadingScene::onDraw(SDL_Surface* dest)
 {
-	// New-Dialog.pak is bugged. So we need to draw background +1, +1. TODO: Fix New-Dialog.pak
-	// Crazy koreans, they didn't fix it up to most recent versions
-	// Notice when original client is loading there is black line on edges.
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOADING], 1, 1, SPRID_LOADING_BACKGROUND);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOADING], 473, 443, Percent, 17, SPRID_LOADING_PROGRESSBAR);
-
-	Game::DrawVersion(Dest);
+	SpriteBank::manager.draw(dest, 1, 1, SPRID_NEWDIALOG_LOADING, 0);
+	SpriteBank::manager.draw(dest, 473, 443, percent+17, 17, SPRID_NEWDIALOG_LOADING, 1);
 }

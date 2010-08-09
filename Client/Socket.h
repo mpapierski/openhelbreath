@@ -1,8 +1,9 @@
-#ifndef SOCKET_H_
-#define SOCKET_H_
+#ifndef SOCKET_H
+#define SOCKET_H
+
+#include <string>
 
 #include <SDL.h>
-#include <string>
 
 #include "NetSock.h"
 #include "Threading.h"
@@ -15,7 +16,7 @@ class Socket : public Thread
 		bool Connected;
 		void KillSocket();
 	public:
-		Socket(std::string Addr, int Port);
+		Socket(const std::string& Addr, int Port);
 		virtual ~Socket();
 		void Run();
 		inline bool IsConnected() const;
@@ -31,4 +32,4 @@ class Socket : public Thread
 		NetSock * Connection;
 		Buffer * Data;
 };
-#endif /* SOCKET_H_ */
+#endif // SOCKET_H

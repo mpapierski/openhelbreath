@@ -2,21 +2,20 @@
 #define MOUSE_H
 
 #include "Event.h"
+#include "SpriteBank.h"
 
 class Mouse : public Event
 {
-public:
-	Mouse();
+	public:
+		Mouse();
+		~Mouse();
+		void onDraw(SDL_Surface* dest);
+		void onEvent(SDL_Event* eventSource);
+		void onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle);
 
-	void Draw(SDL_Surface *Dest);
-
-	void OnEvent(SDL_Event *EventSource);
-
-	void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
-
-private:
-	int Mx;
-	int My;
+	private:
+		int cursorX;
+		int cursorY;
 };
 
 #endif // MOUSE_H

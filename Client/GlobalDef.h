@@ -13,13 +13,12 @@
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 #define DEBUG // Debug messages
-#define DEF_FPSLIMIT 60
+//#define DEF_FPSLIMIT 150
 #define DEF_SELECTSERVER //Abaddon, Apocalypse server
 #define DEF_FULLSCREEN // Run game in full screen
 #define DEF_MAKEACCOUNT // Enable account creation from Client
 #define DEF_CONSOLE  // Relocate stdout to console Window (Win32)
 #define DEF_CHECKVERSION // Server version check
-#define DEF_CACHE // Save RAM by release unused sprites
 ///////////////////////////////////////////////////////////////////////////////
 
 #define DEF_SERVER_ADDR "localhost" // Server address (Default address)
@@ -30,8 +29,6 @@
 
 #define DEF_LOWERVERSION 3
 #define DEF_UPPERVERSION 82
-
-#define DEF_MAXSPRITES 30
 
 #ifdef DEBUG
 #	if !defined(WIN32)
@@ -45,7 +42,7 @@
 
 #define DEF_BUFFERSIZE 128 * 1024 // Max buffer size (128Kb)
 
-// Custom SDL events used by networking
+// Custom user event codes used by networking
 #define SDL_NETWORK_INIT		0x00000001
 #define SDL_NETWORK_CONNECTED	0x00000002
 #define SDL_NETWORK_CLOSED		0x00000003
@@ -61,8 +58,5 @@
 // Dialog button result...
 #define SDL_CLICKED_LEFT		0x0000000A
 #define SDL_CLICKED_RIGHT		0x0000000B
-
-// Delete previous scene
-#define SDL_DELETE_SCENE		0x0000000C
 
 #endif // GLOBALDEF_H

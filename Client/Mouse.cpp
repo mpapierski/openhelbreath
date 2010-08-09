@@ -1,23 +1,28 @@
-#include "Game.h"
+#include "Mouse.h"
 
 Mouse::Mouse()
 {
-	Mx = 0;
-	My = 0;
+	cursorX = 0;
+	cursorY = 0;
 }
 
-void Mouse::Draw(SDL_Surface *Dest)
+Mouse::~Mouse()
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_CURSOR], Mx, My, INTERFACE_CURSOR_ARROW);
+
 }
 
-void Mouse::OnEvent(SDL_Event *EventSource)
+void Mouse::onDraw(SDL_Surface* dest)
 {
-	Event::OnEvent(EventSource);
+	SpriteBank::manager.draw(dest, cursorX, cursorY, SPRID_INTERFACE_CURSOR, INTERFACE_CURSOR_ARROW);
 }
 
-void Mouse::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
+void Mouse::onEvent(SDL_Event* eventSource)
 {
-	Mx = X;
-	My = Y;
+	Event::onEvent(eventSource);
+}
+
+void Mouse::onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle)
+{
+	cursorX = x;
+	cursorY = y;
 }

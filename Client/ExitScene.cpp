@@ -5,29 +5,36 @@ ExitScene::ExitScene()
 
 }
 
-void ExitScene::OnLoop()
+ExitScene::~ExitScene()
 {
-	if(!ExitTimer.IsStarted())
+
+}
+
+void ExitScene::onLoop()
+{
+	if(!exitTimer.isStarted())
 	{
-		ExitTimer.Start();
+		exitTimer.start();
 	}
-	if(ExitTimer.GetTicks() > 2000)
+	if(exitTimer.getTicks() > 2000)
 	{
-		Game::GetInstance().OnQuit();
+		Game::getInstance().onQuit();
 	}
 }
 
-void ExitScene::Draw(SDL_Surface *Dest)
+void ExitScene::onDraw(SDL_Surface* dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_EXIT], 0, 0, SPRID_EXIT_BACKGROUND);
-	
-	if(ExitTimer.GetTicks() > 500)
+	SpriteBank::manager.draw(dest, 0, 0, SPRID_NEWDIALOG_EXIT, EXIT_BACKGROUND);
+
+	if(exitTimer.getTicks() > 500)
 	{
-		Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_EXIT], 255, 123, SPRID_EXIT_MESSAGE);
+		SpriteBank::manager.draw(dest, 255, 123, SPRID_NEWDIALOG_EXIT, EXIT_MESSAGE);
 	}
+
+	Game::drawVersion(dest);
 }
 
-void ExitScene::OnLButtonDown(int X, int Y)
+void ExitScene::onLButtonDown(int x, int y)
 {
-	Game::GetInstance().OnQuit();
+	Game::getInstance().onQuit();
 }

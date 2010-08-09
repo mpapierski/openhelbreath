@@ -2,205 +2,166 @@
 
 Game::Game()
 {
-	Running = true;
+	running = true;
 
-	ChangeScene(new LoadingScene);
+	previousScene = 0;
 
-	Sprites.assign(DEF_MAXSPRITES, Sprite::Sprite());
+	changeScene(new LoadingScene);
 }
 
-int Game::OnExecute()
+int Game::onExecute()
 {
-	if (!OnInitialize())
+	if (!onInitialize())
 		return -1;
 
-	SDL_Event EventHandle;
+	SDL_Event eventHandle;
 
-	while (Running)
+	while (running)
 	{
-		while (SDL_PollEvent(&EventHandle))
+		while (SDL_PollEvent(&eventHandle))
 		{
-			OnEvent(&EventHandle);
+			onEvent(&eventHandle);
 
-			CurrentScene->OnEvent(&EventHandle);
+			mouseCursor.onEvent(&eventHandle);
 
-			MouseCursor.OnEvent(&EventHandle);
+			currentScene->onEvent(&eventHandle);
 		}
 
-		OnLoop();
+		onLoop();
 
-		OnDraw();
+		onDraw();
 
-		MainWindow.Update();
+		mainWindow.update();
+
+		if (previousScene != 0)
+		{
+			delete previousScene;
+			previousScene = 0;
+		}
 	}
 
-	OnCleanup();
+	onCleanup();
 
 	return 0;
 }
 
-bool Game::OnInitialize()
+bool Game::onInitialize()
 {
-
-#ifndef __unix__
-	WSADATA wsdat;
-	memset(&wsdat, 0, sizeof(wsdat));
-	if (WSAStartup(0x0101, &wsdat))
-	{
-		fprintf(stderr, "WSAStartup() failed.\n");
-		return false;
-	}
-#endif
-
 #ifdef DEF_FULLSCREEN
-	MainWindow.Create("HelGame", 640, 480, 32, SDL_FULLSCREEN | SDL_HWSURFACE | SDL_DOUBLEBUF);
+	mainWindow.create("HelGame", 640, 480, 32, SDL_FULLSCREEN | SDL_HWSURFACE | SDL_DOUBLEBUF);
 #else
-	MainWindow.Create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	mainWindow.create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
 #endif
 
-	MainWindow.SetKeyRepeat(5, 200);
-	MainWindow.ShowCursor(false);
-	MainWindow.SetCursorPos(320, 240);
+	mainWindow.setKeyRepeat(1, 175);
+	mainWindow.showCursor(false);
+	mainWindow.setCursorPos(320, 240);
 
 #ifdef DEF_FPSLIMIT
-	MainWindow.SetFpsLimit(DEF_FPSLIMIT);
+	mainWindow.setFpsLimit(DEF_FPSLIMIT);
 #endif
 
 	SDL_EnableUNICODE( SDL_ENABLE);
 
-	Font = TTF_OpenFont("FONTS/VeraSe.ttf", 12);
-	if(Font == NULL)
+	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
 	{
-		printf("Unable to load font file: FONTS/VeraSe.ttf\n");
+		fprintf(stderr, "Unable to open audio channel\n");
 		return false;
 	}
 
-	Audio = new AudioManager();
+	SoundBank::manager.load("E14");
 
-	//Load some Sprites before Loading
-	Sprites[SPRID_CURSOR].Init("interface.pak", 0);
-	Sprites[SPRID_CURSOR].SetColorKey();
+	Font::smallFont = TTF_OpenFont("FONTS/VeraSe.ttf", 10);
+	if (Font::smallFont == NULL)
+	{
+		fprintf(stderr, "Unable to load font file: FONTS/VeraSe.ttf\n");
+		return false;
+	}
 
-	Sprites[SPRID_SPRFONT_NUM].Init("interface2.pak", 0);
-	Sprites[SPRID_SPRFONT_NUM].SetColorKey();
+	Font::normalFont = TTF_OpenFont("FONTS/VeraSe.ttf", 12);
+	if (Font::normalFont == NULL)
+	{
+		fprintf(stderr, "Unable to load font file: FONTS/VeraSe.ttf\n");
+		return false;
+	}
 
-	Sprites[SPRID_SPRFONT].Init("SPRFONTS.PAK", 0);
-	Sprites[SPRID_SPRFONT].SetColorKey();
-	Sprites[SPRID_SPRFONT2].Init("SPRFONTS.PAK", 1);
-	Sprites[SPRID_SPRFONT2].SetColorKey();
-
-	Sprites[SPRID_LOADING].Init("New-Dialog.pak", 0);
-
+	SpriteBank::manager.load("interface");
+	SpriteBank::manager.getSprite(SPRID_INTERFACE_CURSOR).setColorKey();
+	SpriteBank::manager.load("interface2");
+	SpriteBank::manager.getSprite(SPRID_INTERFACE2_NUM).setColorKey();
+	SpriteBank::manager.load("SPRFONTS");
+	SpriteBank::manager.getSprite(SPRID_SPRFONT).setColorKey();
+	SpriteBank::manager.load("New-Dialog");
+	SpriteBank::manager.load("LoginDialog");
+	SpriteBank::manager.load("DialogText");
+	SpriteBank::manager.getSprite(SPRID_DIALOGTEXT_BUTTONS).setColorKey();
 	return true;
 }
 
-void Game::OnLoop()
+void Game::onLoop()
 {
-	CurrentScene->OnLoop();
+	currentScene->onLoop();
 }
 
-void Game::OnDraw()
+void Game::onDraw()
 {
-	CurrentScene->Draw(MainWindow.GetSurface());
-	MouseCursor.Draw(MainWindow.GetSurface());
+	currentScene->onDraw(mainWindow.getSurface());
+
+	mouseCursor.onDraw(mainWindow.getSurface());
+
+	char fps[12];
+	snprintf(fps, 12, "fps: %d", mainWindow.getFps());
+	Font::putTextShaded(mainWindow.getSurface(), 0, 0, fps, Font::NORMAL, 255, 255, 255);
 }
 
-void Game::OnEvent(SDL_Event *EventSource)
+void Game::onEvent(SDL_Event* eventSource)
 {
-#ifdef DEBUG
-	if (EventSource->type == SDL_USEREVENT)
+	Event::onEvent(eventSource);
+}
+
+void Game::onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
+{
+	if (sym == SDLK_F11)
 	{
-		switch (EventSource->user.code)
-		{
-			case SDL_DELETE_SCENE:
-				Scene * prev = static_cast<Scene*>(EventSource->user.data1);
-				delete prev;
-				break;
-			case SDL_THREAD_START:
-			{
-				printf("Thread started (ID: " INT_FMT ")\n", reinterpret_cast<INT>(EventSource->user.data2));
-			}
-				break;
-			case SDL_THREAD_FINISHED:
-			{
-				printf("Thread finished (ID: " INT_FMT ")\n", reinterpret_cast<INT>(EventSource->user.data2));
-			}
-				break;
-		}
-
+		changeScene(new CreateNewCharScene);
 	}
-#endif
-	Event::OnEvent(EventSource);
 }
 
-void Game::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
+void Game::onExit()
 {
-#ifdef DEBUG
-#ifdef DEF_CACHE
-	if (Sym == SDLK_F11)
-	{
-		printf("Cache listing:\n");
-		for (unsigned int i = 0; i < Sprite::Cache.size(); i++)
-		{
-			printf("%s:%d (Locked: %s RAM: %s)\n", Sprite::Cache[i]->Name.c_str(), Sprite::Cache[i]->ID, Sprite::Cache[i]->Locked ? "true" : "false", Sprite::Cache[i]->getImage() == 0 ? "false" : "true");
-		}
-		printf("OK.\n");
-	}
-	if (Sym == SDLK_F10)
-	{
-		printf("Releasing unused sprites...\n");
-		Sprite::ReleaseUnused();
-		printf("\nDone\n");
-	}
-#endif
-	if (Sym == SDLK_F12)
-	{
-		ChangeScene(new DebugScene);
-	}
-#endif
+	changeScene(new ExitScene);
 }
 
-void Game::OnExit()
+void Game::onQuit()
 {
-	ChangeScene(new ExitScene);
+	running = false;
 }
 
-void Game::OnQuit()
+void Game::onCleanup()
 {
-	Running = false;
+	delete currentScene;
+	delete previousScene;
+
+	Mix_CloseAudio();
+
+	TTF_CloseFont(Font::smallFont);
+	TTF_CloseFont(Font::normalFont);
+
+	mainWindow.close();
+
+	SpriteBank::manager.cleanUp();
+	SoundBank::manager.cleanUp();
 }
 
-void Game::OnCleanup()
+void Game::changeScene(Scene* newScene)
 {
-	delete Audio;
-
-	TTF_CloseFont(Font);
-
-	MainWindow.Close();
+	previousScene = currentScene;
+	currentScene = newScene;
 }
 
-void Game::ChangeScene(Scene *NewScene)
+void Game::drawVersion(SDL_Surface* dest)
 {
-#ifdef DEF_CACHE
-	Sprite::ReleaseUnused();
-	for (unsigned int i = 0; i < Sprite::Cache.size(); i++)
-	{
-		Sprite::Cache[i]->Locked = false;
-		Sprite::Cache[i]->Priority = 0;
-	}
-#endif
-	SDL_Event Ev;
-	Ev.type = SDL_USEREVENT;
-	Ev.user.code = SDL_DELETE_SCENE;
-	Ev.user.data1 = CurrentScene;
-	Ev.user.data2 = 0;
-	SDL_PushEvent(&Ev);
-	CurrentScene = NewScene;
-}
-
-void Game::DrawVersion(SDL_Surface *Dest)
-{
-	char Ver[20];
-	sprintf(Ver, "V%d.%d", DEF_LOWERVERSION, DEF_UPPERVERSION);
-	Font::PutTextSprF(Dest, 14, 463, Ver);
+	char ver[20];
+	sprintf(ver, "V%d.%d", DEF_LOWERVERSION, DEF_UPPERVERSION);
+	Font::putTextSprF(dest, 14, 463, ver);
 }

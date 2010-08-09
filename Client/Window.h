@@ -1,58 +1,46 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include <string>
+
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include <string>
 
 #include "Event.h"
 #include "Timer.h"
 
 class Window : public Event
 {
-public:
-	Window();
+	public:
+		Window();
+		virtual ~Window();
+		void create(const std::string& title, int width, int height, int depth, int flags);
+		void close();
+		void update();
+		SDL_Surface* getSurface() const;
+		int getWidth() const;
+		int getHeight() const;
+		int getFps() const;
+		void setFpsLimit(int limit);
+		void setKeyRepeat(int delay, int interval);
+		void setCursorPos(unsigned short x, unsigned short y);
+		void showCursor(bool show);
 
-	virtual ~Window();
+	private:
+		void initialize();
 
-	void Create(const std::string &Title, int Width, int Height, int Depth, int Flags);
-
-	void Close();
-
-	void Update();
-
-	SDL_Surface *GetSurface() const;
-
-	int GetWidth() const;
-
-	int GetHeight() const;
-
-	void SetFpsLimit(int Limit);
-
-	void SetKeyRepeat(int Delay, int Interval);
-
-	void SetCursorPos(unsigned short X, unsigned short Y);
-
-	void ShowCursor(bool Show);
-
-private:
-	void Initialize();
-
-	SDL_Surface *WindowSurface;
-
-	bool FpsCap;
-
-	int FpsLimit;
-	int Frames;
-
-	Timer FpsTimer;
-
-	Timer FrameTimer;
+		SDL_Surface* windowSurface;
+		bool fpsCap;
+		int fpsLimit;
+		int frames;
+		int lastFps;
+		Timer fpsTimer;
+		Timer frameTimer;
 };
 
-inline SDL_Surface *Window::GetSurface() const
+inline SDL_Surface* Window::getSurface() const
 {
-	return WindowSurface;
+	return windowSurface;
 }
 
 #endif // WINDOW_H

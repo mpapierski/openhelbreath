@@ -2,48 +2,33 @@
 #define SELECTCHARSCENE_H
 
 #include "Scene.h"
+#include "Buffers.h"
+#include "Character.h"
 
-#pragma pack(1)
-
-typedef struct
-{
-		char Name[10];
-		char _Unused;
-		short Appr1, Appr2, Appr3, Appr4;
-		short Gender, Skin;
-		unsigned int Level, Experience;
-		short Strength, Vitality, Dexterity, Intelligence,Magic, Agility;
-		short Year, Month, Day, Hour, Minute, Second;
-		char MapLoc[10];
-} CCharacter;
 typedef CCharacter CCharList[4];
 
-#pragma pack(0)
-
-class SelectCharScene: public Scene
+class SelectCharScene : public Scene
 {
 	public:
-		SelectCharScene(Buffer * P);
+		SelectCharScene();
+		SelectCharScene(Buffer* data);
 		~SelectCharScene();
-
-		void Draw(SDL_Surface *Dest);
-
-		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
-
-		void OnLButtonDown(int X, int Y);
-
-		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+		void onDraw(SDL_Surface* dest);
+		void onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle);
+		void onLButtonDown(int x, int y);
+		void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
 
 	private:
+		void updateCharList(Buffer* data, int skip = 0);
+
 		enum Focus
 		{
-			Start, CreateNewChar, DelChar, ChangePasswd, Logout
-		} ButtonFocus;
+			START, CREATE_NEW_CHAR, DELETE_CHAR, CHANGE_PASSWD, LOGOUT
+		} buttonFocus;
 
-		int SlotSelect;
-		int CharCount;
-		CCharList CharList;
-		void UpdateCharList(Buffer * B, int Skip = 0);
+		int slotSelect;
+		int charCount;
+		CCharList charList;
 };
 
 #endif // SELECTCHARSCENE_H

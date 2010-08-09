@@ -4,42 +4,46 @@
 #include "Scene.h"
 #include "TextEdit.h"
 #include "ConnectingWidget.h"
-#include "DialogBoxButtons.h"
-#include "Socket.h"
+#include "MessageDialog.h"
+#include "Timer.h"
 
 class LoginScene: public Scene
 {
 	public:
-		LoginScene(const std::string &WS = DEF_SERVER_NAME1);
+		LoginScene(const std::string& serverName = DEF_SERVER_NAME1);
 		~LoginScene();
-		void Draw(SDL_Surface *Dest);
-		void OnEvent(SDL_Event *EventSource);
-		void OnUser(Uint8 Type, int Code, void *Data1, void *Data2);
-		void OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle);
-		void OnLButtonDown(int X, int Y);
-		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+		void onLoop();
+		void onDraw(SDL_Surface* dest);
+		void onEvent(SDL_Event* eventSource);
+		void onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle);
+		void onLButtonDown(int x, int y);
+		void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
+		void onUser(Uint8 type, int code, void* data1, void* data2);
 
 	private:
-		void _Connect();
-		void _Cancel();
-
-		void __NotExistingAccount();
-		void __PasswordMismatch();
-		void __WorldNotActivated();
-		void __AccountBlocked(int Y, int M, int D);
-		void Disconnect();
+		void connect();
+		void disconnect();
+		void cancel();
+		void notExistingAccount();
+		void passwordMismatch();
+		void worldNotActivated();
+		void accountBlocked(int Y, int M, int D);
 
 		enum Focus
 		{
-			Login, Password, Connect, Cancel
-		} LoginFocus;
+			LOGIN, PASSWORD, CONNECT, CANCEL
+		} loginFocus;
 
-		gui::TextEdit LoginEdit;
-		gui::TextEdit PasswordEdit;
-		ConnectingWidget ConnectingBox;
-		DialogBoxButtons DlgBox;
-		Socket *MLSocket;
-		std::string WorldServerName;
+		gui::TextEdit loginEdit;
+		gui::TextEdit passwordEdit;
+		gui::ConnectingWidget connectingBox;
+		gui::MessageDialog msgBox;
+
+		Socket* MLSocket;
+		std::string worldServerName;
+		SDL_Surface* form;
+		Timer formTimer;
+		int alpha;
 };
 
 #endif // LOGINSCENE_H

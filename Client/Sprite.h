@@ -1,73 +1,59 @@
 #ifndef SPRITE_H
 #define SPRITE_H
 
-#include <SDL.h>
 #include <string>
 #include <vector>
 
-#include "Surface.h"
-#include "GlobalDef.h"
+#include <SDL.h>
 
-struct Cord
+#include "Surface.h"
+#include "Timer.h"
+
+struct FrameSize
 {
-		short X;
-		short Y;
-		short W;
-		short H;
-		short Vx;
-		short Vy;
+		short x;
+		short y;
+		short w;
+		short h;
+		short xOffset;
+		short yOffset;
 };
 
 class Sprite
 {
 	public:
-#ifdef DEF_CACHE
-		int Priority;
-		int ID;
-		bool Locked;
-		std::string Name;
-		static std::vector<Sprite*> Cache;
-		static void ReleaseUnused();
-#endif
 		Sprite();
 		~Sprite();
-		Sprite(const std::string & FileName, int Number);
-		bool Init(const std::string & FileName, int Number);
-		inline bool LoadFromFile(const std::string & FileName, int Number);
-		static bool Draw(SDL_Surface *Dest, Sprite & SpriteSrc, int X, int Y, int Frame);
-		static bool Draw(SDL_Surface *Dest, Sprite & SpriteSrc, int X, int Y, int W, int H, int Frame);
-		SDL_Surface *GetSurface() const;
-		Cord GetCord(int Number) const;
-		int GetTotalFrames() const;
-		int GetMaxFrameH() const;
-		void SetColorKey();
+		void update();
+		void setFrameRect(short x, short y, short w, short h, short xOffset, short yOffset);
+		FrameSize getFrameRect(int number) const;
+		void setFramesCount(int frames);
+		int getFramesCount() const;
+		void setCurrentFrame(int frameID);
+		int getCurrentFrame() const;
+		void setMaxFrameH(int height);
+		int getMaxFrameH() const;
+		void setColorKey();
+		void setColor(int r, int g, int b);
 
-		inline bool getTransparent() const
+		inline SDL_Surface* getSurface() const
 		{
-			return Transparent;
+			return image;
 		}
 
-		void setTransparent(bool Transparent)
+		void setSurface(SDL_Surface* source)
 		{
-			this->Transparent = Transparent;
-		}
-
-		SDL_Surface *getImage() const
-		{
-			return Image;
-		}
-
-		void setImage(SDL_Surface *Image)
-		{
-			this->Image = Image;
+			this->image = SDL_ConvertSurface(source, source->format, source->flags);
+			SDL_FreeSurface(source);
 		}
 
 	private:
-		SDL_Surface *Image;
-		std::vector<Cord> Cords;
-		int TotalFrames;
-		int MaxFrameH;
-		bool Transparent;
+		SDL_Surface* image;
+		std::vector<FrameSize> framesRects;
+		Timer frameTimer;
+		int framesCount;
+		int currentFrame;
+		int maxFrameH;
 };
 
 #endif // SPRITE_H

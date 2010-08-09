@@ -1,161 +1,166 @@
 #include "TextEdit.h"
-#include "Game.h"
+#include "SpriteBank.h"
 
 namespace gui
 {
 
 	TextEdit::TextEdit()
 	{
-		Create();
+		create();
 	}
 
-	TextEdit::TextEdit(const std::string &Text)
+	TextEdit::TextEdit(const std::string& text)
 	{
-		Create();
-		SetText(Text);
+		create();
+		setText(text);
 	}
 
-	void TextEdit::Create()
+	TextEdit::~TextEdit()
 	{
-		MaxLength = 255;
-		Enabled = true;
-		PasswordMode = false;
-		CursorVisible = true;
-		CursorPosition = CursorPositionX = 0;
-		CursorSurface = Font::TextShaded("_", 255, 255, 255);
-		BlinkTimer.Start();
+		SDL_FreeSurface(cursorSurface);
 	}
 
-	void TextEdit::Draw(SDL_Surface *Dest)
+	void TextEdit::create()
 	{
-		Surface::Draw(Dest, GetSurface(), this->X(), this->Y());
-		if (CursorVisible)
+		maxLength = 255;
+		setEnabled(true);
+		passwordMode = false;
+		cursorVisible = true;
+		cursorPosition = cursorPositionX = 0;
+		cursorSurface = Font::textShaded("_", Font::NORMAL, 255, 255, 255);
+		blinkTimer.start();
+	}
+
+	void TextEdit::draw(SDL_Surface* dest)
+	{
+		Surface::draw(dest, getSurface(), this->x(), this->y());
+		if (cursorVisible)
 		{
-			if (BlinkTimer.GetTicks() > 500)
+			if (blinkTimer.getTicks() > 500)
 			{
-				Surface::Draw(Dest, CursorSurface, (this->X() + CursorPositionX), this->Y());
+				Surface::draw(dest, cursorSurface,
+						(this->x() + cursorPositionX), this->y());
 
-				if (BlinkTimer.GetTicks() > 1000)
-					BlinkTimer.Start();
+				if (blinkTimer.getTicks() > 1000)
+					blinkTimer.start();
 			}
 		}
 	}
 
-	const std::string &TextEdit::GetText()
+	void TextEdit::onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
 	{
-		return WidgetText;
-	}
-
-	void TextEdit::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
-	{
-
-	}
-
-	void TextEdit::OnLButtonDown(int X, int Y)
-	{
-
-	}
-
-	void TextEdit::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
-	{
-		switch (Sym)
+		switch (sym)
 		{
 			case SDLK_BACKSPACE:
-				if (!WidgetText.empty() && CursorPosition > 0)
-					WidgetText.erase(--CursorPosition, 1);
+				if (!widgetText.empty() && cursorPosition > 0)
+				{
+					widgetText.erase(--cursorPosition, 1);
+				}
 				break;
 			case SDLK_DELETE:
-				if (!WidgetText.empty() && CursorPosition != (int) WidgetText.length())
-					WidgetText.erase(CursorPosition, 1);
+				if (!widgetText.empty() && cursorPosition
+						!= (int) widgetText.length())
+					widgetText.erase(cursorPosition, 1);
 				break;
 			case SDLK_LEFT:
-				CursorPosition = max(CursorPosition - 1, 0);
+				cursorPosition = std::max(cursorPosition - 1, 0);
 				break;
 			case SDLK_RIGHT:
-				CursorPosition = (CursorPosition + 1 > (int) WidgetText.length()) ? WidgetText.length() : CursorPosition + 1;
+				cursorPosition = (cursorPosition + 1
+						> (int) widgetText.length()) ? widgetText.length()
+						: cursorPosition + 1;
 				break;
 			case SDLK_END:
-				CursorPosition = (int) WidgetText.length();
+				cursorPosition = (int) widgetText.length();
 				break;
 			case SDLK_HOME:
-				CursorPosition = 0;
+				cursorPosition = 0;
 				break;
 
 			default:
 			{
-				if (Sym < 32 || WidgetText.length() >= MaxLength)
+				if (sym < 32 || widgetText.length() >= maxLength)
 					return;
 				const int INTERNATIONAL_MASK = 0xFF80, UNICODE_MASK = 0x7F;
-				if (Unicode == 0)
+				if (unicode == 0)
 					return;
-				else if ((Unicode & INTERNATIONAL_MASK) == 0)
+				else if ((unicode & INTERNATIONAL_MASK) == 0)
 				{
-					char Key = static_cast<char> (Unicode & UNICODE_MASK);
-					WidgetText = WidgetText.substr(0, CursorPosition) + Key + WidgetText.substr(CursorPosition, WidgetText.length() - CursorPosition);
-					CursorPosition = CursorPosition + 1 > (int) WidgetText.length() ? WidgetText.length() : CursorPosition + 1;
+					char Key = static_cast<char> (unicode & UNICODE_MASK);
+					widgetText.insert(cursorPosition, 1, Key);
+					cursorPosition = cursorPosition + 1
+							> (int) widgetText.length() ? widgetText.length()
+							: cursorPosition + 1;
 				}
 				else
 					return;
 			}
 				break;
 		}
-		Update();
+		update();
 	}
 
-	void TextEdit::SetEnabled(bool Enable)
+	void TextEdit::setText(const std::string& text)
 	{
-		Enabled = Enable;
-		CursorVisible = Enabled;
-		Update();
+		widgetText.assign(text);
+		update();
 	}
 
-	void TextEdit::SetCursorVisible(bool Visible)
+	const std::string& TextEdit::getText()
 	{
-		CursorVisible = Visible;
-		Update();
+		return widgetText;
 	}
 
-	void TextEdit::SetCursorPosition(int Position)
+	void TextEdit::setEnabled(bool enabled)
 	{
-		CursorPosition = Position;
+		Widget::setEnabled(enabled);
+		cursorVisible = enabled;
+		update();
 	}
 
-	void TextEdit::SetMaxLength(int Length)
+	void TextEdit::setCursorVisible(bool visible)
 	{
-		MaxLength = Length;
+		cursorVisible = visible;
+		update();
 	}
 
-	void TextEdit::SetPasswordMode(bool Visible)
+	void TextEdit::setCursorPosition(int position)
 	{
-		PasswordMode = Visible;
+		cursorPosition = position;
 	}
 
-	void TextEdit::SetText(const std::string &Text)
+	void TextEdit::setMaxLength(int length)
 	{
-		WidgetText.assign(Text);
-		Update();
+		maxLength = length;
 	}
 
-	void TextEdit::Update()
+	void TextEdit::setPasswordMode(bool visible)
 	{
-		SDL_FreeSurface(GetSurface());
-		std::string Temp;
-		if (PasswordMode)
-			Temp.append(WidgetText.size(), '*');
+		passwordMode = visible;
+	}
+
+	void TextEdit::clear()
+	{
+		widgetText.clear();
+		cursorPosition = 0;
+		update();
+	}
+
+	void TextEdit::update()
+	{
+		SDL_FreeSurface(getSurface());
+		std::string temp;
+		if (passwordMode)
+			temp.append(widgetText.size(), '*');
 		else
-			Temp.assign(WidgetText);
+			temp = widgetText;
 
-		if (!Enabled)
-			SetSurface(Font::Text(Temp, 102, 102, 102));
+		if (!isEnabled())
+			setSurface(Font::textShaded(temp, Font::NORMAL, 160, 160, 160));
 		else
-			SetSurface(Font::TextShaded(Temp, 255, 255, 255));
+			setSurface(Font::textShaded(temp, Font::NORMAL, 255, 255, 255));
 
-		CursorPositionX = CursorPosition > 0 ? Font::TextWidth(Temp.substr(0, CursorPosition)) : 0;
-	}
-
-	TextEdit::~TextEdit()
-	{
-		SDL_FreeSurface(CursorSurface);
+		cursorPositionX = cursorPosition > 0 ? Font::textWidth(temp.substr(0, cursorPosition), Font::NORMAL) : 0;
 	}
 
 } //namespace gui

@@ -5,30 +5,23 @@
 #include "Font.h"
 #include "Timer.h"
 
-class ConnectingWidget: public gui::Widget
+namespace gui
 {
-	public:
-		ConnectingWidget();
-		~ConnectingWidget();
 
-		void Draw(SDL_Surface *Dest);
+	class ConnectingWidget : public Widget
+	{
+		public:
+			ConnectingWidget();
+			~ConnectingWidget();
+			void draw(SDL_Surface* dest);
+			void setVisible(bool visible);
+			void setState(int State);
+			int getState() const;
 
-		void OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode);
+		private:
+			Timer messageTimer;
+			int state;
+	};
 
-		void SetEnabled(bool Enable);
-
-		void SetState(int State);
-
-		int GetState() const;
-
-		bool IsEnabled() const;
-
-	private:
-		Timer MessageTimer;
-
-		bool Enabled;
-
-		int State;
-};
-
+} // namespace gui
 #endif // CONNECTINGWIDGET_H

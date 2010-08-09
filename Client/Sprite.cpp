@@ -1,271 +1,142 @@
 #include "Sprite.h"
 
-#ifdef DEF_CACHE
-std::vector<Sprite*> Sprite::Cache;
-#endif
+static FrameSize emptyFrameRect = { 0, 0, 0, 0, 0, 0 };
 
 Sprite::Sprite()
 {
-	Image = NULL;
+	image = NULL;
+	currentFrame = 0;
 }
 
-Sprite::Sprite(const std::string &FileName, int Number)
+void Sprite::update()
 {
-	Init(FileName, Number);
+	if (!frameTimer.isStarted())
+		frameTimer.start();
+
+	if (frameTimer.getTicks() > 100)
+	{
+		currentFrame++;
+		if (currentFrame >= framesCount)
+			currentFrame = 0;
+
+		frameTimer.start();
+	}
 }
 
-bool Sprite::Init(const std::string &FileName, int Number)
+void Sprite::setFrameRect(short x, short y, short w, short h, short xOffset, short yOffset)
 {
-#ifdef DEF_CACHE
-	bool OK = false;
-	unsigned int i;
-	for (i = 0; i < Sprite::Cache.size(); i++)
-	{
-		if ((Sprite::Cache[i]->Name == FileName) && (Sprite::Cache[i]->ID == Number))
-		{
-			printf("Cache load: %s\n", FileName.c_str());
-			this->Name = Sprite::Cache[i]->Name;
-			this->Image = Sprite::Cache[i]->Image;
-			this->Priority = Sprite::Cache[i]->Priority;
-			this->ID = Sprite::Cache[i]->ID;
-			this->Locked = Sprite::Cache[i]->Locked;
-			this->Transparent = Sprite::Cache[i]->Transparent;
-			OK = true;
-			break;
-		}
-	}
-	if (OK)
-		return true;
-#endif
-
-#ifndef DEF_CACHE
-	if (!LoadFromFile(FileName, Number))
-	{
-		return false;
-	}
-#else
-	setImage(0);
-#endif
-
-#ifdef DEF_CACHE
-	if (!OK)
-	{
-		int lowest = INT_MAX;
-		int lowest_id = -1;
-		for (unsigned int i = 0; i < Sprite::Cache.size(); i++)
-			if (!Sprite::Cache[i]->Locked)
-			{
-				lowest = lowest < Sprite::Cache[i]->Priority ? Sprite::Cache[i]->Priority : lowest;
-				lowest_id = i;
-			}
-
-		this->ID = Number;
-		this->Priority = 0;
-		this->Name = FileName;
-		printf("Cache add %s (lowest_id: %d)\n", FileName.c_str(), lowest_id);
-		if (lowest_id > -1)
-			Sprite::Cache[lowest_id] = this;
-		else
-			Sprite::Cache.push_back(this);
-	}
-#endif
-	return true;
+	FrameSize tempFrameRect = { x, y, w, h, xOffset, yOffset };
+	framesRects.push_back(tempFrameRect);
 }
 
-bool Sprite::Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int Frame)
+FrameSize Sprite::getFrameRect(int number) const
 {
-#ifdef DEF_CACHE
-	if (!SpriteSrc.Locked)
+	if ((framesRects.size() - 1) < static_cast<unsigned int> (number))
 	{
-		SpriteSrc.Locked = true;
-		SpriteSrc.Priority = 0;
+		return emptyFrameRect;
 	}
 	else
-		SpriteSrc.Priority++;
-	if (SpriteSrc.getImage() == 0)
-	{
-		if (!SpriteSrc.LoadFromFile(SpriteSrc.Name, SpriteSrc.ID))
-			return false;
-//		else
-//			if (SpriteSrc.getTransparent())
-//				SpriteSrc.SetColorKey();
-	}
-#endif
-	return Surface::Draw(Dest, SpriteSrc.GetSurface(), X, Y, SpriteSrc.GetCord(Frame).X, SpriteSrc.GetCord(Frame).Y, SpriteSrc.GetCord(Frame).W, SpriteSrc.GetCord(Frame).H);
+		return framesRects.at(number);
 }
 
-bool Sprite::Draw(SDL_Surface *Dest, Sprite &SpriteSrc, int X, int Y, int W, int H, int Frame)
+void Sprite::setFramesCount(int frames)
 {
-#ifdef DEF_CACHE
-	if (!SpriteSrc.Locked)
-	{
-		SpriteSrc.Locked = true;
-		SpriteSrc.Priority = 0;
-	}
-	else
-		SpriteSrc.Priority++;
-	if (SpriteSrc.getImage() == 0)
-	{
-		if (!SpriteSrc.LoadFromFile(SpriteSrc.Name, SpriteSrc.ID))
-			return false;
-//		else
-//			if (SpriteSrc.getTransparent())
-//				SpriteSrc.SetColorKey();
-	}
-#endif
-	return Surface::Draw(Dest, SpriteSrc.GetSurface(), X, Y, SpriteSrc.GetCord(Frame).X, SpriteSrc.GetCord(Frame).Y, W, H);
+	framesCount = frames;
 }
 
-SDL_Surface *Sprite::GetSurface() const
+int Sprite::getFramesCount() const
 {
-	return Image;
+	return framesCount;
 }
 
-Cord Sprite::GetCord(int Number) const
+void Sprite::setCurrentFrame(int frameID)
 {
-	if (!Cords.size())
-	{
-		Cord EmptyCord =
-		{ 0, 0, 0, 0, 0, 0 };
-		return EmptyCord;
-	}
-	else
-		return Cords.at(Number);
+	currentFrame = frameID;
 }
 
-int Sprite::GetTotalFrames() const
+int Sprite::getCurrentFrame() const
 {
-	return TotalFrames;
+	return currentFrame;
 }
 
-int Sprite::GetMaxFrameH() const
+void Sprite::setMaxFrameH(int height)
 {
-	return MaxFrameH;
+	maxFrameH = height;
 }
 
-inline bool Sprite::LoadFromFile(const std::string & FileName, int Number)
+int Sprite::getMaxFrameH() const
 {
-	FILE *pakFile;
-
-	std::string path = "SPRITES/";
-
-	path.append(FileName);
-
-	int tmp, tmp2;
-
-	int BitmapFileStartLoc;
-	int BmpSize;
-	char *BmpFile;
-
-	pakFile = fopen(path.c_str(), "rb");
-
-	if (pakFile == NULL)
-	{
-		printf("Unable to load: %s\n", path.c_str());
-		return false;
-	}
-
-	fseek(pakFile, (24 + (Number * 8)), SEEK_SET);
-	fread(&tmp, 1, 4, pakFile);
-
-	fseek(pakFile, tmp + 100, SEEK_SET);
-	fread(&TotalFrames, 1, 4, pakFile);
-
-	Cords.resize(TotalFrames);
-
-	for (int i = 0; i < TotalFrames; i++)
-	{
-		tmp2 = (tmp + 104 + (i * 12));
-		fseek(pakFile, tmp2, SEEK_SET);
-		fread(&Cords[i].X, 1, 2, pakFile);
-
-		fseek(pakFile, tmp2 + 2, SEEK_SET);
-		fread(&Cords[i].Y, 1, 2, pakFile);
-
-		fseek(pakFile, tmp2 + 4, SEEK_SET);
-		fread(&Cords[i].W, 1, 2, pakFile);
-
-		fseek(pakFile, tmp2 + 6, SEEK_SET);
-		fread(&Cords[i].H, 1, 2, pakFile);
-
-		fseek(pakFile, tmp2 + 8, SEEK_SET);
-		fread(&Cords[i].Vx, 1, 2, pakFile);
-
-		fseek(pakFile, tmp2 + 10, SEEK_SET);
-		fread(&Cords[i].Vy, 1, 2, pakFile);
-	}
-
-	int max = 0;
-	for (int i = 0; i < TotalFrames; i++)
-	{
-		if (Cords[i].H > Cords[max].H)
-			max = i;
-	}
-	MaxFrameH = Cords[max].H;
-
-	BitmapFileStartLoc = tmp + (108 + (12 * TotalFrames));
-
-	fseek(pakFile, BitmapFileStartLoc + 2, SEEK_SET);
-	fread(&BmpSize, 1, 4, pakFile);
-
-	fseek(pakFile, BitmapFileStartLoc, SEEK_SET);
-
-	BmpFile = new char[BmpSize];
-
-	fread(BmpFile, 1, BmpSize, pakFile);
-
-	SDL_RWops *rw = SDL_RWFromMem(BmpFile, BmpSize);
-	Image = SDL_LoadBMP_RW(rw, 1);
-
-	delete[] BmpFile;
-
-	fclose(pakFile);
-/*#ifdef DEF_CACHE
-	if (getTransparent())
-	{
-		printf("Restore color key (%s:%d)\n", Name.c_str(), Number);
-		SetColorKey();
-	}
-#endif*/
-	return true;
+	return maxFrameH;
 }
 
-void Sprite::SetColorKey()
+void Sprite::setColorKey()
 {
-#ifdef DEF_CACHE
-	if (Image == 0)
-	{
-		if (!LoadFromFile(Name, ID))
-		{
-			printf("SetColorKey(%s, %d) failed reload sprite.\n", Name.c_str(), ID);
-			return;
-		}
-	}
-	//setTransparent(true);
-#endif
+	if (image == NULL)
+		return;
+
+	SDL_PixelFormat* fmt;
+	Uint32 temp, pixel;
+	Uint8 index, alpha;
 	SDL_Color color;
-	Uint8 index;
-	index = *((Uint8*) Image->pixels);
-	color = Image->format->palette->colors[index];
-	Surface::SetTransparent(Image, color.r, color.g, color.b);
+
+	color.r = 0;
+	color.g = 0;
+	color.b = 0;
+
+	fmt = image->format;
+
+	SDL_LockSurface(image);
+
+	if (fmt->BitsPerPixel == 32)
+	{
+		/* Get the topleft pixel */
+		pixel = *((Uint32*) image->pixels);
+
+		/* Get Red component */
+		temp = pixel & fmt->Rmask; /* Isolate red component */
+		temp = temp >> fmt->Rshift; /* Shift it down to 8-bit */
+		temp = temp << fmt->Rloss; /* Expand to a full 8-bit number */
+		color.r = static_cast<Uint8>(temp);
+
+		/* Get Green component */
+		temp = pixel & fmt->Gmask; /* Isolate green component */
+		temp = temp >> fmt->Gshift; /* Shift it down to 8-bit */
+		temp = temp << fmt->Gloss; /* Expand to a full 8-bit number */
+		color.g = (Uint8) temp;
+
+		/* Get Blue component */
+		temp = pixel & fmt->Bmask; /* Isolate blue component */
+		temp = temp >> fmt->Bshift; /* Shift it down to 8-bit */
+		temp = temp << fmt->Bloss; /* Expand to a full 8-bit number */
+		color.b = (Uint8) temp;
+
+		/* Get Alpha component */
+		temp = pixel & fmt->Amask; /* Isolate alpha component */
+		temp = temp >> fmt->Ashift; /* Shift it down to 8-bit */
+		temp = temp << fmt->Aloss; /* Expand to a full 8-bit number */
+		alpha = (Uint8) temp;
+	}
+
+	if (fmt->BitsPerPixel == 8)
+	{
+		/* Get the topleft pixel */
+		index = *(Uint8 *)image->pixels;
+		color = fmt->palette->colors[index];
+	}
+
+	/* Unlock the surface */
+	SDL_UnlockSurface(image);
+
+	SDL_SetColorKey(image, SDL_SRCCOLORKEY | SDL_RLEACCEL, SDL_MapRGB(
+							image->format, color.r, color.g, color.b));
+}
+
+void Sprite::setColor(int r, int g, int b)
+{
+
 }
 
 Sprite::~Sprite()
 {
-	SDL_FreeSurface(Image);
-}
-#ifdef DEF_CACHE
 
-void Sprite::ReleaseUnused()
-{
-	for (unsigned int i = 0; i < Sprite::Cache.size(); i++)
-		if (!Sprite::Cache[i]->Locked)
-		{
-#ifdef DEBUG
-			printf("Releasing: %s (ID: %d)\n", Sprite::Cache[i]->Name.c_str(), Sprite::Cache[i]->ID);
-#endif
-			SDL_FreeSurface(Sprite::Cache[i]->getImage());
-			Sprite::Cache[i]->setImage(0);
-		}
 }
-#endif

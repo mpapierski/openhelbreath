@@ -2,12 +2,12 @@
 
 Window::Window()
 {
-	WindowSurface = NULL;
+	windowSurface = NULL;
 
-	FpsCap = false;
+	fpsCap = false;
 
-	FpsLimit = 1;
-	Frames = 0;
+	fpsLimit = 1;
+	frames = 0;
 }
 
 Window::~Window()
@@ -15,52 +15,54 @@ Window::~Window()
 
 }
 
-void Window::Create(const std::string &Title, int Width, int Height, int Depth, int Flags)
+void Window::create(const std::string& title, int width, int height, int depth, int flags)
 {
-	Initialize();
+	initialize();
 
-	if((WindowSurface = SDL_SetVideoMode(Width, Height, Depth, Flags)) == NULL)
+	if((windowSurface = SDL_SetVideoMode(width, height, depth, flags)) == NULL)
 	{
 		fprintf(stderr, "Unable to set video mode: %s\n", SDL_GetError());
 		exit(1);
 	}
 
-	FpsTimer.Start();
+	fpsTimer.start();
 
-	FrameTimer.Start();
+	frameTimer.start();
 
-	SDL_WM_SetCaption(Title.c_str(), NULL);
+	SDL_WM_SetCaption(title.c_str(), NULL);
 }
 
-void Window::Close()
+void Window::close()
 {
 	TTF_Quit();
 
 	SDL_Quit();
 }
 
-void Window::Update()
+void Window::update()
 {
-	SDL_Flip(WindowSurface);
+	SDL_Flip(windowSurface);
 
-	Frames++;
+	frames++;
 
-	if(FrameTimer.GetTicks() > 1000)
+	if(frameTimer.getTicks() > 1000)
 	{
-		Frames = 0;
+		lastFps = frames;
 
-		FrameTimer.Start();
+		frames = 0;
+
+		frameTimer.start();
 	}
 
-	if((FpsCap == true) && (FpsTimer.GetTicks() < 1000 / FpsLimit))
+	if((fpsCap == true) && (fpsTimer.getTicks() < 1000 / fpsLimit))
 	{
-		SDL_Delay((1000 / FpsLimit) - FpsTimer.GetTicks());
+		SDL_Delay((1000 / fpsLimit) - fpsTimer.getTicks());
 	}
 
-	FpsTimer.Start();
+	fpsTimer.start();
 }
 
-void Window::Initialize()
+void Window::initialize()
 {
 	if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER) < 0)
 	{
@@ -75,38 +77,43 @@ void Window::Initialize()
 	}
 }
 
-int Window::GetWidth() const
+int Window::getWidth() const
 {
-	return WindowSurface->w;
+	return windowSurface->w;
 }
 
-int Window::GetHeight() const
+int Window::getHeight() const
 {
-	return WindowSurface->h;
+	return windowSurface->h;
 }
 
-void Window::SetFpsLimit(int Limit)
+int Window::getFps() const
 {
-	if(Limit)
+	return lastFps;
+}
+
+void Window::setFpsLimit(int limit)
+{
+	if(limit)
 	{
-		FpsCap = true;
-		FpsLimit = Limit;
+		fpsCap = true;
+		fpsLimit = limit;
 	}
 }
 
-void Window::SetKeyRepeat(int Delay, int Interval)
+void Window::setKeyRepeat(int delay, int interval)
 {
-	SDL_EnableKeyRepeat(Delay, Interval);
+	SDL_EnableKeyRepeat(delay, interval);
 }
 
-void Window::SetCursorPos(unsigned short X, unsigned short Y)
+void Window::setCursorPos(unsigned short x, unsigned short y)
 {
-	SDL_WarpMouse(X, Y);
+	SDL_WarpMouse(x, y);
 }
 
-void Window::ShowCursor(bool Show)
+void Window::showCursor(bool show)
 {
-	if(!Show)
+	if(!show)
 	{
 		SDL_ShowCursor(SDL_DISABLE);
 	}

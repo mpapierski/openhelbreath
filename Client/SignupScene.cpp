@@ -1,225 +1,301 @@
 #include "Game.h"
 
-SignupScene::SignupScene() :
-	MLSocket(0)
+SignupScene::SignupScene()
 {
-	struct form
-	{
-			std::string label;
-			int x, y;
-			int max_len;
-			bool password;
-			std::string info[3];
-	} _descr[DEF_INPUTTOTAL] =
-	{
-	{ "Login:", 427, 84, 10, false,
-	{ "Enter your account ID.", "( Only letters and numbers )", "and numbers, no special keywords." } },
-	{ "Password:", 427, 106, 10, true,
-	{ "Enter your account password.", "", "" } },
-	{ "Confirm:", 427, 129, 10, true,
-	{ "Confirm the password.", "", "" } },
-	{ "E-mail:", 311, 215, 50, false,
-	{ "Enter your E-mail address.", "You should enter a correct E-mail address", "to confirm the account owner." } },
-	{ "Quiz:", 311, 253, 45, false,
-	{ "Enter the secret question, so you can", "recover the password if you forget it.", "" } },
-	{ "Answer:", 311, 291, 20, false,
-	{ "Answer the question.", "", "" } } };
+	form[0].name.setText("Login:");
+	form[0].name.setPosition(350, 85);
+	form[0].input.setPosition((350 + Font::textWidth("Login:", Font::NORMAL) + 10), 85);
+	form[0].input.setMaxLength(10);
+	form[0].tip.setPosition(290, 330);
+	form[0].tip.setText("Enter your account ID, only letters and numbers,\nno special characters.");
 
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
+	form[1].name.setText("Password:");
+	form[1].name.setPosition(350, 110);
+	form[1].input.setMaxLength(10);
+	form[1].input.setPasswordMode(true);
+	form[1].tip.setText("Enter your account password.");
+
+	form[2].name.setText("Confirm:");
+	form[2].name.setPosition(350, 135);
+	form[2].input.setMaxLength(10);
+	form[2].input.setPasswordMode(true);
+	form[2].tip.setText("Confirm your account password.");
+
+	form[3].name.setText("Email:");
+	form[3].name.setPosition(350, 160);
+	form[3].input.setMaxLength(50);
+	form[3].tip.setText(
+			"Enter your E-mail address. You should enter a correct\nE-mail address to confirm the account owner.");
+
+	form[4].name.setText("Quiz:");
+	form[4].name.setPosition(300, 185);
+	form[4].input.setMaxLength(45);
+	form[4].tip.setText("Enter the secret question.");
+
+	form[5].name.setText("Answer:");
+	form[5].name.setPosition(300, 210);
+	form[5].input.setMaxLength(20);
+	form[5].tip.setText("Answer the question.");
+
+	for (int i = 1; i < 6; i++)
 	{
-		Form[i].Label = _descr[i].label;
-		Form[i].Input.SetMaxLength(_descr[i].max_len);
-		Form[i].Input.SetPosition(_descr[i].x, _descr[i].y);
-		Form[i].Input.SetPasswordMode(_descr[i].password);
-		for (int j = 0; j < 3; j++)
-			Form[i].Info[j] = _descr[i].info[j];
+		form[i].input.setEnabled(false);
+		form[i].input.setPosition(
+				(form[i].name.x() + Font::textWidth(form[i].name.getText(), Font::NORMAL) + 10), (85 + i * 25));
+		form[i].tip.setPosition(290, 330);
 	}
-	DlgBox.SetMode(-1, INTERFACE_BUTTON_OK);
-	SetFocus(0);
+
+	int x = 320 - (SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).getFrameRect(
+			INTERFACE_DIALOG_MESSAGEBOX).w / 2);
+	int y = 240 - (SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).getFrameRect(
+			INTERFACE_DIALOG_MESSAGEBOX).h / 2);
+
+	dlgBox.setPosition(x, y);
+	dlgBox.setButtons(gui::MessageDialog::OK);
+	dlgBox.setVisible(false);
+	dlgBox.setEnabled(false);
+
+	MLSocket = 0;
+
+	setFocus(0);
 }
 
 SignupScene::~SignupScene()
 {
-	Disconnect();
+	disconnect();
 }
 
-void SignupScene::Draw(SDL_Surface * Dest)
+void SignupScene::onDraw(SDL_Surface* dest)
 {
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_LOGIN], 0, 0, SPRID_LOGIN_BACKGROUND);
+	SpriteBank::manager.draw(dest, 0, 0, SPRID_LOGINDIALOG, LOGIN_BACKGROUND);
 
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
+	for (int i = 0; i < 6; i++)
 	{
-		Font::PutTextShaded(Dest, Form[i].Input.X() - Font::TextWidth(Form[i].Label) - 6, Form[i].Input.Y(), Form[i].Label, 255, 255, 255);
-
-		Form[i].Input.Draw(Dest);
+		form[i].name.draw(dest);
+		form[i].input.draw(dest);
 	}
 
-	if (FormFocus < DEF_INPUTTOTAL)
-	{
-		for (int i = 0; i < 3; i++)
-			Font::PutAlignedText(Dest, 290, 330 + (15 * i), 285, Form[FormFocus].Info[i], 255, 255, 255);
-	}
+	if (formFocus < 6)
+		form[formFocus].tip.draw(dest);
 	else
 	{
-		switch (FormFocus)
+		switch (formFocus)
 		{
 			case 6:
-				Font::PutAlignedText(Dest, 290, 330, 285, "Create an account with your input.", 255, 255, 255);
+				Font::putTextShaded(dest, 290, 330, "Create an account with your input.", Font::NORMAL, 255, 255, 255);
 				break;
 			case 7:
-				Font::PutAlignedText(Dest, 290, 330, 285, "Clear all.", 255, 255, 255);
+				Font::putTextShaded(dest, 290, 330, "Clear all.", Font::NORMAL, 255, 255, 255);
 				break;
 			case 8:
-				Font::PutAlignedText(Dest, 290, 330, 285, "Back to main menu.", 255, 255, 255);
+				Font::putTextShaded(dest, 290, 330, "Back to main menu.", Font::NORMAL, 255, 255, 255);
 				break;
 		}
 	}
 
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 199 + 98, 398, FormFocus == 6 ? INTERFACE_BUTTON_CREATE + 1
-			: INTERFACE_BUTTON_CREATE);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 294 + 98, 398, FormFocus == 7 ? INTERFACE_BUTTON_RESET + 1
-			: INTERFACE_BUTTON_RESET);
-	Sprite::Draw(Dest, Game::GetInstance().Sprites[SPRID_DIALOGTEXT_BUTTONS], 390 + 98, 398, FormFocus == 8 ? INTERFACE_BUTTON_CANCEL + 1
-			: INTERFACE_BUTTON_CANCEL);
+	SpriteBank::manager.draw(dest, 297, 398, SPRID_DIALOGTEXT_BUTTONS, formFocus == 6
+			? INTERFACE_BUTTON_CREATE + 1 : INTERFACE_BUTTON_CREATE);
+	SpriteBank::manager.draw(dest, 392, 398, SPRID_DIALOGTEXT_BUTTONS, formFocus == 7
+			? INTERFACE_BUTTON_RESET + 1 : INTERFACE_BUTTON_RESET);
+	SpriteBank::manager.draw(dest, 488, 398, SPRID_DIALOGTEXT_BUTTONS, formFocus == 8
+			? INTERFACE_BUTTON_CANCEL + 1 : INTERFACE_BUTTON_CANCEL);
 
-	if (ConnectingBox.IsEnabled())
-		ConnectingBox.Draw(Dest);
-	if (DlgBox.IsEnabled())
-		DlgBox.Draw(Dest);
+	connectingBox.draw(dest);
+	dlgBox.draw(dest);
 
-	Scene::Draw(Dest);
+	Game::drawVersion(dest);
 }
 
-void SignupScene::OnEvent(SDL_Event * EventSource)
+void SignupScene::onEvent(SDL_Event* eventSource)
 {
-	Event::OnEvent(EventSource);
-	if (ConnectingBox.IsEnabled())
-	{
-		ConnectingBox.OnEvent(EventSource);
-		return;
-	}
-	if (DlgBox.IsEnabled())
-	{
-		DlgBox.OnEvent(EventSource);
-		return;
-	}
-	if (FormFocus < DEF_INPUTTOTAL)
-		Form[FormFocus].Input.OnEvent(EventSource);
+	Event::onEvent(eventSource);
+
+	connectingBox.onEvent(eventSource);
+	dlgBox.onEvent(eventSource);
+
+	if (formFocus < 6)
+		form[formFocus].input.onEvent(eventSource);
 }
 
-void SignupScene::OnMouseMove(int X, int Y, int RelX, int RelY, bool Left, bool Right, bool Middle)
+void SignupScene::onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle)
 {
-	if ((X >= 297) && (X <= 370) && (Y >= 396) && (Y <= 417))
-		SetFocus(6);
-	if ((X >= 392) && (X <= 465) && (Y >= 396) && (Y <= 417))
-		SetFocus(7);
-	if ((X >= 488) && (X <= 561) && (Y >= 396) && (Y <= 417))
-		SetFocus(8);
+	if ((x >= 297) && (x <= 370) && (y >= 396) && (y <= 417))
+		setFocus(6);
+	if ((x >= 392) && (x <= 465) && (y >= 396) && (y <= 417))
+		setFocus(7);
+	if ((x >= 488) && (x <= 561) && (y >= 396) && (y <= 417))
+		setFocus(8);
 }
 
-void SignupScene::OnLButtonDown(int X, int Y)
+void SignupScene::onLButtonDown(int x, int y)
 {
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
+	for (int i = 0; i < 6; i++)
 	{
-		const gui::TextEdit & _ctrl = Form[i].Input;
-		if (X >= _ctrl.X() && X <= 640 && Y >= _ctrl.Y() && Y <= _ctrl.Y() + 20)
+		int tmpX = form[i].input.x();
+		int tmpY = form[i].input.y();
+		if (x >= tmpX && x <= 640 && y >= tmpY && y <= tmpY + 20)
 		{
-			SetFocus(i);
+			SoundBank::manager.play("E14");
+			setFocus(i);
 			break;
 		}
 	}
-	if ((X >= 297) && (X <= 370) && (Y >= 396) && (Y <= 417))
-		_Ok();
-	if ((X >= 392) && (X <= 465) && (Y >= 396) && (Y <= 417))
-		_Reset();
-	if ((X >= 488) && (X <= 561) && (Y >= 396) && (Y <= 417))
-		_Cancel();
+	if ((x >= 297) && (x <= 370) && (y >= 396) && (y <= 417))
+		connect();
+	if ((x >= 392) && (x <= 465) && (y >= 396) && (y <= 417))
+		reset();
+	if ((x >= 488) && (x <= 561) && (y >= 396) && (y <= 417))
+		cancel();
+
 }
 
-void SignupScene::OnKeyDown(SDLKey Sym, SDLMod Mod, Uint16 Unicode)
+void SignupScene::onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
 {
-	if (ConnectingBox.IsEnabled() || DlgBox.IsEnabled())
+	if (connectingBox.isVisible())
 	{
-		if (Sym == SDLK_ESCAPE)
+		if (sym == SDLK_ESCAPE)
 		{
-			Disconnect();
-			ConnectingBox.SetEnabled(false);
+			disconnect();
+			connectingBox.setVisible(false);
 		}
 		return;
 	}
 
-	if (Sym == SDLK_ESCAPE)
+	if (sym == SDLK_ESCAPE)
 	{
-		_Cancel();
+		cancel();
 	}
 
-	if (Sym == SDLK_RETURN)
+	if (sym == SDLK_RETURN)
 	{
-		if (FormFocus < DEF_INPUTTOTAL)
-			SetFocus(FormFocus + 1);
+		if (formFocus < 6)
+			setFocus(formFocus + 1);
 		else
-			switch (FormFocus)
+			switch (formFocus)
 			{
 				case 6:
-					_Ok();
+					connect();
 					break;
 				case 7:
-					_Reset();
+					reset();
 					break;
 				case 8:
-					_Cancel();
+					cancel();
 					break;
 			}
 	}
 
-	if (Sym == SDLK_TAB || Sym == SDLK_DOWN)
-		SetFocus((FormFocus + 1) % (DEF_INPUTTOTAL + 3));
+	if (sym == SDLK_TAB || sym == SDLK_DOWN)
+		setFocus((formFocus + 1) % (6 + 3));
 
-	if (Sym == SDLK_UP)
-		SetFocus((FormFocus - 1) % (DEF_INPUTTOTAL + 3));
+	if (sym == SDLK_UP)
+		setFocus((formFocus - 1) % (6 + 3));
 }
 
-void SignupScene::SetFocus(int NewId)
+void SignupScene::onUser(Uint8 Type, int Code, void* Data1, void* Data2)
 {
-	if (NewId < 0)
-		return;
-
-	FormFocus = NewId;
-
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
+	switch (Code)
 	{
-		Form[i].Input.SetEnabled(false);
-	}
-	if (NewId >= DEF_INPUTTOTAL)
-		return;
-	Form[NewId].Input.SetEnabled(true);
-}
-
-void SignupScene::_Cancel()
-{
-	Game::GetInstance().Audio->Play("E14");
-	Game::GetInstance().ChangeScene(new MenuScene);
-}
-
-void SignupScene::_Ok()
-{
-	Game::GetInstance().Audio->Play("E14");
-
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
-		if (Form[i].Input.GetText().length() == 0)
+		case SDL_NETWORK_CONNECTED:
 		{
-			DlgBox.ClearText();
-			DlgBox.SetTitle("Can not create new account!");
-			DlgBox.AddText("Please fill in all the required fields.");
-			DlgBox.SetEnabled(true);
+			Packet P(MSGID_REQUEST_CREATENEWACCOUNT, 0);
+			P.push<char> (form[0].input.getText().c_str(), 10); //Login
+			P.push<char> (form[1].input.getText().c_str(), 10); //Password
+			P.push<char> (form[3].input.getText().c_str(), 50); //Mail
+			P.push<char> (" ", 10); // Gender
+			P.push<char> (" ", 10); // Account Age
+			P.push<int> (0);
+			P.push<short> (0);
+			P.push<short> (0);
+			P.push<char> (" ", 17); // Country
+			P.push<char> (" ", 28); // SSN
+			P.push<char> (form[4].input.getText().c_str(), 45); // Q
+			P.push<char> (form[5].input.getText().c_str(), 20); // A
+			P.push<char> (" ", 50);
+			P.send(MLSocket->Connection);
+		}
+			break;
+		case SDL_NETWORK_RECEIVE:
+		{
+			connectingBox.setState(1);
+			Buffer* data = reinterpret_cast<Buffer*> (Data2);
+			unsigned int MsgID = data->next<int> ();
+			unsigned short MsgType = data->next<unsigned short> ();
+			printf("MsgID: 0x%08X MsgType: 0x%04X\n", MsgID, MsgType);
+			switch (MsgID)
+			{
+				case MSGID_RESPONSE_LOG:
+					switch (MsgType)
+					{
+						case DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED:
+							dlgBox.setTitle("New account created.");
+							dlgBox.setMessage("New account created.\nYou can login with your ID.");
+							break;
+						case DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT:
+							dlgBox.setTitle("Already existing account name.");
+							dlgBox.setMessage(
+									"Already existing account name.\nEnter another account name.");
+							break;
+						default:
+							// DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT and others
+							dlgBox.setTitle("Can not create new account!");
+							dlgBox.setMessage("Can not create new account!");
+							break;
+					}
+					connectingBox.setVisible(false);
+					dlgBox.setVisible(true);
+					dlgBox.setEnabled(true);
+					disconnect();
+					break;
+			}
+		}
+			break;
+		case SDL_NETWORK_FINISH:
+			disconnect();
+			break;
+	}
+}
+
+void SignupScene::setFocus(int newId)
+{
+	if (newId < 0)
+		return;
+
+	formFocus = newId;
+
+	for (int i = 0; i < 6; i++)
+	{
+		form[i].input.setEnabled(false);
+	}
+
+	if (newId >= 6)
+		return;
+
+	form[newId].input.setEnabled(true);
+}
+
+void SignupScene::connect()
+{
+	SoundBank::manager.play("E14");
+
+	for (int i = 0; i < 6; i++)
+	{
+		if (form[i].input.getText().length() == 0)
+		{
+			dlgBox.setTitle("Can not create new account!");
+			dlgBox.setMessage("Please fill in all the required fields.");
+			dlgBox.setVisible(true);
+			dlgBox.setEnabled(true);
 			return;
 		}
-	if (Form[1].Input.GetText() != Form[2].Input.GetText())
+	}
+
+	if (form[1].input.getText() != form[2].input.getText())
 	{
-		DlgBox.ClearText();
-		DlgBox.SetTitle("Can not create new account!");
-		DlgBox.AddText("Please confirm your password carefully.");
-		DlgBox.SetEnabled(true);
+		dlgBox.setTitle("Can not create new account!");
+		dlgBox.setMessage("Please confirm your password carefully.");
+		dlgBox.setVisible(true);
+		dlgBox.setEnabled(true);
 		return;
 	}
 
@@ -229,12 +305,15 @@ void SignupScene::_Ok()
 	MLSocket = new Socket(DEF_SERVER_ADDR, DEF_SERVER_PORT);
 	if (!MLSocket->Connect())
 		fprintf(stderr, "Connect() failed.\n");
+
+	connectingBox.setVisible(true);
 }
 
-void SignupScene::Disconnect()
+void SignupScene::disconnect()
 {
 	if (MLSocket == 0)
 		return;
+
 	MLSocket->Disconnect();
 #ifdef WIN32
 	MLSocket->Join();
@@ -243,87 +322,15 @@ void SignupScene::Disconnect()
 	MLSocket = 0;
 }
 
-void SignupScene::_Reset()
+void SignupScene::cancel()
 {
-	Game::GetInstance().Audio->Play("E14");
-	for (int i = 0; i < DEF_INPUTTOTAL; i++)
-		Form[i].Input.SetText("");
+	SoundBank::manager.play("E14");
+	Game::getInstance().changeScene(new MenuScene);
 }
 
-void SignupScene::OnUser(Uint8 Type, int Code, void *Data1, void *Data2)
+void SignupScene::reset()
 {
-	switch (Code)
-	{
-		case SDL_CLICKED_RIGHT:
-			DlgBox.SetEnabled(false);
-			Disconnect();
-			switch (DlgBox.getTag())
-			{
-				case 0:
-					Game::GetInstance().ChangeScene(new MenuScene);
-					break;
-			}
-			break;
-		case SDL_NETWORK_CONNECTED:
-		{
-			ConnectingBox.SetEnabled(true);
-			Packet P(MSGID_REQUEST_CREATENEWACCOUNT, 0);
-			P.push<char> (Form[0].Input.GetText().c_str(), 10); //Login
-			P.push<char> (Form[1].Input.GetText().c_str(), 10); //Password
-			P.push<char> (Form[3].Input.GetText().c_str(), 50); //Mail
-			P.push<char> (" ", 10); // Gender
-			P.push<char> (" ", 10); // Account Age
-			P.push<int> (0);
-			P.push<short> (0);
-			P.push<short> (0);
-			P.push<char> (" ", 17); // Country
-			P.push<char> (" ", 28); // SSN
-			P.push<char> (Form[4].Input.GetText().c_str(), 45); // Q
-			P.push<char> (Form[5].Input.GetText().c_str(), 20); // A
-			P.push<char> (" ", 50);
-			P.send(MLSocket->Connection);
-		}
-			break;
-		case SDL_NETWORK_RECEIVE:
-		{
-			ConnectingBox.SetState(1);
-			Buffer *data = (Buffer*) Data2;
-			unsigned int MsgID = data->next<int> ();
-			unsigned short MsgType = data->next<unsigned short> ();
-			fprintf(stderr, "MsgID: 0x%08X MsgType: 0x%04X\n", MsgID, MsgType);
-			switch (MsgID)
-			{
-				case MSGID_RESPONSE_LOG:
-					DlgBox.ClearText();
-					DlgBox.setTag(-1); // Do nothing
-					switch (MsgType)
-					{
-						case DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED:
-							DlgBox.SetTitle("New account created.");
-							DlgBox.AddText("New account created.");
-							DlgBox.AddText("You can login with your ID.");
-							DlgBox.setTag(0); // Return to main menu
-							break;
-						case DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT:
-							DlgBox.SetTitle("Already existing account name.");
-							DlgBox.AddText("Already existing account name.");
-							DlgBox.AddText("Enter another account name.");
-							break;
-						default:
-							// DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT and others
-							DlgBox.SetTitle("Can not create new account!");
-							DlgBox.AddText("Can not create new account!");
-							break;
-					}
-					ConnectingBox.SetEnabled(false);
-					DlgBox.SetEnabled(true);
-					Disconnect();
-					break;
-			}
-		}
-			break;
-		case SDL_NETWORK_FINISH:
-			Disconnect();
-			break;
-	}
+	SoundBank::manager.play("E14");
+	for (int i = 0; i < 6; i++)
+		form[i].input.clear();
 }
