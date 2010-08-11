@@ -5,6 +5,7 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "Logger.h"
 #include "Socket.h"
 #include "NetMessages.h"
 #include "GlobalDef.h"
@@ -14,6 +15,7 @@
 #include "SpriteBank.h"
 #include "SoundBank.h"
 #include "Font.h"
+#include "Map.h"
 
 #include "Player.h"
 #include "PlayGroundScene.h"
@@ -47,7 +49,6 @@ class Game: public Event
 		void onCleanup();
 		void changeScene(Scene* newScene);
 		static void drawVersion(SDL_Surface* dest);
-
 	private:
 		Game();
 		Game(const Game &);

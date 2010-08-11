@@ -130,7 +130,6 @@ bool Game::onInitialize()
     SpriteBank::manager.load("LoginDialog");
     SpriteBank::manager.load("DialogText");
     SpriteBank::manager.getSprite(SPRID_DIALOGTEXT_BUTTONS).setColorKey();
-
     return true;
 }
 

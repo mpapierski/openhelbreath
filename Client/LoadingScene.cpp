@@ -448,7 +448,8 @@ void LoadingScene::onLoop()
         SpriteBank::manager.loadCreatureSprites("SKE");
         break;
     case 55:
-        SpriteBank::manager.loadCreatureSprites("SLM");
+    	// TODO: This one fails to load. Figure out why
+        //SpriteBank::manager.loadCreatureSprites("SLM");
         break;
     case 56:
         SpriteBank::manager.loadCreatureSprites("Sorceress");
@@ -503,8 +504,21 @@ void LoadingScene::onLoop()
         SpriteBank::manager.loadPlayerSprites("Yw");
         SpriteBank::manager.loadPlayerEquipment("MHauberk", "WHauberk");
         break;
-
-        case 100:
+    case 73:
+        {MapBank maps;
+    	maps.loadMap("aresden");
+    	maps.loadMap("elvine");
+    	if (maps.loadMap("middleland"))
+    	{
+    		Debug() << "OK";
+    		Debug() << "W" << maps.getMap("middleland").getSizeX();
+    		Debug() << "H" << maps.getMap("middleland").getSizeY();
+    	}
+    	else
+    		Debug() << "middleland loanding fail";
+        }
+    	break;
+    case 100:
             Game::getInstance().changeScene(new MenuScene);
             break;
     }

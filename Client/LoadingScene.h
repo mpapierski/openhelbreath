@@ -1,6 +1,7 @@
 #ifndef LOADINGSCENE_H
 #define LOADINGSCENE_H
 
+#include <iostream>
 #include "Scene.h"
 
 class LoadingScene: public Scene
