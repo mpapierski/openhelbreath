@@ -1,6 +1,7 @@
 //
 // Player definition file. Initializes currentPlayer as main character. Can and should
 // be used for displaying other player characters on screen
+// TODO: there are some bugs in colorkey detection for capes (see aresden hero cape)
 //
 #include "Player.h"
 
@@ -8,9 +9,22 @@ Player::Player()
 {
     _sex = FEMALE;
     _race = ASIAN;
-    _orientation = ORIENTATION_DOWN;
+    _orientation = ORIENTATION_UP;
     _action = PLAYER_ACTION_STANDING_PEACE_MODE;
-    hauberk = PLAYER_EQUIPMENT_HAUBERK;
+
+    // initial equipment
+    hauberk = PLAYER_EQUIPMENT_UNEQUIPPED;
+    leggings = PLAYER_EQUIPMENT_UNEQUIPPED;
+    chest = PLAYER_EQUIPMENT_UNEQUIPPED;
+    feet = PLAYER_EQUIPMENT_UNEQUIPPED;
+    cape = PLAYER_EQUIPMENT_UNEQUIPPED;
+
+    // just for test
+    hauberk = PLAYER_EQUIPMENT_ARESDEN_HERO_HAUBERK;
+    leggings = PLAYER_EQUIPMENT_CHAIN_HOSE;
+    //chest = PLAYER_EQUIPMENT_SANTA_COSTUME;
+    feet = PLAYER_EQUIPMENT_SHOES;
+    //cape = PLAYER_EQUIPMENT_MANTLE;
 
     framesCount = 0;
     resetTimerAndFrames();
@@ -38,8 +52,28 @@ void Player::resetTimerAndFrames()
     if(player_animation_id <= SpriteBank::manager.players.at(player_sprite_id).size() - 1) framesCount = SpriteBank::manager.players.at(player_sprite_id).at(player_animation_id).getFramesCount();
 }
 
+void Player::drawEquipment(SDL_Surface* dest, int x, int y, int equip_id, int equipmentFrameToShow)
+{
+    unsigned int offset = equip_id + _action / 8;
+    if(equip_id != PLAYER_EQUIPMENT_UNEQUIPPED)
+    {
+        if(_sex == MALE)
+        {
+            if(offset > SpriteBank::manager.male_equipment.size() - 1) return;
+            SpriteBank::manager.drawSprite(dest, SpriteBank::manager.male_equipment.at(offset), equipmentFrameToShow, x, y);
+        }
+        else
+        {
+            if(offset > SpriteBank::manager.female_equipment.size() - 1) return;
+            SpriteBank::manager.drawSprite(dest, SpriteBank::manager.female_equipment.at(offset), equipmentFrameToShow, x, y);
+        }
+    }
+}
+
 void Player::draw(SDL_Surface* dest, int x, int y)
 {
+    // TODO: optimize to draw on separate surface, then just blip to screen
+
     if(player_sprite_id > SpriteBank::manager.players.size() - 1) return;
     if(player_animation_id > SpriteBank::manager.players.at(player_sprite_id).size() - 1) return;
 
@@ -51,25 +85,34 @@ void Player::draw(SDL_Surface* dest, int x, int y)
         playerTimer.start();
     }
 
+    unsigned int equipmentFrameToShow = _orientation * framesCount + currentFrame;
+
+    if(cape != PLAYER_EQUIPMENT_UNEQUIPPED &&
+        (_orientation == ORIENTATION_DOWN || _orientation == ORIENTATION_RIGHT_DOWN
+         || _orientation == ORIENTATION_DOWN_LEFT
+         )
+       )
+    {
+        // draw cape before model
+        drawEquipment(dest, x, y, cape, equipmentFrameToShow);
+    }
     SpriteBank::manager.drawSprite(dest, SpriteBank::manager.players.at(player_sprite_id).at(player_animation_id), currentFrame, x, y);
 
-    /*
+    drawEquipment(dest, x, y, leggings, equipmentFrameToShow);
+    drawEquipment(dest, x, y, feet, equipmentFrameToShow);
+    drawEquipment(dest, x, y, hauberk, equipmentFrameToShow);
+    drawEquipment(dest, x, y, chest, equipmentFrameToShow);
 
-    // draw hauberk
-    if(player.hauberk != PLAYER_EQUIPMENT_HAUBERK_NONE)
+    if(cape != PLAYER_EQUIPMENT_UNEQUIPPED &&
+            (_orientation == ORIENTATION_UP || _orientation == ORIENTATION_UP_RIGHT
+             || _orientation == ORIENTATION_RIGHT || _orientation == ORIENTATION_LEFT_UP
+             || _orientation == ORIENTATION_LEFT
+            )
+       )
     {
-        int offset = player.hauberk + player.action / 8;
-        if(player.sex == Player::MALE)
-        {
-            //male_equipment[offset].update(player.orientation * 8, player.orientation * 8 + 8);
-            //drawAnimatedSprite(dest, male_equipment.at(offset), x, y);
-        }
-        else
-        {
-            //female_equipment[offset].update(player.orientation * 8, player.orientation * 8 + 8);
-            //drawAnimatedSprite(dest, female_equipment.at(offset), x, y);
-        }
-    }    */
+        // draw cape after model
+        drawEquipment(dest, x, y, cape, equipmentFrameToShow);
+    }
 
 }
 

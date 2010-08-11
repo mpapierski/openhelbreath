@@ -34,10 +34,17 @@ class Player
         int action();
         void setAction(int a);
 
+        // equipment
 
         int hauberk;
+        int leggings;
+        int chest;
+        int feet;
+        int cape;
 
     private:
+        void drawEquipment(SDL_Surface* dest, int x, int y, int equip_id, int equipmentFrameToShow);
+
         Sex _sex;
         Race _race;
         int _orientation;
