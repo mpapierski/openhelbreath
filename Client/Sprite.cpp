@@ -13,7 +13,7 @@ void Sprite::update()
 	if (!frameTimer.isStarted())
 		frameTimer.start();
 
-	if (frameTimer.getTicks() > 100)
+        if (frameTimer.getTicks() > 100)
 	{
 		currentFrame++;
 		if (currentFrame >= framesCount)
