@@ -64,17 +64,19 @@ void Window::update()
 
 void Window::initialize()
 {
-	if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER) < 0)
-	{
-		fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
-		exit(1);
-	}
+    fprintf(stdout, "Initializing SDL system\r\n");
+    if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER) != 0)
+    {
+        fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
+        exit(1);
+    }
 
-	if(TTF_Init() == -1)
-	{
-    	fprintf(stderr, "Unable to init SDL_ttf: %s\n", TTF_GetError());
-    	exit(2);
-	}
+    fprintf(stdout, "Initializing font system\r\n");
+    if(TTF_Init() == -1)
+    {
+        fprintf(stderr, "Unable to init SDL_ttf: %s\n", TTF_GetError());
+        exit(2);
+    }
 }
 
 int Window::getWidth() const
