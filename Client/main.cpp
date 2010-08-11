@@ -39,5 +39,11 @@ int main(int argc, char *argv[])
         *stderr = *stdout;
     #endif
 
-    return Game::getInstance().onExecute();
+    int ret = Game::getInstance().onExecute();
+
+    #ifdef WIN32
+        if (ret != 0) getchar(); // pause to see the output
+    #endif
+
+    return ret;
 }
