@@ -4,7 +4,7 @@
 #include "Scene.h"
 #include "Widget.h"
 
-class MenuScene: public Scene
+class MenuScene : public Scene
 {
 	public:
 		MenuScene();
@@ -18,6 +18,7 @@ class MenuScene: public Scene
 	private:
 		void login();
 		void newAccount();
+                void enterPlayGround(); // testing area
 
 		enum Focus
 		{

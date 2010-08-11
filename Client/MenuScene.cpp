@@ -67,6 +67,8 @@ void MenuScene::onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode)
 		onExit();
 	}
 
+        if( sym == SDLK_F1) enterPlayGround();
+
 	if (sym == SDLK_RETURN)
 	{
 		switch (menuFocus)
@@ -128,6 +130,11 @@ void MenuScene::newAccount()
 {
 	SoundBank::manager.play("E14");
 	Game::getInstance().changeScene(new SignupScene);
+}
+
+void MenuScene::enterPlayGround()
+{
+    Game::getInstance().changeScene(new PlayGroundScene);
 }
 
 void MenuScene::login()
