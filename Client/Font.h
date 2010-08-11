@@ -1,10 +1,12 @@
+//
+// Font container and common font routines
+//
+
 #ifndef FONT_H
 #define FONT_H
 
 #include <string>
-
 #include <SDL_ttf.h>
-
 #include "Surface.h"
 
 class Font

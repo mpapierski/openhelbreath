@@ -1,3 +1,7 @@
+//
+// Font container and common font routines
+//
+
 #include "Font.h"
 #include "SpriteBank.h"
 
