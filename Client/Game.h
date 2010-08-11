@@ -1,3 +1,7 @@
+//
+// Main window initialization and game loop
+//
+
 #ifndef GAME_H
 #define GAME_H
 
@@ -11,6 +15,7 @@
 #include "SoundBank.h"
 #include "Font.h"
 
+#include "PlayGroundScene.h"
 #include "LoadingScene.h"
 #include "MenuScene.h"
 #include "ExitScene.h"
@@ -46,6 +51,8 @@ class Game: public Event
 		Game();
 		Game(const Game &);
 		Game& operator =(const Game&);
+                bool initializeAudio();
+                bool initializeFonts();
 
 		Window mainWindow;
 		Mouse mouseCursor;

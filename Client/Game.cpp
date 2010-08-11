@@ -1,3 +1,7 @@
+//
+// Main window initialization and game loop
+//
+
 #include "Game.h"
 
 Game::Game()
@@ -45,57 +49,89 @@ int Game::onExecute()
 	return 0;
 }
 
+/*
+ *  Font initialization
+ */
+
+bool Game::initializeFonts()
+{
+    Font::smallFont = TTF_OpenFont("FONTS/VeraSe.ttf", 10);
+    if (Font::smallFont == NULL)
+    {
+        fprintf(stderr, "Unable to load font file: FONTS/VeraSe.ttf\r\n");
+        return false;
+    }
+    fprintf(stdout, "Small font loaded\r\n");
+
+    Font::normalFont = TTF_OpenFont("FONTS/VeraSe.ttf", 12);
+    if (Font::normalFont == NULL)
+    {
+        fprintf(stderr, "Unable to load font file: FONTS/VeraSe.ttf\r\n");
+        return false;
+    }
+    fprintf(stdout, "Normal font loaded\r\n");
+
+    return true;
+}
+
+/*
+ *  Audio initialization routines
+ */
+
+bool Game::initializeAudio()
+{
+    fprintf(stdout, "Initializing audio system\r\n");
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
+    {
+        fprintf(stderr, "Unable to open audio channel\r\n");
+        return false;
+    }
+    SoundBank::manager.load("E14");
+
+    fprintf(stdout, "Finished initializing audio system\r\n");
+
+    return true;
+}
+
+/*
+ *  Game initialization procedure
+ */
+
 bool Game::onInitialize()
 {
-#ifdef DEF_FULLSCREEN
-	mainWindow.create("HelGame", 640, 480, 32, SDL_FULLSCREEN | SDL_HWSURFACE | SDL_DOUBLEBUF);
-#else
-	mainWindow.create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
-#endif
+    #ifdef DEF_FULLSCREEN
+        mainWindow.create("HelGame", 640, 480, 32, SDL_FULLSCREEN | SDL_HWSURFACE | SDL_DOUBLEBUF);
+    #else
+        mainWindow.create("HelGame", 640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+    #endif
 
-	mainWindow.setKeyRepeat(1, 175);
-	mainWindow.showCursor(false);
-	mainWindow.setCursorPos(320, 240);
+    mainWindow.setKeyRepeat(1, 175);
+    mainWindow.showCursor(false);
+    mainWindow.setCursorPos(320, 240);
 
-#ifdef DEF_FPSLIMIT
-	mainWindow.setFpsLimit(DEF_FPSLIMIT);
-#endif
+    #ifdef DEF_FPSLIMIT
+        mainWindow.setFpsLimit(DEF_FPSLIMIT);
+    #endif
 
-	SDL_EnableUNICODE( SDL_ENABLE);
+    SDL_EnableUNICODE(SDL_ENABLE);
 
-	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
-	{
-		fprintf(stderr, "Unable to open audio channel\n");
-		return false;
-	}
+    if(!initializeAudio()) return false;
+    if(!initializeFonts()) return false;
 
-	SoundBank::manager.load("E14");
+    // Load necessary sprites for Loading screen
+    SpriteBank::manager.load("interface");
+    SpriteBank::manager.getSprite(SPRID_INTERFACE_CURSOR).setColorKey();
+    SpriteBank::manager.load("interface2");
+    SpriteBank::manager.getSprite(SPRID_INTERFACE2_NUM).setColorKey();
+    SpriteBank::manager.load("SPRFONTS");
+    SpriteBank::manager.getSprite(SPRID_SPRFONT).setColorKey();
+    SpriteBank::manager.load("New-Dialog");
+    SpriteBank::manager.load("LoginDialog");
+    SpriteBank::manager.load("DialogText");
+    SpriteBank::manager.getSprite(SPRID_DIALOGTEXT_BUTTONS).setColorKey();
 
-	Font::smallFont = TTF_OpenFont("FONTS/VeraSe.ttf", 10);
-	if (Font::smallFont == NULL)
-	{
-		fprintf(stderr, "Unable to load font file: FONTS/VeraSe.ttf\n");
-		return false;
-	}
-
-	Font::normalFont = TTF_OpenFont("FONTS/VeraSe.ttf", 12);
-	if (Font::normalFont == NULL)
-	{
-		fprintf(stderr, "Unable to load font file: FONTS/VeraSe.ttf\n");
-		return false;
-	}
-
-	SpriteBank::manager.load("interface");
-	SpriteBank::manager.getSprite(SPRID_INTERFACE_CURSOR).setColorKey();
-	SpriteBank::manager.load("interface2");
-	SpriteBank::manager.getSprite(SPRID_INTERFACE2_NUM).setColorKey();
-	SpriteBank::manager.load("SPRFONTS");
-	SpriteBank::manager.getSprite(SPRID_SPRFONT).setColorKey();
-	SpriteBank::manager.load("New-Dialog");
-	SpriteBank::manager.load("LoginDialog");
-	SpriteBank::manager.load("DialogText");
-	SpriteBank::manager.getSprite(SPRID_DIALOGTEXT_BUTTONS).setColorKey();
-	return true;
+    return true;
 }
 
 void Game::onLoop()
