@@ -361,19 +361,20 @@ void LoadingScene::onLoop()
 
         break;
     case 73:
-        MapBank maps;
-    	maps.loadMap("aresden");
-    	maps.loadMap("elvine");
-    	if (maps.loadMap("middleland"))
-    	{
-    		Debug() << "OK";
-    		Debug() << "W" << maps.getMap("middleland").getSizeX();
-    		Debug() << "H" << maps.getMap("middleland").getSizeY();
-    	}
-    	else
-    		Debug() << "middleland loanding fail";
+        {MapBank maps;
+        maps.loadMap("aresden");
+        maps.loadMap("elvine");
+        if (maps.loadMap("middleland"))
+        {
+                Debug() << "OK";
+                Debug() << "W" << maps.getMap("middleland").getSizeX();
+                Debug() << "H" << maps.getMap("middleland").getSizeY();
+        }
+        else
+                Debug() << "middleland loanding fail";
         }
     	break;
+
     case 100:
             Game::getInstance().changeScene(new MenuScene);
             break;

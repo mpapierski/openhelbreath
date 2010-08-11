@@ -1,12 +1,18 @@
-win32:LIBS += -L../lib/SDL-1.2.14/lib -L../lib/SDL_ttf-2.0.10/lib -L../lib/SDL_mixer-1.2.11/lib -L../lib/SDL_image-1.2.10/lib -L/usr/local/lib -llibSDL -lSDL_image -lSDL_ttf -l SDL_mixer -lws2_32
+win32:LIBS += -L../lib/SDL-1.2.14/lib \
+    -L../lib/SDL_ttf-2.0.10/lib \
+    -L../lib/SDL_mixer-1.2.11/lib \
+    -L../lib/SDL_image-1.2.10/lib \
+    -L/usr/local/lib \
+    -llibSDL \
+    -lSDL_image \
+    -lSDL_ttf \
+    -l \
+    SDL_mixer \
+    -lws2_32
 INCLUDEPATH = ../lib/SDL-1.2.14/include/SDL;../lib/SDL_ttf-2.0.10/include;../lib/SDL_mixer-1.2.11/include;../lib/SDL_image-1.2.10/include
-
-OTHER_FILES += \
-    GPL.txt \
+OTHER_FILES += GPL.txt \
     config.cfg
-
-HEADERS += \
-    Window.h \
+HEADERS += Window.h \
     Widget.h \
     VersionNotMatchScene.h \
     Timer.h \
@@ -41,10 +47,10 @@ HEADERS += \
     Character.h \
     Buffers.h \
     PlayGroundScene.h \
-    Player.h
-
-SOURCES += \
-    Window.cpp \
+    Player.h \
+    Map.h \
+    Logger.h
+SOURCES += Window.cpp \
     Widget.cpp \
     VersionNotMatchScene.cpp \
     Timer.cpp \
@@ -75,4 +81,6 @@ SOURCES += \
     ConnectingWidget.cpp \
     Config.cpp \
     PlayGroundScene.cpp \
-    Player.cpp
+    Player.cpp \
+    Map.cpp \
+    Logger.cpp
