@@ -15,6 +15,7 @@ class PlayGroundScene : public Scene
     private:
         int monster_id;
         int orientation;
+        Player currentPlayer;
 };
 
 #endif // PLAYGROUNDSCENE_H

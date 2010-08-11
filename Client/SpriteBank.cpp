@@ -25,20 +25,11 @@ Sprite& SpriteBank::getSprite(int sprID)
 }
 
 /*
- *  Draws animated creature on screen
+ *  Draws sprite.
  */
-void SpriteBank::drawAnimatedCreature(SDL_Surface* dest, unsigned int creature_id, unsigned int animation_id, int x, int y)
+void SpriteBank::drawSprite(SDL_Surface* dest, const Sprite& spr, int frame, int x, int y)
 {
-    if(creature_id > creatures.size() - 1) return;
-
-    int frame, tmpX, tmpY;
-
-    creatures[creature_id][animation_id].update();
-
-    SpriteArray creature = creatures.at(creature_id);
-    Sprite spr = creature.at(animation_id);
-
-    frame = spr.getCurrentFrame();
+    int tmpX, tmpY;
 
     FrameSize f = spr.getFrameRect(frame);
 
@@ -49,21 +40,67 @@ void SpriteBank::drawAnimatedCreature(SDL_Surface* dest, unsigned int creature_i
 }
 
 /*
+ *  Draws animated creature on screen
+ */
+void SpriteBank::drawAnimatedCreature(SDL_Surface* dest, unsigned int creature_id, unsigned int animation_id, int x, int y)
+{
+    // TODO: maybe create separate class for creatures on screen :/
+    if(creature_id > creatures.size() - 1) return;
+
+    creatures[creature_id][animation_id].update();
+    SpriteArray creature = creatures.at(creature_id);
+    Sprite spr = creature.at(animation_id);
+    drawSprite(dest, spr, spr.getCurrentFrame(), x, y);
+}
+
+/*
+ *  Loads player equipment into equipment array
+ *  Must pass both female and male model filename
+ *  In order to avoid confusion with different Ids
+ */
+bool SpriteBank::loadPlayerEquipment(const std::string& maleModelfileName, const std::string& femaleModelfileName)
+{
+    SpriteArray male_sprites = getSpritesFromPakFile(maleModelfileName);
+    if(male_sprites.size() == 0) return false;
+
+    for(unsigned int i = 0; i < male_sprites.size(); i++) male_equipment.push_back(male_sprites.at(i));
+    fprintf(stdout, "Equipment: %s.pak loaded. %i sprites found\r\n", maleModelfileName.c_str(), male_sprites.size());
+
+    SpriteArray female_sprites = getSpritesFromPakFile(femaleModelfileName);
+    if(female_sprites.size() == 0) return false;
+
+    for(unsigned int i = 0; i < female_sprites.size(); i++) female_equipment.push_back(female_sprites.at(i));
+    fprintf(stdout, "Equipment: %s.pak loaded. %i sprites found\r\n", femaleModelfileName.c_str(), female_sprites.size());
+
+    return true;
+}
+
+
+/*
+ *  Loads .PAK file sprites into players array
+ */
+bool SpriteBank::loadPlayerSprites(const std::string& fileName)
+{
+    SpriteArray player_sprites = getSpritesFromPakFile(fileName);
+    if(player_sprites.size() == 0) return false;
+
+    players.push_back(player_sprites);
+
+    fprintf(stdout, "Players: %s.pak loaded. %i sprites found\r\n", fileName.c_str(), player_sprites.size());
+    return true;
+}
+
+/*
  *  Loads .PAK file sprites into creature array
  */
-bool SpriteBank::loadCreature(const std::string& fileName)
+bool SpriteBank::loadCreatureSprites(const std::string& fileName)
 {
     SpriteArray creature_sprites = getSpritesFromPakFile(fileName);
-    if(creature_sprites.size() == 0)
-    {
-        // TODO: theoretically we should fail all game at this point
-        // but right now ignorance is bliss
-        return false;
-    }
+    if(creature_sprites.size() == 0) return false;
 
     creatures.push_back(creature_sprites);
 
-    fprintf(stdout, "%s.pak loaded. %i sprites found\r\n", fileName.c_str(), creature_sprites.size());
+    fprintf(stdout, "Monster: %s.pak loaded. %i sprites found\r\n", fileName.c_str(), creature_sprites.size());
     return true;
 }
 
@@ -346,4 +383,19 @@ void SpriteBank::cleanUp()
         arr.clear();
     }
     creatures.clear();
+
+    for (unsigned int i = 0 ; i < players.size(); i++)
+    {
+        SpriteArray arr = players[i];
+        for(unsigned int j = 0; j < arr.size(); j++) SDL_FreeSurface(arr[j].getSurface());
+        arr.clear();
+    }
+    players.clear();
+
+    for(unsigned int i = 0; i < male_equipment.size(); i++) SDL_FreeSurface(male_equipment[i].getSurface());
+    male_equipment.clear();
+    for(unsigned int i = 0; i < female_equipment.size(); i++) SDL_FreeSurface(female_equipment[i].getSurface());
+    female_equipment.clear();
+
+
 }

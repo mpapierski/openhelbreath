@@ -1,3 +1,9 @@
+//
+//  Game initialization
+//  Loads sprites, maps, sounds
+//  TODO: add check if some resources fail
+//
+
 #include "Game.h"
 
 LoadingScene::LoadingScene()
@@ -14,8 +20,6 @@ void LoadingScene::onLoop()
 {
     // TODO: paks left to load
     // ACannon.pak - Cannon Guard Tower - 32 sprites inside
-    // Bm.pak - naked man - 96 sprites inside
-    // Bw.pak - naked female - 96 sprites inside
     // CBTurret.pak - Arrow Guard Tower - 32 sprites inside
     // CruEffect1.pak - crusade effects
     // CruObj1.pak - warehouse?
@@ -111,26 +115,21 @@ void LoadingScene::onLoop()
     // TutelarAngel3.pak
     // TutelarAngel4.pak
     // yspro.pak - abbaddon - 32 sprites
-    // Yw.pak - woman model - 96 sprites
     // Wbo.pak
     // Whr.pak
     // William.pak - william npc - 8 sprites
-    // Wm.pak - male model - 96 sprites
     // Wpt.pak
     // Wsh.pak
     // Wsw.pak
     // Wsw2.pak
     // Wsw3.pak
-    // Ww.pak - woman model - 96 sprites
     // Wyvern.pak - 24 sprites
-    // Ym.pak - male model - 96 sprites
     // yseffect2.pak
     // yseffect3.pak
     // yseffect4.pak
 
     // EQUIPMENT
 
-    // MHauberk.pak - 12 sprites inside
     // MHCap1.pak - 12 sprites inside
     // MHCap2.pak - 12 sprites inside
     // MCHoses.pak - 12 sprites inside
@@ -180,7 +179,6 @@ void LoadingScene::onLoop()
     // WChemiss.pak - 12 sprites inside
     // WCHoses.pak - 12 sprites inside
     // WCMail.pak - 12 sprites inside
-    // WHauberk.pak - 12 sprites inside
     // WHHauberk1.pak - 12 sprites inside
     // WHHauberk2.pak - 12 sprites inside
     // WHCap1.pak - 12 sprites inside
@@ -288,203 +286,222 @@ void LoadingScene::onLoop()
             SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_MODELS).setColorKey();
             break;
         case 1:
-            SpriteBank::manager.loadCreature("ABS");
+            SpriteBank::manager.loadCreatureSprites("ABS");
             break;
     case 2:
-        SpriteBank::manager.loadCreature("DarkElf");
+        SpriteBank::manager.loadCreatureSprites("DarkElf");
         break;
     case 3:
-        SpriteBank::manager.loadCreature("Cyc");
+        SpriteBank::manager.loadCreatureSprites("Cyc");
         break;
     case 4:
-        SpriteBank::manager.loadCreature("Ant");
+        SpriteBank::manager.loadCreatureSprites("Ant");
         break;
     case 5:
-        SpriteBank::manager.loadCreature("Demon");
+        SpriteBank::manager.loadCreatureSprites("Demon");
         break;
     case 6:
-        SpriteBank::manager.loadCreature("Beholder");
+        SpriteBank::manager.loadCreatureSprites("Beholder");
         break;
     case 7:
-        SpriteBank::manager.loadCreature("BG");
+        SpriteBank::manager.loadCreatureSprites("BG");
         break;
     case 8:
-        SpriteBank::manager.loadCreature("Amp");
+        SpriteBank::manager.loadCreatureSprites("Amp");
         break;
     case 9:
-        SpriteBank::manager.loadCreature("Babarian");
+        SpriteBank::manager.loadCreatureSprites("Babarian");
         break;
     case 10:
-        SpriteBank::manager.loadCreature("Barlog");
+        SpriteBank::manager.loadCreatureSprites("Barlog");
         break;
     case 11:
-        SpriteBank::manager.loadCreature("Bunny");
+        SpriteBank::manager.loadCreatureSprites("Bunny");
         break;
     case 12:
-        SpriteBank::manager.loadCreature("CanPlant");
+        SpriteBank::manager.loadCreatureSprites("CanPlant");
         break;
     case 13:
-        SpriteBank::manager.loadCreature("Cat");
+        SpriteBank::manager.loadCreatureSprites("Cat");
         break;
     case 14:
-        SpriteBank::manager.loadCreature("Catapult");
+        SpriteBank::manager.loadCreatureSprites("Catapult");
         break;
     case 15:
-        SpriteBank::manager.loadCreature("Centaurus");
+        SpriteBank::manager.loadCreatureSprites("Centaurus");
         break;
     case 16:
-        SpriteBank::manager.loadCreature("Cla");
+        SpriteBank::manager.loadCreatureSprites("Cla");
         break;
     case 17:
-        SpriteBank::manager.loadCreature("Clawturtle");
+        SpriteBank::manager.loadCreatureSprites("Clawturtle");
         break;
     case 18:
-        SpriteBank::manager.loadCreature("Crop");
+        SpriteBank::manager.loadCreatureSprites("Crop");
         break;
     case 19:
-        SpriteBank::manager.loadCreature("DarkKnight");
+        SpriteBank::manager.loadCreatureSprites("DarkKnight");
         break;
     case 20:
-        SpriteBank::manager.loadCreature("Detector");
+        SpriteBank::manager.loadCreatureSprites("Detector");
         break;
     case 21:
-        SpriteBank::manager.loadCreature("Direboar");
+        SpriteBank::manager.loadCreatureSprites("Direboar");
         break;
     case 22:
-        SpriteBank::manager.loadCreature("dummy");
+        SpriteBank::manager.loadCreatureSprites("dummy");
         break;
     case 23:
-        SpriteBank::manager.loadCreature("ElfMaster");
+        SpriteBank::manager.loadCreatureSprites("ElfMaster");
         break;
     case 24:
-        SpriteBank::manager.loadCreature("ESG");
+        SpriteBank::manager.loadCreatureSprites("ESG");
         break;
     case 25:
-        SpriteBank::manager.loadCreature("Ettin");
+        SpriteBank::manager.loadCreatureSprites("Ettin");
         break;
     case 26:
-        SpriteBank::manager.loadCreature("Frost");
+        SpriteBank::manager.loadCreatureSprites("Frost");
         break;
     case 27:
-        SpriteBank::manager.loadCreature("gagoyle");
+        SpriteBank::manager.loadCreatureSprites("gagoyle");
         break;
     case 28:
-        SpriteBank::manager.loadCreature("GHK");
+        SpriteBank::manager.loadCreatureSprites("GHK");
         break;
     case 29:
-        SpriteBank::manager.loadCreature("GHKABS");
+        SpriteBank::manager.loadCreatureSprites("GHKABS");
         break;
     case 30:
-        SpriteBank::manager.loadCreature("GiantCrayfish");
+        SpriteBank::manager.loadCreatureSprites("GiantCrayfish");
         break;
     case 31:
-        SpriteBank::manager.loadCreature("GiantFrog");
+        SpriteBank::manager.loadCreatureSprites("GiantFrog");
         break;
     case 32:
-        SpriteBank::manager.loadCreature("GiantLizard");
+        SpriteBank::manager.loadCreatureSprites("GiantLizard");
         break;
     case 33:
-        SpriteBank::manager.loadCreature("GiantPlant");
+        SpriteBank::manager.loadCreatureSprites("GiantPlant");
         break;
     case 34:
-        SpriteBank::manager.loadCreature("GMG");
+        SpriteBank::manager.loadCreatureSprites("GMG");
         break;
     case 35:
-        SpriteBank::manager.loadCreature("GOL");
+        SpriteBank::manager.loadCreatureSprites("GOL");
         break;
     case 36:
-        SpriteBank::manager.loadCreature("GT-Arrow");
+        SpriteBank::manager.loadCreatureSprites("GT-Arrow");
         break;
     case 37:
-        SpriteBank::manager.loadCreature("GT-Cannon");
+        SpriteBank::manager.loadCreatureSprites("GT-Cannon");
         break;
     case 38:
-        SpriteBank::manager.loadCreature("Guard");
+        SpriteBank::manager.loadCreatureSprites("Guard");
         break;
     case 39:
-        SpriteBank::manager.loadCreature("Helb");
+        SpriteBank::manager.loadCreatureSprites("Helb");
         break;
     case 40:
-        SpriteBank::manager.loadCreature("Hellclaw");
+        SpriteBank::manager.loadCreatureSprites("Hellclaw");
         break;
     case 41:
-        SpriteBank::manager.loadCreature("IceGolem");
+        SpriteBank::manager.loadCreatureSprites("IceGolem");
         break;
     case 42:
-        SpriteBank::manager.loadCreature("Liche");
+        SpriteBank::manager.loadCreatureSprites("Liche");
         break;
     case 43:
-        SpriteBank::manager.loadCreature("LWB");
+        SpriteBank::manager.loadCreatureSprites("LWB");
         break;
     case 44:
-        SpriteBank::manager.loadCreature("ManaCollector");
+        SpriteBank::manager.loadCreatureSprites("ManaCollector");
         break;
     case 45:
-        SpriteBank::manager.loadCreature("ManaStone");
+        SpriteBank::manager.loadCreatureSprites("ManaStone");
         break;
     case 46:
-        SpriteBank::manager.loadCreature("MasterMageOrc");
+        SpriteBank::manager.loadCreatureSprites("MasterMageOrc");
         break;
     case 47:
-        SpriteBank::manager.loadCreature("Minotaurs");
+        SpriteBank::manager.loadCreatureSprites("Minotaurs");
         break;
     case 48:
-        SpriteBank::manager.loadCreature("MTGiant");
+        SpriteBank::manager.loadCreatureSprites("MTGiant");
         break;
     case 49:
-        SpriteBank::manager.loadCreature("Orc");
+        SpriteBank::manager.loadCreatureSprites("Orc");
         break;
     case 50:
-        SpriteBank::manager.loadCreature("Orge");
+        SpriteBank::manager.loadCreatureSprites("Orge");
         break;
     case 51:
-        SpriteBank::manager.loadCreature("Nizie");
+        SpriteBank::manager.loadCreatureSprites("Nizie");
         break;
     case 52:
-        SpriteBank::manager.loadCreature("Rudolph");
+        SpriteBank::manager.loadCreatureSprites("Rudolph");
         break;
     case 53:
-        SpriteBank::manager.loadCreature("Scp");
+        SpriteBank::manager.loadCreatureSprites("Scp");
         break;
     case 54:
-        SpriteBank::manager.loadCreature("SKE");
+        SpriteBank::manager.loadCreatureSprites("SKE");
         break;
     case 55:
-        SpriteBank::manager.loadCreature("SLM");
+        SpriteBank::manager.loadCreatureSprites("SLM");
         break;
     case 56:
-        SpriteBank::manager.loadCreature("Sorceress");
+        SpriteBank::manager.loadCreatureSprites("Sorceress");
         break;
     case 57:
-        SpriteBank::manager.loadCreature("Stalker");
+        SpriteBank::manager.loadCreatureSprites("Stalker");
         break;
     case 58:
-        SpriteBank::manager.loadCreature("Tentocle");
+        SpriteBank::manager.loadCreatureSprites("Tentocle");
         break;
     case 59:
-        SpriteBank::manager.loadCreature("Tigerworm");
+        SpriteBank::manager.loadCreatureSprites("Tigerworm");
         break;
     case 60:
-        SpriteBank::manager.loadCreature("Unicorn");
+        SpriteBank::manager.loadCreatureSprites("Unicorn");
         break;
     case 61:
-        SpriteBank::manager.loadCreature("TK");
+        SpriteBank::manager.loadCreatureSprites("TK");
         break;
     case 62:
-        SpriteBank::manager.loadCreature("TPKnight");
+        SpriteBank::manager.loadCreatureSprites("TPKnight");
         break;
     case 63:
-        SpriteBank::manager.loadCreature("Troll");
+        SpriteBank::manager.loadCreatureSprites("Troll");
         break;
     case 64:
-        SpriteBank::manager.loadCreature("Zom");
+        SpriteBank::manager.loadCreatureSprites("Zom");
         break;
     case 65:
-        SpriteBank::manager.loadCreature("WereWolf");
+        SpriteBank::manager.loadCreatureSprites("WereWolf");
         break;
     case 66:
         // TODO: This one fails to load. Figure out why
-        //SpriteBank::manager.loadCreature("Scarecrow");
+        //SpriteBank::manager.loadCreatureSprites("Scarecrow");
+        break;
+    case 67:
+        SpriteBank::manager.loadPlayerSprites("Bm");
+        break;
+    case 68:
+        SpriteBank::manager.loadPlayerSprites("Bw");
+        break;
+    case 69:
+        SpriteBank::manager.loadPlayerSprites("Wm");
+        break;
+    case 70:
+        SpriteBank::manager.loadPlayerSprites("Ww");
+        break;
+    case 71:
+        SpriteBank::manager.loadPlayerSprites("Ym");
+        break;
+    case 72:
+        SpriteBank::manager.loadPlayerSprites("Yw");
+        SpriteBank::manager.loadPlayerEquipment("MHauberk", "WHauberk");
         break;
 
         case 100:

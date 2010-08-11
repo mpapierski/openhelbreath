@@ -40,7 +40,8 @@ HEADERS += \
     Config.h \
     Character.h \
     Buffers.h \
-    PlayGroundScene.h
+    PlayGroundScene.h \
+    Player.h
 
 SOURCES += \
     Window.cpp \
@@ -73,4 +74,5 @@ SOURCES += \
     CreateNewCharScene.cpp \
     ConnectingWidget.cpp \
     Config.cpp \
-    PlayGroundScene.cpp
+    PlayGroundScene.cpp \
+    Player.cpp

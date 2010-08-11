@@ -5,22 +5,20 @@ static FrameSize emptyFrameRect = { 0, 0, 0, 0, 0, 0 };
 Sprite::Sprite()
 {
 	image = NULL;
-	currentFrame = 0;
+        currentFrame = 0;
 }
 
 void Sprite::update()
 {
-	if (!frameTimer.isStarted())
-		frameTimer.start();
+    if (!frameTimer.isStarted()) frameTimer.start();
 
-        if (frameTimer.getTicks() > 100)
-	{
-		currentFrame++;
-		if (currentFrame >= framesCount)
-			currentFrame = 0;
+    if (frameTimer.getTicks() > 100)
+    {
+        currentFrame++;
+        if (currentFrame >= framesCount) currentFrame = 0;
 
-		frameTimer.start();
-	}
+        frameTimer.start();
+    }
 }
 
 void Sprite::setFrameRect(short x, short y, short w, short h, short xOffset, short yOffset)

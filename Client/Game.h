@@ -15,6 +15,7 @@
 #include "SoundBank.h"
 #include "Font.h"
 
+#include "Player.h"
 #include "PlayGroundScene.h"
 #include "LoadingScene.h"
 #include "MenuScene.h"
