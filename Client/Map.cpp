@@ -1,11 +1,21 @@
 #include "Map.h"
 
-Map::Map(const std::string& fileName) throw (BadMapFormat)
+Map::Map(const std::string& mapName) throw (BadMapFormat)
 {
-	FILE *fin;
+	FILE* fin;
+
+	std::string fileName = "MAPDATA/" + mapName + ".amd";
+
 	fin = fopen(fileName.c_str(), "r");
 	if (fin == NULL)
-		throw BadMapFormat();
+	{
+		fileName = "MAPDATA/" + mapName + ".AMD";
+		fin = fopen(fileName.c_str(), "r");
+		if (fin == NULL)
+		{
+			throw BadMapFormat();
+		}
+	}
 	char cHeader[256];
 	char * token;
 	char seps[] = "= \t\n";
@@ -84,20 +94,19 @@ MapBank::~MapBank()
 
 }
 
-bool MapBank::loadMap(const std::string & mapName)
+bool MapBank::loadMap(const std::string& mapName)
 {
 	std::string lowerMapName(mapName);
 	std::transform(lowerMapName.begin(), lowerMapName.end(), lowerMapName.begin(), ::tolower);
 
-	std::string fileName = "MAPDATA/" + mapName + ".amd";
 	try
 	{
-		Map mapData(fileName);
+		Map mapData(mapName);
 		Debug() << "Loading map: " << lowerMapName;
 		m_Maps.insert(std::pair<std::string, Map>(lowerMapName, mapData));
 		return true;
 	}
-	catch(BadMapFormat & e)
+	catch(BadMapFormat& e)
 	{
 		Debug() << "Error while loading map: " << e.what();
 		return false;
