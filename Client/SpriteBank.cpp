@@ -54,6 +54,28 @@ void SpriteBank::drawAnimatedCreature(SDL_Surface* dest, unsigned int creature_i
 }
 
 /*
+ *  Loads player weapon into weapon array
+ *  Must pass both female and male model filename
+ *  In order to avoid confusion with different Ids
+ */
+bool SpriteBank::loadPlayerWeapons(const std::string& maleModelfileName, const std::string& femaleModelfileName)
+{
+    SpriteArray male_sprites = getSpritesFromPakFile(maleModelfileName);
+    if(male_sprites.size() == 0) return false;
+
+    for(unsigned int i = 0; i < male_sprites.size(); i++) male_weapons.push_back(male_sprites.at(i));
+    fprintf(stdout, "Equipment: %s.pak loaded. %i sprites found\r\n", maleModelfileName.c_str(), male_sprites.size());
+
+    SpriteArray female_sprites = getSpritesFromPakFile(femaleModelfileName);
+    if(female_sprites.size() == 0) return false;
+
+    for(unsigned int i = 0; i < female_sprites.size(); i++) female_weapons.push_back(female_sprites.at(i));
+    fprintf(stdout, "Equipment: %s.pak loaded. %i sprites found\r\n", femaleModelfileName.c_str(), female_sprites.size());
+
+    return true;
+}
+
+/*
  *  Loads player equipment into equipment array
  *  Must pass both female and male model filename
  *  In order to avoid confusion with different Ids
@@ -396,6 +418,8 @@ void SpriteBank::cleanUp()
     male_equipment.clear();
     for(unsigned int i = 0; i < female_equipment.size(); i++) SDL_FreeSurface(female_equipment[i].getSurface());
     female_equipment.clear();
-
-
+    for(unsigned int i = 0; i < male_weapons.size(); i++) SDL_FreeSurface(male_weapons[i].getSurface());
+    male_weapons.clear();
+    for(unsigned int i = 0; i < female_weapons.size(); i++) SDL_FreeSurface(female_weapons[i].getSurface());
+    female_weapons.clear();
 }

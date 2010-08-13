@@ -130,6 +130,19 @@ void LoadingScene::onLoop()
 
     // EQUIPMENT
 
+
+    // some animation bugs? or different method to display them?
+    // NMHelm1.pak - 12 sprites inside
+    // NWHelm1.pak - 12 sprites inside
+    // NMHelm2.pak - 12 sprites inside
+    // NWHelm2.pak - 12 sprites inside
+    // NMHelm3.pak - 12 sprites inside
+    // NWHelm3.pak - 12 sprites inside
+
+    // NMHelm4.pak - 12 sprites inside
+    // NWHelm4.pak - 12 sprites inside
+
+
     // MLeggings.pak - 12 sprites inside
     // WLeggings.pak - 12 sprites inside
 
@@ -144,24 +157,16 @@ void LoadingScene::onLoop()
     // MHelm2.pak - 12 sprites inside
     // MHelm3.pak - 11 sprites inside !!!!!
     // MHelm4.pak - 12 sprites inside
+
+
     // MHHelm1.pak - 12 sprites inside
     // MHHelm2.pak - 12 sprites inside
-    // MHRobe1.pak - 12 sprites inside
-    // MHRobe2.pak - 12 sprites inside
     // MTrouser.pak - 12 sprites inside
     // MTunic.pak - 12 sprites inside
     // MPMail.pak - 12 sprites inside
     // Mrobe1.pak - 12 sprites inside
     // MShirt.pak - 12 sprites inside
     // MSMail.pak - 12 sprites inside
-    // NMHelm1.pak - 12 sprites inside
-    // NMHelm2.pak - 12 sprites inside
-    // NMHelm3.pak - 12 sprites inside
-    // NMHelm4.pak - 12 sprites inside
-    // NWHelm1.pak - 12 sprites inside
-    // NWHelm2.pak - 12 sprites inside
-    // NWHelm3.pak - 12 sprites inside
-    // NWHelm4.pak - 12 sprites inside
     // WBodice1.pak - 12 sprites inside
     // WBodice2.pak - 12 sprites inside
     // WChemiss.pak - 12 sprites inside
@@ -172,8 +177,6 @@ void LoadingScene::onLoop()
     // WHHelm2.pak - 12 sprites inside
     // WHoe.pak - 12 sprites inside
     // WHelm4.pak - 12 sprites inside
-    // WHRobe1.pak - 12 sprites inside
-    // WHRobe2.pak - 12 sprites inside
     // WLarmor.pak - 12 sprites inside
     // WPMail.pak - 12 sprites inside
     // WRobe1.pak - 12 sprites inside
@@ -184,49 +187,34 @@ void LoadingScene::onLoop()
 
     // WEAPONS
 
-    // MAxe1.pak - 56 sprites inside
-    // MAxe2.pak - 56 sprites inside
-    // Maxe3.pak - 56 sprites inside
-    // Maxe4.pak - 56 sprites inside
-    // Maxe5.pak - 56 sprites inside
-    // Maxe6.pak - 56 sprites inside
+    // MStaff1.pak - 56 sprites inside
+    // MStaff2.pak - 56 sprites inside
+    // MStaff3.pak - 56 sprites inside
+    // MStaff4.pak - 56 sprites inside
+    // WStaff1.pak - 56 sprites inside
+    // WStaff2.pak - 56 sprites inside
+    // WStaff3.pak - 56 sprites inside
+    // WStaff4.pak - 56 sprites inside
+
     // MDirectBow.pak - 56 sprites inside
     // MFireBow.pak - 56 sprites inside
-    // STOP! HAMMERTIME!
     // MHammer.pak - 56 sprites inside
     // MBabHammer.pak - 56 sprites inside
     // MBerserkWand.pak - 56 sprites inside
     // MBHammer.pak - 56 sprites inside
     // Mbo.pak - 112 sprites inside
-    // MBShadowSword.pak - 56 sprites inside
-    // MDarkExec.pak - 56 sprites inside
     // MDebastator.pak - 56 sprites inside
     // MKlonessAxe.pak - 56 sprites inside
     // MKlonessBlade.pak - 56 sprites inside
     // MKlonessWand.pak - 56 sprites inside
-    // MLightBlade.pak - 56 sprites inside
     // MHoe.pak - 56 sprites inside
     // MKlonessAstock.pak - 56 sprites inside
     // Mswx.pak - 56 sprites inside
-    // MPickAxe1.pak - 56 sprites inside
     // MReMagicWand.pak - 56 sprites inside
-    // MStaff1.pak - 56 sprites inside
-    // MStaff2.pak - 56 sprites inside
-    // MStaff3.pak - 56 sprites inside
-    // MStaff4.pak - 56 sprites inside
     // MStaff2222.pak - 56 sprites inside
-    // MStormBringer.pak - 56 sprites inside
-    // WAxe1.pak - 56 sprites inside
-    // WAxe2.pak - 56 sprites inside
-    // WAxe3.pak - 56 sprites inside
-    // WAxe4.pak - 56 sprites inside
-    // WAxe5.pak - 56 sprites inside
-    // WAxe6.pak - 56 sprites inside
     // WBabHammer.pak - 56 sprites inside
     // WBerserkWand.pak - 56 sprites inside
     // WBHammer.pak - 56 sprites inside
-    // WBShadowSword.pak - 56 sprites inside
-    // WDarkExec.pak - 56 sprites inside
     // WDebastator.pak - 56 sprites inside
     // WDirectBow.pak - 56 sprites inside
     // WFireBow.pak - FUU
@@ -235,14 +223,7 @@ void LoadingScene::onLoop()
     // WKlonessAxe.pak - 56 sprites inside
     // WKlonessBlade.pak - 56 sprites inside
     // WKlonessWand.pak - 56 sprites inside
-    // WLightBlade.pak - 56 sprites inside
-    // WPickAxe1.pak - 56 sprites inside
     // WReMagicWand.pak - 56 sprites inside
-    // WStaff1.pak - 56 sprites inside
-    // WStaff2.pak - 56 sprites inside
-    // WStaff3.pak - 56 sprites inside
-    // WStaff4.pak - 56 sprites inside
-    // WStormbringer.pak - 56 sprites inside
     // Wswx.pak - 56 sprites inside
 
     switch(percent)
@@ -257,107 +238,128 @@ void LoadingScene::onLoop()
             break;
         case 1:
             // monsters
+            fprintf(stdout, "Loading creature sprites\r\n");
 
             SpriteBank::manager.loadCreatureSprites("ABS");
-        SpriteBank::manager.loadCreatureSprites("DarkElf");
-        SpriteBank::manager.loadCreatureSprites("Cyc");
-        SpriteBank::manager.loadCreatureSprites("Ant");
-        SpriteBank::manager.loadCreatureSprites("Demon");
-        SpriteBank::manager.loadCreatureSprites("Beholder");
-        SpriteBank::manager.loadCreatureSprites("BG");
-        SpriteBank::manager.loadCreatureSprites("Amp");
-        SpriteBank::manager.loadCreatureSprites("Babarian");
-        SpriteBank::manager.loadCreatureSprites("Barlog");
-        SpriteBank::manager.loadCreatureSprites("Bunny");
-        SpriteBank::manager.loadCreatureSprites("CanPlant");
-        SpriteBank::manager.loadCreatureSprites("Cat");
-        SpriteBank::manager.loadCreatureSprites("Catapult");
-        SpriteBank::manager.loadCreatureSprites("Centaurus");
-        SpriteBank::manager.loadCreatureSprites("Cla");
-        SpriteBank::manager.loadCreatureSprites("Clawturtle");
-        SpriteBank::manager.loadCreatureSprites("Crop");
-        SpriteBank::manager.loadCreatureSprites("DarkKnight");
-        SpriteBank::manager.loadCreatureSprites("Detector");
-        SpriteBank::manager.loadCreatureSprites("Direboar");
-        SpriteBank::manager.loadCreatureSprites("dummy");
-        SpriteBank::manager.loadCreatureSprites("ElfMaster");
-        SpriteBank::manager.loadCreatureSprites("ESG");
-        SpriteBank::manager.loadCreatureSprites("Ettin");
-        SpriteBank::manager.loadCreatureSprites("Frost");
-        SpriteBank::manager.loadCreatureSprites("gagoyle");
-        SpriteBank::manager.loadCreatureSprites("GHK");
-        SpriteBank::manager.loadCreatureSprites("GHKABS");
-        SpriteBank::manager.loadCreatureSprites("GiantCrayfish");
-        SpriteBank::manager.loadCreatureSprites("GiantFrog");
-        SpriteBank::manager.loadCreatureSprites("GiantLizard");
-        SpriteBank::manager.loadCreatureSprites("GiantPlant");
-        SpriteBank::manager.loadCreatureSprites("GMG");
-        SpriteBank::manager.loadCreatureSprites("GOL");
-        SpriteBank::manager.loadCreatureSprites("GT-Arrow");
-        SpriteBank::manager.loadCreatureSprites("GT-Cannon");
-        SpriteBank::manager.loadCreatureSprites("Guard");
-        SpriteBank::manager.loadCreatureSprites("Helb");
-        SpriteBank::manager.loadCreatureSprites("Hellclaw");
-        SpriteBank::manager.loadCreatureSprites("IceGolem");
-        SpriteBank::manager.loadCreatureSprites("Liche");
-        SpriteBank::manager.loadCreatureSprites("LWB");
-        SpriteBank::manager.loadCreatureSprites("ManaCollector");
-        SpriteBank::manager.loadCreatureSprites("ManaStone");
-        SpriteBank::manager.loadCreatureSprites("MasterMageOrc");
-        SpriteBank::manager.loadCreatureSprites("Minotaurs");
-        SpriteBank::manager.loadCreatureSprites("MTGiant");
-        SpriteBank::manager.loadCreatureSprites("Orc");
-        SpriteBank::manager.loadCreatureSprites("Orge");
-        SpriteBank::manager.loadCreatureSprites("Nizie");
-        SpriteBank::manager.loadCreatureSprites("Rudolph");
-        SpriteBank::manager.loadCreatureSprites("Scp");
-        SpriteBank::manager.loadCreatureSprites("SKE");
-    	// TODO: This one fails to load. Figure out why
-        //SpriteBank::manager.loadCreatureSprites("SLM");
-        SpriteBank::manager.loadCreatureSprites("Sorceress");
-        SpriteBank::manager.loadCreatureSprites("Stalker");
-        SpriteBank::manager.loadCreatureSprites("Tentocle");
-        SpriteBank::manager.loadCreatureSprites("Tigerworm");
-        SpriteBank::manager.loadCreatureSprites("Unicorn");
-        SpriteBank::manager.loadCreatureSprites("TK");
-        SpriteBank::manager.loadCreatureSprites("TPKnight");
-        SpriteBank::manager.loadCreatureSprites("Troll");
-        SpriteBank::manager.loadCreatureSprites("Zom");
-        SpriteBank::manager.loadCreatureSprites("WereWolf");
-        // TODO: This one fails to load. Figure out why
-        //SpriteBank::manager.loadCreatureSprites("Scarecrow");
+            SpriteBank::manager.loadCreatureSprites("DarkElf");
+            SpriteBank::manager.loadCreatureSprites("Cyc");
+            SpriteBank::manager.loadCreatureSprites("Ant");
+            SpriteBank::manager.loadCreatureSprites("Demon");
+            SpriteBank::manager.loadCreatureSprites("Beholder");
+            SpriteBank::manager.loadCreatureSprites("BG");
+            SpriteBank::manager.loadCreatureSprites("Amp");
+            SpriteBank::manager.loadCreatureSprites("Babarian");
+            SpriteBank::manager.loadCreatureSprites("Barlog");
+            SpriteBank::manager.loadCreatureSprites("Bunny");
+            SpriteBank::manager.loadCreatureSprites("CanPlant");
+            SpriteBank::manager.loadCreatureSprites("Cat");
+            SpriteBank::manager.loadCreatureSprites("Catapult");
+            SpriteBank::manager.loadCreatureSprites("Centaurus");
+            SpriteBank::manager.loadCreatureSprites("Cla");
+            SpriteBank::manager.loadCreatureSprites("Clawturtle");
+            SpriteBank::manager.loadCreatureSprites("Crop");
+            SpriteBank::manager.loadCreatureSprites("DarkKnight");
+            SpriteBank::manager.loadCreatureSprites("Detector");
+            SpriteBank::manager.loadCreatureSprites("Direboar");
+            SpriteBank::manager.loadCreatureSprites("dummy");
+            SpriteBank::manager.loadCreatureSprites("ElfMaster");
+            SpriteBank::manager.loadCreatureSprites("ESG");
+            SpriteBank::manager.loadCreatureSprites("Ettin");
+            SpriteBank::manager.loadCreatureSprites("Frost");
+            SpriteBank::manager.loadCreatureSprites("gagoyle");
+            SpriteBank::manager.loadCreatureSprites("GHK");
+            SpriteBank::manager.loadCreatureSprites("GHKABS");
+            SpriteBank::manager.loadCreatureSprites("GiantCrayfish");
+            SpriteBank::manager.loadCreatureSprites("GiantFrog");
+            SpriteBank::manager.loadCreatureSprites("GiantLizard");
+            SpriteBank::manager.loadCreatureSprites("GiantPlant");
+            SpriteBank::manager.loadCreatureSprites("GMG");
+            SpriteBank::manager.loadCreatureSprites("GOL");
+            SpriteBank::manager.loadCreatureSprites("GT-Arrow");
+            SpriteBank::manager.loadCreatureSprites("GT-Cannon");
+            SpriteBank::manager.loadCreatureSprites("Guard");
+            SpriteBank::manager.loadCreatureSprites("Helb");
+            SpriteBank::manager.loadCreatureSprites("Hellclaw");
+            SpriteBank::manager.loadCreatureSprites("IceGolem");
+            SpriteBank::manager.loadCreatureSprites("Liche");
+            SpriteBank::manager.loadCreatureSprites("LWB");
+            SpriteBank::manager.loadCreatureSprites("ManaCollector");
+            SpriteBank::manager.loadCreatureSprites("ManaStone");
+            SpriteBank::manager.loadCreatureSprites("MasterMageOrc");
+            SpriteBank::manager.loadCreatureSprites("Minotaurs");
+            SpriteBank::manager.loadCreatureSprites("MTGiant");
+            SpriteBank::manager.loadCreatureSprites("Orc");
+            SpriteBank::manager.loadCreatureSprites("Orge");
+            SpriteBank::manager.loadCreatureSprites("Nizie");
+            SpriteBank::manager.loadCreatureSprites("Rudolph");
+            SpriteBank::manager.loadCreatureSprites("Scp");
+            SpriteBank::manager.loadCreatureSprites("SKE");
+            // TODO: This one fails to load. Figure out why
+            //SpriteBank::manager.loadCreatureSprites("SLM");
+            SpriteBank::manager.loadCreatureSprites("Sorceress");
+            SpriteBank::manager.loadCreatureSprites("Stalker");
+            SpriteBank::manager.loadCreatureSprites("Tentocle");
+            SpriteBank::manager.loadCreatureSprites("Tigerworm");
+            SpriteBank::manager.loadCreatureSprites("Unicorn");
+            SpriteBank::manager.loadCreatureSprites("TK");
+            SpriteBank::manager.loadCreatureSprites("TPKnight");
+            SpriteBank::manager.loadCreatureSprites("Troll");
+            SpriteBank::manager.loadCreatureSprites("Zom");
+            SpriteBank::manager.loadCreatureSprites("WereWolf");
+            // TODO: This one fails to load. Figure out why
+            //SpriteBank::manager.loadCreatureSprites("Scarecrow");
 
-    case 50:
-        // players
+        case 50:
 
-        SpriteBank::manager.loadPlayerSprites("Bm");
-        SpriteBank::manager.loadPlayerSprites("Bw");
-        SpriteBank::manager.loadPlayerSprites("Wm");
-        SpriteBank::manager.loadPlayerSprites("Ww");
-        SpriteBank::manager.loadPlayerSprites("Ym");
-        SpriteBank::manager.loadPlayerSprites("Yw");
-        SpriteBank::manager.loadPlayerEquipment("MHauberk", "WHauberk");
+            // players
+            fprintf(stdout, "Loading player sprites\r\n");
 
-        // player equipment
+            SpriteBank::manager.loadPlayerSprites("Bm");
+            SpriteBank::manager.loadPlayerSprites("Bw");
+            SpriteBank::manager.loadPlayerSprites("Wm");
+            SpriteBank::manager.loadPlayerSprites("Ww");
+            SpriteBank::manager.loadPlayerSprites("Ym");
+            SpriteBank::manager.loadPlayerSprites("Yw");
 
-        SpriteBank::manager.loadPlayerEquipment("MHauberk", "WHauberk");
-        SpriteBank::manager.loadPlayerEquipment("MHHauberk1", "WHHauberk1");
-        SpriteBank::manager.loadPlayerEquipment("MHHauberk2", "WHHauberk2");
-        SpriteBank::manager.loadPlayerEquipment("MHLeggings1", "WHLeggings1");
-        SpriteBank::manager.loadPlayerEquipment("MHLeggings2", "WHLeggings2");
-        SpriteBank::manager.loadPlayerEquipment("MHTrouser", "WHTrouser");
-        SpriteBank::manager.loadPlayerEquipment("MSanta", "WSanta");
-        SpriteBank::manager.loadPlayerEquipment("MLBoots", "WLBoots");
-        SpriteBank::manager.loadPlayerEquipment("MShoes", "WShoes");
-        SpriteBank::manager.loadPlayerEquipment("Mmantle01", "Wmantle01");
-        SpriteBank::manager.loadPlayerEquipment("Mmantle02", "Wmantle02");
-        SpriteBank::manager.loadPlayerEquipment("Mmantle03", "Wmantle03");
-        SpriteBank::manager.loadPlayerEquipment("Mmantle04", "Wmantle04");
-        SpriteBank::manager.loadPlayerEquipment("Mmantle05", "Wmantle05");
-        SpriteBank::manager.loadPlayerEquipment("Mmantle06", "Wmantle06");
-        SpriteBank::manager.loadPlayerEquipment("MCHoses", "WCHoses");
-        SpriteBank::manager.loadPlayerEquipment("MHPMail1", "WHPMail1");
-        SpriteBank::manager.loadPlayerEquipment("MHPMail2", "WHPMail2");
+            // player equipment
+            fprintf(stdout, "Loading player equipment sprites\r\n");
+
+            SpriteBank::manager.loadPlayerEquipment("MHauberk", "WHauberk");
+            SpriteBank::manager.loadPlayerEquipment("MHHauberk1", "WHHauberk1");
+            SpriteBank::manager.loadPlayerEquipment("MHHauberk2", "WHHauberk2");
+            SpriteBank::manager.loadPlayerEquipment("MHLeggings1", "WHLeggings1");
+            SpriteBank::manager.loadPlayerEquipment("MHLeggings2", "WHLeggings2");
+            SpriteBank::manager.loadPlayerEquipment("MHTrouser", "WHTrouser");
+            SpriteBank::manager.loadPlayerEquipment("MSanta", "WSanta");
+            SpriteBank::manager.loadPlayerEquipment("MLBoots", "WLBoots");
+            SpriteBank::manager.loadPlayerEquipment("MShoes", "WShoes");
+            SpriteBank::manager.loadPlayerEquipment("Mmantle01", "Wmantle01");
+            SpriteBank::manager.loadPlayerEquipment("Mmantle02", "Wmantle02");
+            SpriteBank::manager.loadPlayerEquipment("Mmantle03", "Wmantle03");
+            SpriteBank::manager.loadPlayerEquipment("Mmantle04", "Wmantle04");
+            SpriteBank::manager.loadPlayerEquipment("Mmantle05", "Wmantle05");
+            SpriteBank::manager.loadPlayerEquipment("Mmantle06", "Wmantle06");
+            SpriteBank::manager.loadPlayerEquipment("MCHoses", "WCHoses");
+            SpriteBank::manager.loadPlayerEquipment("MHPMail1", "WHPMail1");
+            SpriteBank::manager.loadPlayerEquipment("MHPMail2", "WHPMail2");
+            SpriteBank::manager.loadPlayerEquipment("MHRobe1", "WHRobe1");
+            SpriteBank::manager.loadPlayerEquipment("MHRobe2", "WHRobe2");
+
+            // player weapons
+            fprintf(stdout, "Loading player weapon sprites\r\n");
+            SpriteBank::manager.loadPlayerWeapons("MAxe1", "WAxe1");
+            SpriteBank::manager.loadPlayerWeapons("MAxe2", "WAxe2");
+            SpriteBank::manager.loadPlayerWeapons("MAxe3", "WAxe3");
+            // TODO: this one has wrong color key
+            SpriteBank::manager.loadPlayerWeapons("MAxe4", "WAxe4");
+            SpriteBank::manager.loadPlayerWeapons("MAxe5", "WAxe5");
+            SpriteBank::manager.loadPlayerWeapons("MAxe6", "WAxe6");
+            SpriteBank::manager.loadPlayerWeapons("MDarkExec", "WDarkExec");
+            SpriteBank::manager.loadPlayerWeapons("MLightBlade", "WLightBlade");
+            SpriteBank::manager.loadPlayerWeapons("MBShadowSword", "WBShadowSword");
+            // TODO: this one has wrong color key
+            SpriteBank::manager.loadPlayerWeapons("MPickAxe1", "WPickAxe1");
+            SpriteBank::manager.loadPlayerWeapons("MStormBringer", "WStormbringer");
 
         break;
     case 73:

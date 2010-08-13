@@ -41,9 +41,13 @@ class Player
         int chest;
         int feet;
         int cape;
+        int head;
+        int primary_weapon;
+        int secondary_weapon; // shield
 
     private:
         void drawEquipment(SDL_Surface* dest, int x, int y, int equip_id, int equipmentFrameToShow);
+        void drawWeapon(SDL_Surface* dest, int x, int y, int equip_id, int weaponFrameToShow);
 
         Sex _sex;
         Race _race;

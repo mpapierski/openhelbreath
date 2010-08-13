@@ -32,13 +32,16 @@ class SpriteBank
                 bool loadCreatureSprites(const std::string& fileName);
                 bool loadPlayerSprites(const std::string& fileName);
                 bool loadPlayerEquipment(const std::string& maleModelfileName, const std::string& femaleModelfileName);
-                std::vector<Sprite> getSpritesFromPakFile(const std::string& fileName);
+                bool loadPlayerWeapons(const std::string& maleModelfileName, const std::string& femaleModelfileName);
+                SpriteArray getSpritesFromPakFile(const std::string& fileName);
 
 		static SpriteBank manager;
 
                 std::vector<SpriteArray> players;
-                SpriteArray female_equipment;
                 SpriteArray male_equipment;
+                SpriteArray female_equipment;
+                SpriteArray male_weapons;
+                SpriteArray female_weapons;
 
 	private:
 
