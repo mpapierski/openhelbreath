@@ -1,6 +1,6 @@
 //
 //  Game initialization
-//  Loads sprites, maps, sounds
+//  Loads sprites, maps, sounds, effects
 //  TODO: add check if some resources fail
 //
 
@@ -233,8 +233,12 @@ void LoadingScene::onLoop()
             SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).setColorKey();
             SpriteBank::manager.load("item-equipM");
             SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_M_MODELS).setColorKey();
+            SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_M_UNDERWEAR).setColorKey();
+            SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_M_HAIR_STYLES).setColorKey();
             SpriteBank::manager.load("item-equipW");
             SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_MODELS).setColorKey();
+            SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_UNDERWEAR).setColorKey();
+            SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_HAIR_STYLES).setColorKey();
             break;
         case 1:
             // monsters
@@ -260,17 +264,19 @@ void LoadingScene::onLoop()
             SpriteBank::manager.loadCreatureSprites("Crop");
             SpriteBank::manager.loadCreatureSprites("DarkKnight");
             SpriteBank::manager.loadCreatureSprites("Detector");
-            SpriteBank::manager.loadCreatureSprites("Direboar");
+            SpriteBank::manager.loadCreatureSprites("DireBoar");
             SpriteBank::manager.loadCreatureSprites("dummy");
             SpriteBank::manager.loadCreatureSprites("ElfMaster");
             SpriteBank::manager.loadCreatureSprites("ESG");
             SpriteBank::manager.loadCreatureSprites("Ettin");
-            SpriteBank::manager.loadCreatureSprites("Frost");
+            SpriteBank::manager.loadCreatureSprites("FireWyvern");
+            SpriteBank::manager.loadCreatureSprites("frost");
             SpriteBank::manager.loadCreatureSprites("gagoyle");
             SpriteBank::manager.loadCreatureSprites("GHK");
             SpriteBank::manager.loadCreatureSprites("GHKABS");
             SpriteBank::manager.loadCreatureSprites("GiantCrayfish");
             SpriteBank::manager.loadCreatureSprites("GiantFrog");
+        case 25:
             SpriteBank::manager.loadCreatureSprites("GiantLizard");
             SpriteBank::manager.loadCreatureSprites("GiantPlant");
             SpriteBank::manager.loadCreatureSprites("GMG");
@@ -294,8 +300,7 @@ void LoadingScene::onLoop()
             SpriteBank::manager.loadCreatureSprites("Rudolph");
             SpriteBank::manager.loadCreatureSprites("Scp");
             SpriteBank::manager.loadCreatureSprites("SKE");
-            // TODO: This one fails to load. Figure out why
-            //SpriteBank::manager.loadCreatureSprites("SLM");
+            SpriteBank::manager.loadCreatureSprites("SLM");
             SpriteBank::manager.loadCreatureSprites("Sorceress");
             SpriteBank::manager.loadCreatureSprites("Stalker");
             SpriteBank::manager.loadCreatureSprites("Tentocle");
@@ -308,9 +313,7 @@ void LoadingScene::onLoop()
             SpriteBank::manager.loadCreatureSprites("WereWolf");
             // TODO: This one fails to load. Figure out why
             //SpriteBank::manager.loadCreatureSprites("Scarecrow");
-
         case 50:
-
             // players
             fprintf(stdout, "Loading player sprites\r\n");
 
@@ -364,8 +367,8 @@ void LoadingScene::onLoop()
         break;
     case 73:
         {MapBank maps;
-        maps.loadMap("aresden");
-        maps.loadMap("elvine");
+        maps.loadMap("ARESDEN");
+        maps.loadMap("ELVINE");
         if (maps.loadMap("middleland"))
         {
                 Debug() << "OK";
@@ -379,6 +382,7 @@ void LoadingScene::onLoop()
 
     case 100:
             Game::getInstance().changeScene(new MenuScene);
+            Game::getInstance().mouseCursor.setCursorStyle(Mouse::ARROW);
             break;
     }
 

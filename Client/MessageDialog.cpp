@@ -91,12 +91,18 @@ namespace gui
 
 	void MessageDialog::onLButtonDown(int x, int y)
 	{
-		if ((x > (this->x() + 120) && x < (this->x() + 194)) && (y > (this->y() + 125) && y
-				< (this->y() + 145)))
+		if ((x > (this->x() + 120) && x < (this->x() + 194)) && (y > (this->y() + 125) && y < (this->y() + 145)))
 		{
 			SoundBank::manager.play("E14");
 			setVisible(false);
 			setEnabled(false);
+
+			SDL_Event user_event;
+			user_event.type=SDL_USEREVENT;
+			user_event.user.code=GUI_BUTTON_CLICKED_OK;
+			user_event.user.data1= reinterpret_cast<void*>(getId());
+			user_event.user.data2=NULL;
+			SDL_PushEvent(&user_event);
 		}
 	}
 

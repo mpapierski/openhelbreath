@@ -19,6 +19,8 @@ namespace gui
 			SDL_Surface *getSurface() const;
 			int x() const;
 			int y() const;
+			void setId(int id);
+			int getId() const;
 			bool isEnabled() const;
 			virtual void setEnabled(bool enabled);
 			bool isVisible() const;
@@ -28,6 +30,7 @@ namespace gui
 			SDL_Surface* widgetSurface;
 			int posX;
 			int posY;
+			int id;
 			bool enabled;
 			bool visible;
 	};

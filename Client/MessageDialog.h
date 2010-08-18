@@ -3,6 +3,7 @@
 
 #include "Widget.h"
 #include "Font.h"
+#include "GlobalDef.h"
 
 namespace gui
 {

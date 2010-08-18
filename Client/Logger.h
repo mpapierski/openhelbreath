@@ -1,9 +1,10 @@
-#ifndef LOGGER_H_
-#define LOGGER_H_
+#ifndef LOGGER_H
+#define LOGGER_H
+
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <dir.h>
+//#include <dir.h>
 
 class Log {
    public:
@@ -47,4 +48,4 @@ class Debugger : public Log
 
 #define Debug() Debugger( __func__ , __FILE__ , __LINE__ )
 
-#endif /* LOGGER_H_ */
+#endif // LOGGER_H

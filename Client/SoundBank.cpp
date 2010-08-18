@@ -23,10 +23,13 @@ void SoundBank::load(const std::string& fileName)
 	tempSound = Mix_LoadWAV(path.c_str());
 	if(tempSound == NULL)
 	{
-		fprintf(stderr, "Unable to load: %s\n", path.c_str());
+		fprintf(stderr, "Unable to load: %s. %s\n", path.c_str(), Mix_GetError());
 	}
 	else
+	{
 		soundContainer[fileName] = tempSound;
+		fprintf(stdout, "Sound: %s loaded.\n", path.c_str());
+	}
 }
 
 void SoundBank::play(const std::string& fileName)

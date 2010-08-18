@@ -156,7 +156,7 @@ namespace gui
 			temp = widgetText;
 
 		if (!isEnabled())
-			setSurface(Font::textShaded(temp, Font::NORMAL, 160, 160, 160));
+			setSurface(Font::textShaded(temp, Font::NORMAL, 200, 200, 200));
 		else
 			setSurface(Font::textShaded(temp, Font::NORMAL, 255, 255, 255));
 

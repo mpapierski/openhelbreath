@@ -6,6 +6,7 @@ namespace gui
 	Widget::Widget()
 	{
 		widgetSurface = NULL;
+		setId(0);
 		setPosition(0, 0);
 		setEnabled(true);
 		setVisible(true);
@@ -57,6 +58,16 @@ namespace gui
 	int Widget::y() const
 	{
 		return posY;
+	}
+
+	void Widget::setId(int id)
+	{
+		this->id = id;
+	}
+
+	int Widget::getId() const
+	{
+		return id;
 	}
 
 	bool Widget::isEnabled() const

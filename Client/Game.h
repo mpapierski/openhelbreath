@@ -42,22 +42,23 @@ class Game: public Event
 		bool onInitialize();
 		void onLoop();
 		void onDraw();
-		void onEvent(SDL_Event *EventSource);
+		void onEvent(SDL_Event* eventSource);
 		void onKeyDown(SDLKey sym, SDLMod mod, Uint16 unicode);
 		void onExit();
 		void onQuit();
 		void onCleanup();
 		void changeScene(Scene* newScene);
 		static void drawVersion(SDL_Surface* dest);
+
+		Mouse mouseCursor;
+
 	private:
 		Game();
 		Game(const Game &);
 		Game& operator =(const Game&);
-                bool initializeAudio();
-                bool initializeFonts();
+        bool initializeFonts();
 
 		Window mainWindow;
-		Mouse mouseCursor;
 		Scene* currentScene;
 		Scene* previousScene;
 		bool running;

@@ -2,6 +2,7 @@
 #define CREATENEWCHARSCENE_H
 
 #include "Scene.h"
+#include "Player.h"
 
 class CreateNewCharScene : public Scene
 {
@@ -41,6 +42,11 @@ class CreateNewCharScene : public Scene
 		gui::TextEdit charNameEdit;
 		int specialPoints;
 		char pointsLeftLabel[30];
+		Player::Sex tmpSex;
+		Player::Race tmpRace;
+		int hairStyle;
+		// TODO: make hair color change (create temp surface, copy hair style, and put color)
+		int underWearColor;
 };
 
 #endif // CREATENEWCHARSCENE_H

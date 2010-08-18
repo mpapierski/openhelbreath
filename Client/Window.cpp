@@ -34,6 +34,8 @@ void Window::create(const std::string& title, int width, int height, int depth, 
 
 void Window::close()
 {
+	Mix_CloseAudio();
+
 	TTF_Quit();
 
 	SDL_Quit();
@@ -64,6 +66,19 @@ void Window::update()
 
 void Window::initialize()
 {
+	// TODO: Move to separate function, add information about versions added in compilation proces
+	const SDL_version* sdlVersion = SDL_Linked_Version();
+	printf("Running with SDL version: %u.%u.%u\n", sdlVersion->major, sdlVersion->minor, sdlVersion->patch);
+
+	const SDL_version* imageVersion = IMG_Linked_Version();
+	printf("Running with SDL_image version: %u.%u.%u\n", imageVersion->major, imageVersion->minor, imageVersion->patch);
+
+	const SDL_version* ttfVersion = TTF_Linked_Version();
+	printf("Running with SDL_ttf version: %u.%u.%u\n", ttfVersion->major, ttfVersion->minor, ttfVersion->patch);
+
+	const SDL_version* mixerVersion = Mix_Linked_Version();
+	printf("Running with SDL_mixer version: %u.%u.%u\n", mixerVersion->major, mixerVersion->minor, mixerVersion->patch);
+
     fprintf(stdout, "Initializing SDL system\r\n");
     if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER) != 0)
     {
@@ -76,6 +91,12 @@ void Window::initialize()
     {
         fprintf(stderr, "Unable to init SDL_ttf: %s\n", TTF_GetError());
         exit(2);
+    }
+    fprintf(stdout, "Initializing audio system\r\n");
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
+    {
+    	fprintf(stderr, "Unable to open audio channel: %s\n", Mix_GetError());
+        exit(3);
     }
 }
 

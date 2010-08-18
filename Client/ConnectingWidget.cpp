@@ -1,5 +1,5 @@
 #include "ConnectingWidget.h"
-#include "SpriteBank.h"
+#include "Game.h"
 
 namespace gui
 {
@@ -58,7 +58,10 @@ namespace gui
 		{
 			setState(0);
 			messageTimer.start();
+			Game::getInstance().mouseCursor.setCursorStyle(Mouse::THINK);
 		}
+		else
+			Game::getInstance().mouseCursor.setCursorStyle(Mouse::ARROW);
 	}
 
 	void ConnectingWidget::setState(int state)

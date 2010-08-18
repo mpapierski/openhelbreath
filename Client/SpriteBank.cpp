@@ -97,7 +97,6 @@ bool SpriteBank::loadPlayerEquipment(const std::string& maleModelfileName, const
     return true;
 }
 
-
 /*
  *  Loads .PAK file sprites into players array
  */
@@ -353,7 +352,10 @@ void SpriteBank::draw(SDL_Surface* dest, int x, int y, int sprID, int frameID)
 	if ((SpritesContainer.size() - 1) < static_cast<unsigned int> (sprID))
 		return;
 
-	Surface::draw(dest, SpritesContainer[sprID].getSurface(), x, y,
+	int tmpX = x + SpritesContainer[sprID].getFrameRect(frameID).xOffset;
+	int tmpY = y + SpritesContainer[sprID].getFrameRect(frameID).yOffset;
+
+	Surface::draw(dest, SpritesContainer[sprID].getSurface(), tmpX, tmpY,
 			SpritesContainer[sprID].getFrameRect(frameID).x,
 			SpritesContainer[sprID].getFrameRect(frameID).y,
 			SpritesContainer[sprID].getFrameRect(frameID).w,

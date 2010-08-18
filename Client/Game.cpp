@@ -75,26 +75,6 @@ bool Game::initializeFonts()
 }
 
 /*
- *  Audio initialization routines
- */
-
-bool Game::initializeAudio()
-{
-    fprintf(stdout, "Initializing audio system\r\n");
-
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
-    {
-        fprintf(stderr, "Unable to open audio channel\r\n");
-        return false;
-    }
-    SoundBank::manager.load("E14");
-
-    fprintf(stdout, "Finished initializing audio system\r\n");
-
-    return true;
-}
-
-/*
  *  Game initialization procedure
  */
 
@@ -116,7 +96,6 @@ bool Game::onInitialize()
 
     SDL_EnableUNICODE(SDL_ENABLE);
 
-    if(!initializeAudio()) return false;
     if(!initializeFonts()) return false;
 
     // Load necessary sprites for Loading screen
@@ -130,6 +109,8 @@ bool Game::onInitialize()
     SpriteBank::manager.load("LoginDialog");
     SpriteBank::manager.load("DialogText");
     SpriteBank::manager.getSprite(SPRID_DIALOGTEXT_BUTTONS).setColorKey();
+
+    SoundBank::manager.load("E14");
     return true;
 }
 
@@ -177,8 +158,6 @@ void Game::onCleanup()
 	delete currentScene;
 	delete previousScene;
 
-	Mix_CloseAudio();
-
 	TTF_CloseFont(Font::smallFont);
 	TTF_CloseFont(Font::normalFont);
 
@@ -197,6 +176,6 @@ void Game::changeScene(Scene* newScene)
 void Game::drawVersion(SDL_Surface* dest)
 {
 	char ver[20];
-	sprintf(ver, "V%d.%d", DEF_LOWERVERSION, DEF_UPPERVERSION);
+	snprintf(ver, 20, "V%d.%d", DEF_LOWERVERSION, DEF_UPPERVERSION);
 	Font::putTextSprF(dest, 14, 463, ver);
 }

@@ -4,8 +4,13 @@ CreateNewCharScene::CreateNewCharScene()
 {
 	itemFocus = NONE;
 	charNameEdit.setPosition(195, 110);
-	specialPoints = 14;
+	specialPoints = 10;
 	snprintf(pointsLeftLabel, 30, "Special stat points left: %d", specialPoints);
+
+	tmpSex = Player::FEMALE;
+	tmpRace = Player::BLACK;
+	underWearColor = 0;
+	hairStyle = 0;
 }
 
 CreateNewCharScene::~CreateNewCharScene()
@@ -16,7 +21,7 @@ CreateNewCharScene::~CreateNewCharScene()
 void CreateNewCharScene::onDraw(SDL_Surface* dest)
 {
 	SpriteBank::manager.draw(dest, 0, 0, SPRID_GAMEDIALOG_9, 0);
-	SpriteBank::manager.draw(dest, 194, 6, SPRID_DIALOGTEXT_BUTTONS, 69);
+	SpriteBank::manager.draw(dest, 2, -2, SPRID_DIALOGTEXT_BUTTONS, 69);
 
 	Font::putText(dest, 70, 110, "Character Name", Font::NORMAL, 0, 0, 0);
 	Font::putText(dest, 100, 157, "Gender", Font::NORMAL, 0, 0, 0);
@@ -63,7 +68,8 @@ void CreateNewCharScene::onDraw(SDL_Surface* dest)
 			Font::putAlignedText(dest, 370, 363, 214, "strength assigned. As STR is", Font::SMALL, 0, 0, 0);
 			Font::putAlignedText(dest, 370, 377, 214, "increased, character's maximum", Font::SMALL, 0, 0, 0);
 			Font::putAlignedText(dest, 370, 391, 214, "HP and maximum stamina increases.", Font::SMALL, 0, 0, 0);
-			Font::putAlignedText(dest, 370, 405, 214, "You can equip heavier weapons and shields.", Font::SMALL, 0, 0, 0);
+			Font::putAlignedText(dest, 370, 405, 214, "You can equip heavier weapons and shields.", Font::SMALL, 0, 0,
+					0);
 			break;
 		case VITALITY:
 			Font::putAlignedText(dest, 370, 349, 214, "Determine your character's initial", Font::SMALL, 0, 0, 0);
@@ -76,13 +82,15 @@ void CreateNewCharScene::onDraw(SDL_Surface* dest)
 			Font::putAlignedText(dest, 370, 349, 214, "Determine your character's initial", Font::SMALL, 0, 0, 0);
 			Font::putAlignedText(dest, 370, 363, 214, "dexterity assigned. As DEX is", Font::SMALL, 0, 0, 0);
 			Font::putAlignedText(dest, 370, 377, 214, "increased, evasion from physical hits", Font::SMALL, 0, 0, 0);
-			Font::putAlignedText(dest, 370, 391, 214, "(defense ratio) and hit probability increases.", Font::SMALL, 0, 0, 0);
+			Font::putAlignedText(dest, 370, 391, 214, "(defense ratio) and hit probability increases.", Font::SMALL, 0,
+					0, 0);
 			break;
 		case INTELLIGENCE:
 			Font::putAlignedText(dest, 370, 349, 214, "Determine your character's initial", Font::SMALL, 0, 0, 0);
 			Font::putAlignedText(dest, 370, 363, 214, "intelligence assigned. As INT is", Font::SMALL, 0, 0, 0);
 			Font::putAlignedText(dest, 370, 377, 214, "increased, more magic can be learned,", Font::SMALL, 0, 0, 0);
-			Font::putAlignedText(dest, 370, 391, 214, "casting probability and maximum MP increases.", Font::SMALL, 0, 0, 0);
+			Font::putAlignedText(dest, 370, 391, 214, "casting probability and maximum MP increases.", Font::SMALL, 0,
+					0, 0);
 			break;
 		case MAGIC:
 			Font::putAlignedText(dest, 370, 349, 214, "Determine your character's initial", Font::SMALL, 0, 0, 0);
@@ -110,14 +118,25 @@ void CreateNewCharScene::onDraw(SDL_Surface* dest)
 			Font::putAlignedText(dest, 370, 377, 214, "Return to the main selecting menu.", Font::NORMAL, 0, 0, 0);
 			break;
 	}
+	switch (tmpSex)
+	{
+		case Player::FEMALE:
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_MODELS, tmpRace);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_HAIR_STYLES, hairStyle);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_UNDERWEAR, underWearColor);
+			break;
+		case Player::MALE:
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_MODELS, tmpRace);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_HAIR_STYLES, hairStyle);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_UNDERWEAR, underWearColor);
+			break;
+	}
 
-	SpriteBank::manager.draw(dest, 380, 100, SPRID_ITEM_EQUIP_W_MODELS, 0);
+	SpriteBank::manager.draw(dest, 385, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == CREATE ? INTERFACE_BUTTON_CREATE
+			+ 1 : INTERFACE_BUTTON_CREATE);
 
-	SpriteBank::manager.draw(dest, 385, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == CREATE
-			? INTERFACE_BUTTON_CREATE + 1 : INTERFACE_BUTTON_CREATE);
-
-	SpriteBank::manager.draw(dest, 500, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == CANCEL
-			? INTERFACE_BUTTON_CANCEL + 1 : INTERFACE_BUTTON_CANCEL);
+	SpriteBank::manager.draw(dest, 500, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == CANCEL ? INTERFACE_BUTTON_CANCEL
+			+ 1 : INTERFACE_BUTTON_CANCEL);
 
 	charNameEdit.draw(dest);
 	Game::drawVersion(dest);
@@ -168,6 +187,90 @@ void CreateNewCharScene::onLButtonDown(int x, int y)
 {
 	if ((x > 195 && x < 295) && (y > 110 && y < 130))
 		charNameEdit.setEnabled(true);
+
+	if ((x > 236 && x < 278) && (y > 156 && y < 170))
+	{
+		SoundBank::manager.play("E14");
+
+		switch (tmpSex)
+		{
+			case Player::FEMALE:
+				tmpSex = Player::MALE;
+				break;
+			case Player::MALE:
+				tmpSex = Player::FEMALE;
+				break;
+		}
+	}
+
+	if ((x > 235 && x < 255) && (y > 172 && y < 186))
+	{
+		SoundBank::manager.play("E14");
+
+		switch (tmpRace)
+		{
+			case Player::BLACK:
+				tmpRace = Player::ASIAN;
+				break;
+			case Player::WHITE:
+				tmpRace = Player::BLACK;
+				break;
+			case Player::ASIAN:
+				tmpRace = Player::WHITE;
+				break;
+		}
+	}
+
+	if ((x > 258 && x < 278) && (y > 172 && y < 186))
+	{
+		SoundBank::manager.play("E14");
+
+		switch (tmpRace)
+		{
+			case Player::BLACK:
+				tmpRace = Player::WHITE;
+				break;
+			case Player::WHITE:
+				tmpRace = Player::ASIAN;
+				break;
+			case Player::ASIAN:
+				tmpRace = Player::BLACK;
+				break;
+		}
+	}
+	// Hair style change buttons
+	if ((x > 235 && x < 255) && (y > 188 && y < 202))
+	{
+		SoundBank::manager.play("E14");
+		hairStyle--;
+		if(hairStyle < 0)
+			hairStyle = 5;
+	}
+
+	if ((x > 258 && x < 278) && (y > 188 && y < 202))
+	{
+		SoundBank::manager.play("E14");
+		hairStyle++;
+		if(hairStyle > 5)
+			hairStyle = 0;
+	}
+
+	// Underwear change buttons
+	if ((x > 235 && x < 255) && (y > 220 && y < 234))
+	{
+		SoundBank::manager.play("E14");
+		underWearColor--;
+		if(underWearColor < 0)
+			underWearColor = 7;
+	}
+
+	if ((x > 258 && x < 278) && (y > 220 && y < 234))
+	{
+		SoundBank::manager.play("E14");
+		underWearColor++;
+		if(underWearColor > 7)
+			underWearColor = 0;
+	}
 
 	if ((x > 500 && x < 574) && (y > 445 && y < 465))
 		Game::getInstance().changeScene(new SelectCharScene);

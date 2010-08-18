@@ -59,7 +59,7 @@ void LoginScene::onLoop()
 void LoginScene::onDraw(SDL_Surface* dest)
 {
 	SpriteBank::manager.draw(dest, 0, 0, SPRID_LOGINDIALOG, LOGIN_BACKGROUND);
-	Surface::draw(dest, form, 39, 121);
+	Surface::draw(dest, form, 38, 121);
 
 	switch (loginFocus)
 	{
@@ -321,7 +321,7 @@ void LoginScene::onUser(Uint8 type, int code, void* data1, void* data2)
 								Game::getInstance().changeScene(new SelectCharScene(data));
 #ifdef DEF_CHECKVERSION
 							else
-							Game::getInstance().ChangeScene(new VersionNotMatchScene);
+							Game::getInstance().changeScene(new VersionNotMatchScene);
 #endif
 							return;
 						}
@@ -452,10 +452,9 @@ void LoginScene::accountBlocked(int Y, int M, int D)
 {
 	connectingBox.setVisible(false);
 	msgBox.setTitle("Connection Rejected!");
-	msgBox.setMessage("You can't login because account is blocked.");
-	/*char Txt[30];
-	 sprintf(Txt, "Block date: Until %dY %dM %dD", Y, M, D);
-	 DlgBox.AddText(Txt);*/
+	char Txt[80];
+	snprintf(Txt, 80, "You can't login because account is blocked.\nBlock date: Until %dY %dM %dD", Y, M, D);
+	msgBox.setMessage(Txt);
 	msgBox.setVisible(true);
 	msgBox.setEnabled(true);
 }

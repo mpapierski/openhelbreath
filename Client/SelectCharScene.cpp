@@ -24,7 +24,7 @@ SelectCharScene::~SelectCharScene()
 void SelectCharScene::onDraw(SDL_Surface* dest)
 {
 	SpriteBank::manager.draw(dest, 0, 0, SPRID_GAMEDIALOG_8, 0);
-	SpriteBank::manager.draw(dest, 230, 7, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CHARLIST);
+	SpriteBank::manager.draw(dest, 0, 0, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CHARLIST);
 
 	switch (slotSelect)
 	{
@@ -45,18 +45,18 @@ void SelectCharScene::onDraw(SDL_Surface* dest)
 	switch (buttonFocus)
 	{
 		case START:
-			SpriteBank::manager.draw(dest, 364, 288, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_START);
+			SpriteBank::manager.draw(dest, 0, 0, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_START);
 			Font::putAlignedText(dest, 98, 305, 259, "Log in with the selected character.", Font::NORMAL, 0, 0, 0);
 			Font::putAlignedText(dest, 98, 320, 259, "You can log in by clicking the button", Font::NORMAL, 0, 0, 0);
 			Font::putAlignedText(dest, 98, 335, 259, "or pressing the enter after selecting", Font::NORMAL, 0, 0, 0);
 			Font::putAlignedText(dest, 98, 350, 259, "character.", Font::NORMAL, 0, 0, 0);
 			break;
 		case CREATE_NEW_CHAR:
-			SpriteBank::manager.draw(dest, 364, 318, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CREATENEWCHAR);
+			SpriteBank::manager.draw(dest, 0, 0, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CREATENEWCHAR);
 			Font::putAlignedText(dest, 98, 320, 259, "Make a new character.", Font::NORMAL, 0, 0, 0);
 			break;
 		case DELETE_CHAR:
-			SpriteBank::manager.draw(dest, 364, 348, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_DELCHAR);
+			SpriteBank::manager.draw(dest, 0, 0, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_DELCHAR);
 			Font::putAlignedText(dest, 98, 290, 259, "Delete the selected character. Deleted", Font::NORMAL, 0, 0, 0);
 			Font::putAlignedText(dest, 98, 305, 259, "characters cannot be recovered. You", Font::NORMAL, 0, 0, 0);
 			Font::putAlignedText(dest, 98, 320, 259, "also cannot delete a character above", Font::NORMAL, 0, 0, 0);
@@ -65,18 +65,18 @@ void SelectCharScene::onDraw(SDL_Surface* dest)
 			Font::putAlignedText(dest, 98, 365, 259, "an e-mail to the game master.", Font::NORMAL, 0, 0, 0);
 			break;
 		case CHANGE_PASSWD:
-			SpriteBank::manager.draw(dest, 364, 378, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CHANGEPASSWD);
+			SpriteBank::manager.draw(dest, 0, 0, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_CHANGEPASSWD);
 			Font::putAlignedText(dest, 98, 320, 259, "Change the account password.", Font::NORMAL, 0, 0, 0);
 			break;
 		case LOGOUT:
-			SpriteBank::manager.draw(dest, 364, 408, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_LOGOUTBIG);
+			SpriteBank::manager.draw(dest, 0, 0, SPRID_DIALOGTEXT_BUTTONS, INTERFACE_BUTTON_LOGOUTBIG);
 			Font::putAlignedText(dest, 98, 320, 259, "Back to the main menu.", Font::NORMAL, 0, 0, 0);
 			break;
 		default:
 			;
 	}
 
-	for (int i = 0; i < charCount; i++)
+	/*for (int i = 0; i < charCount; i++)
 	{
 		char Txt[11];
 		memset(&Txt, 0, 11);
@@ -95,7 +95,7 @@ void SelectCharScene::onDraw(SDL_Surface* dest)
 		char LogOut[30];
 		snprintf(LogOut, 30, "Last Logout : %04d/%02d/%02d  %02d:%02d:%02d", charList[slotSelect].Year, charList[slotSelect].Month, charList[slotSelect].Day, charList[slotSelect].Hour, charList[slotSelect].Minute, charList[slotSelect].Second);
 		Font::putAlignedText(dest, 98, 425, 357-98, LogOut, Font::NORMAL, 0, 0, 0);
-	}
+	}*/
 
 	Font::putAlignedText(dest, 122, 456, 315-122, "Test Server", Font::NORMAL, 0, 0, 0);
 

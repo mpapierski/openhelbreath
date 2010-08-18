@@ -70,7 +70,7 @@ class MapBank
 		{
 			return m_Maps;
 		}
-		inline Map & getMap(std::string mapName)
+		inline Map & getMap(const std::string& mapName)
 		{
 			return m_Maps.find(mapName)->second;
 		}
