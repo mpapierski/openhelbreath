@@ -276,7 +276,6 @@ void LoadingScene::onLoop()
             SpriteBank::manager.loadCreatureSprites("GHKABS");
             SpriteBank::manager.loadCreatureSprites("GiantCrayfish");
             SpriteBank::manager.loadCreatureSprites("GiantFrog");
-        case 25:
             SpriteBank::manager.loadCreatureSprites("GiantLizard");
             SpriteBank::manager.loadCreatureSprites("GiantPlant");
             SpriteBank::manager.loadCreatureSprites("GMG");
@@ -313,6 +312,7 @@ void LoadingScene::onLoop()
             SpriteBank::manager.loadCreatureSprites("WereWolf");
             // TODO: This one fails to load. Figure out why
             //SpriteBank::manager.loadCreatureSprites("Scarecrow");
+            break;
         case 50:
             // players
             fprintf(stdout, "Loading player sprites\r\n");
@@ -363,7 +363,6 @@ void LoadingScene::onLoop()
             // TODO: this one has wrong color key
             SpriteBank::manager.loadPlayerWeapons("MPickAxe1", "WPickAxe1");
             SpriteBank::manager.loadPlayerWeapons("MStormBringer", "WStormbringer");
-
         break;
     case 73:
         {MapBank maps;
