@@ -49,8 +49,8 @@ int Game::onExecute()
 	return 0;
 }
 
-/*
- *  Font initialization
+/**
+ *Font initialization
  */
 
 bool Game::initializeFonts()
@@ -74,8 +74,8 @@ bool Game::initializeFonts()
     return true;
 }
 
-/*
- *  Game initialization procedure
+/**
+ *Game initialization procedure
  */
 
 bool Game::onInitialize()
@@ -125,6 +125,7 @@ void Game::onDraw()
 
 	mouseCursor.onDraw(mainWindow.getSurface());
 
+	//show fps
 	char fps[12];
 	snprintf(fps, 12, "fps: %d", mainWindow.getFps());
 	Font::putTextShaded(mainWindow.getSurface(), 0, 0, fps, Font::NORMAL, 255, 255, 255);

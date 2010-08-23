@@ -7,15 +7,43 @@ CreateNewCharScene::CreateNewCharScene()
 	specialPoints = 10;
 	snprintf(pointsLeftLabel, 30, "Special stat points left: %d", specialPoints);
 
-	tmpSex = Player::FEMALE;
-	tmpRace = Player::BLACK;
-	underWearColor = 0;
+	strength = 10;
+	vitality = 10;
+	dexterity = 10;
+	intelligence = 10;
+	magic = 10;
+	charisma = 10;
+
+	newPlayer.setSex(Player::FEMALE);
+	newPlayer.setRace(Player::BLACK);
+	newPlayer.setHairStyle(PLAYER_HAIRSTYLE_0);
+	newPlayer.setUnderwearColor(PLAYER_UNDERWEAR_COLOR_0);
+	newPlayer.setOrientation(ORIENTATION_RIGHT_DOWN);
+	newPlayer.setAction(PLAYER_ACTION_WALKING_PEACE_MODE);
+
+	orientationTimer.start();
+
+	underwearColor = 0;
 	hairStyle = 0;
 }
 
 CreateNewCharScene::~CreateNewCharScene()
 {
 
+}
+
+void CreateNewCharScene::onLoop()
+{
+	if (orientationTimer.getTicks() > 2500)
+	{
+		int tmp = newPlayer.orientation();
+		tmp++;
+		if(tmp > 7)
+			tmp = 0;
+
+		newPlayer.setOrientation(tmp);
+		orientationTimer.start();
+	}
 }
 
 void CreateNewCharScene::onDraw(SDL_Surface* dest)
@@ -40,6 +68,20 @@ void CreateNewCharScene::onDraw(SDL_Surface* dest)
 	Font::putText(dest, 440, 190, "Hit Points", Font::NORMAL, 0, 0, 0);
 	Font::putText(dest, 440, 206, "Mana Points", Font::NORMAL, 0, 0, 0);
 	Font::putText(dest, 440, 222, "Stamina Points", Font::NORMAL, 0, 0, 0);
+
+	char tmp[8];
+	snprintf(tmp, 8, "%d", strength);
+	Font::putText(dest, 203, 275, tmp, Font::NORMAL, 0, 0, 0);
+	snprintf(tmp, 8, "%d", vitality);
+	Font::putText(dest, 203, 291, tmp, Font::NORMAL, 0, 0, 0);
+	snprintf(tmp, 8, "%d", dexterity);
+	Font::putText(dest, 203, 307, tmp, Font::NORMAL, 0, 0, 0);
+	snprintf(tmp, 8, "%d", intelligence);
+	Font::putText(dest, 203, 323, tmp, Font::NORMAL, 0, 0, 0);
+	snprintf(tmp, 8, "%d", magic);
+	Font::putText(dest, 203, 339, tmp, Font::NORMAL, 0, 0, 0);
+	snprintf(tmp, 8, "%d", charisma);
+	Font::putText(dest, 203, 355, tmp, Font::NORMAL, 0, 0, 0);
 
 	switch (itemFocus)
 	{
@@ -106,9 +148,9 @@ void CreateNewCharScene::onDraw(SDL_Surface* dest)
 			break;
 		case WARRIOR:
 			break;
-		case MAGE:
+		case MAGICIAN:
 			break;
-		case PRIEST:
+		case MASTER:
 			break;
 		case CREATE:
 			Font::putAlignedText(dest, 370, 363, 214, "Create with the character", Font::NORMAL, 0, 0, 0);
@@ -118,19 +160,28 @@ void CreateNewCharScene::onDraw(SDL_Surface* dest)
 			Font::putAlignedText(dest, 370, 377, 214, "Return to the main selecting menu.", Font::NORMAL, 0, 0, 0);
 			break;
 	}
-	switch (tmpSex)
+	switch (newPlayer.sex())
 	{
 		case Player::FEMALE:
-			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_MODELS, tmpRace);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_MODELS, newPlayer.race());
 			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_HAIR_STYLES, hairStyle);
-			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_UNDERWEAR, underWearColor);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_W_UNDERWEAR, underwearColor);
 			break;
 		case Player::MALE:
-			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_MODELS, tmpRace);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_MODELS, newPlayer.race());
 			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_HAIR_STYLES, hairStyle);
-			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_UNDERWEAR, underWearColor);
+			SpriteBank::manager.draw(dest, 510, 265, SPRID_ITEM_EQUIP_M_UNDERWEAR, underwearColor);
 			break;
 	}
+
+	SpriteBank::manager.draw(dest, 60, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == WARRIOR ? INTERFACE_BUTTON_WARRIOR
+			+ 1 : INTERFACE_BUTTON_WARRIOR);
+
+	SpriteBank::manager.draw(dest, 145, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == MAGICIAN ? INTERFACE_BUTTON_MAGICIAN
+			+ 1 : INTERFACE_BUTTON_MAGICIAN);
+
+	SpriteBank::manager.draw(dest, 230, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == MASTER ? INTERFACE_BUTTON_MASTER
+			+ 1 : INTERFACE_BUTTON_MASTER);
 
 	SpriteBank::manager.draw(dest, 385, 445, SPRID_DIALOGTEXT_BUTTONS, itemFocus == CREATE ? INTERFACE_BUTTON_CREATE
 			+ 1 : INTERFACE_BUTTON_CREATE);
@@ -139,6 +190,7 @@ void CreateNewCharScene::onDraw(SDL_Surface* dest)
 			+ 1 : INTERFACE_BUTTON_CANCEL);
 
 	charNameEdit.draw(dest);
+	newPlayer.draw(dest, 500, 165);
 	Game::drawVersion(dest);
 }
 
@@ -163,18 +215,24 @@ void CreateNewCharScene::onMouseMove(int x, int y, int relX, int relY, bool left
 		itemFocus = HAIR_COLOR;
 	else if ((x > 100 && x < 280) && (y > 220 && y < 234))
 		itemFocus = UNDERWEAR_COLOR;
-	else if ((x > 100 && x < 280) && (y > 274 && y < 288))
+	else if ((x > 100 && x < 280) && (y > 275 && y < 290))
 		itemFocus = STRENGTH;
-	else if ((x > 100 && x < 280) && (y > 290 && y < 304))
+	else if ((x > 100 && x < 280) && (y > 291 && y < 306))
 		itemFocus = VITALITY;
-	else if ((x > 100 && x < 280) && (y > 306 && y < 320))
+	else if ((x > 100 && x < 280) && (y > 307 && y < 323))
 		itemFocus = DEXTERITY;
-	else if ((x > 100 && x < 280) && (y > 322 && y < 336))
+	else if ((x > 100 && x < 280) && (y > 324 && y < 339))
 		itemFocus = INTELLIGENCE;
-	else if ((x > 100 && x < 280) && (y > 336 && y < 350))
+	else if ((x > 100 && x < 280) && (y > 340 && y < 355))
 		itemFocus = MAGIC;
-	else if ((x > 100 && x < 280) && (y > 352 && y < 366))
+	else if ((x > 100 && x < 280) && (y > 356 && y < 371))
 		itemFocus = CHARISMA;
+	else if ((x > 60 && x < 134) && (y > 445 && y < 465))
+		itemFocus = WARRIOR;
+	else if ((x > 145 && x < 219) && (y > 445 && y < 465))
+		itemFocus = MAGICIAN;
+	else if ((x > 230 && x < 304) && (y > 445 && y < 465))
+		itemFocus = MASTER;
 	else if ((x > 385 && x < 459) && (y > 445 && y < 465))
 		itemFocus = CREATE;
 	else if ((x > 500 && x < 574) && (y > 445 && y < 465))
@@ -185,56 +243,61 @@ void CreateNewCharScene::onMouseMove(int x, int y, int relX, int relY, bool left
 
 void CreateNewCharScene::onLButtonDown(int x, int y)
 {
+	// Name TextEdit
 	if ((x > 195 && x < 295) && (y > 110 && y < 130))
+	{
+		SoundBank::manager.play("E14");
 		charNameEdit.setEnabled(true);
+	}
 
+	// Gender
 	if ((x > 236 && x < 278) && (y > 156 && y < 170))
 	{
 		SoundBank::manager.play("E14");
 
-		switch (tmpSex)
+		switch (newPlayer.sex())
 		{
 			case Player::FEMALE:
-				tmpSex = Player::MALE;
+				newPlayer.setSex(Player::MALE);
 				break;
 			case Player::MALE:
-				tmpSex = Player::FEMALE;
+				newPlayer.setSex(Player::FEMALE);
 				break;
 		}
 	}
 
+	// Race
 	if ((x > 235 && x < 255) && (y > 172 && y < 186))
 	{
 		SoundBank::manager.play("E14");
 
-		switch (tmpRace)
+		switch (newPlayer.race())
 		{
 			case Player::BLACK:
-				tmpRace = Player::ASIAN;
+				newPlayer.setRace(Player::ASIAN);
 				break;
 			case Player::WHITE:
-				tmpRace = Player::BLACK;
+				newPlayer.setRace(Player::BLACK);
 				break;
 			case Player::ASIAN:
-				tmpRace = Player::WHITE;
+				newPlayer.setRace(Player::WHITE);
 				break;
 		}
 	}
-
 	if ((x > 258 && x < 278) && (y > 172 && y < 186))
 	{
 		SoundBank::manager.play("E14");
 
-		switch (tmpRace)
+		switch (newPlayer.race())
 		{
 			case Player::BLACK:
-				tmpRace = Player::WHITE;
+				newPlayer.setRace(Player::WHITE);
 				break;
 			case Player::WHITE:
-				tmpRace = Player::ASIAN;
+				newPlayer.setRace(Player::ASIAN);
 				break;
 			case Player::ASIAN:
-				tmpRace = Player::BLACK;
+				newPlayer.setRace(Player::BLACK);
 				break;
 		}
 	}
@@ -244,34 +307,208 @@ void CreateNewCharScene::onLButtonDown(int x, int y)
 		SoundBank::manager.play("E14");
 		hairStyle--;
 		if(hairStyle < 0)
-			hairStyle = 5;
+			hairStyle = 7;
+		newPlayer.setHairStyle((hairStyle*12));
 	}
 
 	if ((x > 258 && x < 278) && (y > 188 && y < 202))
 	{
 		SoundBank::manager.play("E14");
 		hairStyle++;
-		if(hairStyle > 5)
+		if(hairStyle > 7)
 			hairStyle = 0;
+		newPlayer.setHairStyle((hairStyle*12));
 	}
 
 	// Underwear change buttons
-	if ((x > 235 && x < 255) && (y > 220 && y < 234))
+	if ((x > 235 && x < 256) && (y > 220 && y < 234))
 	{
 		SoundBank::manager.play("E14");
-		underWearColor--;
-		if(underWearColor < 0)
-			underWearColor = 7;
+		underwearColor--;
+		if(underwearColor < 0)
+			underwearColor = 7;
+		newPlayer.setUnderwearColor((96 + (underwearColor*12)));
 	}
 
 	if ((x > 258 && x < 278) && (y > 220 && y < 234))
 	{
 		SoundBank::manager.play("E14");
-		underWearColor++;
-		if(underWearColor > 7)
-			underWearColor = 0;
+		underwearColor++;
+		if(underwearColor > 7)
+			underwearColor = 0;
+		newPlayer.setUnderwearColor((96 + (underwearColor*12)));
 	}
 
+	// strength points
+	if ((x > 235 && x < 256) && (y > 274 && y < 288))
+	{
+		SoundBank::manager.play("E14");
+		if((strength < 14) && (specialPoints > 0))
+		{
+			strength++;
+			specialPoints--;
+			snprintf(pointsLeftLabel, 30, "Special stat points left: %d", specialPoints);
+		}
+	}
+	if ((x > 258 && x < 278) && (y > 274 && y < 288))
+	{
+		SoundBank::manager.play("E14");
+		if((strength > 10) && (specialPoints < 10))
+		{
+			strength--;
+			specialPoints++;
+			snprintf(pointsLeftLabel, 30, "Special stat points left: %d", specialPoints);
+		}
+	}
+
+	// vitality points
+	if ((x > 235 && x < 256) && (y > 290 && y < 304))
+	{
+		SoundBank::manager.play("E14");
+		if((vitality < 14) && (specialPoints > 0))
+		{
+			vitality++;
+			specialPoints--;
+			snprintf(pointsLeftLabel, 30, "Special stat points left: %d", specialPoints);
+		}
+	}
+	if ((x > 258 && x < 278) && (y > 290 && y < 304))
+	{
+		SoundBank::manager.play("E14");
+		if((vitality > 10) && (specialPoints < 10))
+		{
+			vitality--;
+			specialPoints++;
+			snprintf(pointsLeftLabel, 30, "Special stat points left: %d", specialPoints);
+		}
+	}
+
+	// dexterity points
+	if ((x > 235 && x < 256) && (y > 306 && y < 320))
+	{
+		SoundBank::manager.play("E14");
+		if((dexterity < 14) && (specialPoints > 0))
+		{
+			dexterity++;
+			specialPoints--;
+		}
+	}
+	if ((x > 258 && x < 278) && (y > 306 && y < 320))
+	{
+		SoundBank::manager.play("E14");
+		if((dexterity > 10) && (specialPoints < 10))
+		{
+			dexterity--;
+			specialPoints++;
+		}
+	}
+
+	// intelligence points
+	if ((x > 235 && x < 256) && (y > 322 && y < 336))
+	{
+		SoundBank::manager.play("E14");
+		if((intelligence < 14) && (specialPoints > 0))
+		{
+			intelligence++;
+			specialPoints--;
+		}
+	}
+	if ((x > 258 && x < 278) && (y > 322 && y < 336))
+	{
+		SoundBank::manager.play("E14");
+		if((intelligence > 10) && (specialPoints < 10))
+		{
+			intelligence--;
+			specialPoints++;
+		}
+	}
+
+	// magic points
+	if ((x > 235 && x < 256) && (y > 336 && y < 350))
+	{
+		SoundBank::manager.play("E14");
+		if((magic < 14) && (specialPoints > 0))
+		{
+			magic++;
+			specialPoints--;
+		}
+	}
+	if ((x > 258 && x < 278) && (y > 336 && y < 350))
+	{
+		SoundBank::manager.play("E14");
+		if((magic > 10) && (specialPoints < 10))
+		{
+			magic--;
+			specialPoints++;
+		}
+	}
+
+	// charisma points
+	if ((x > 235 && x < 256) && (y > 356 && y < 370))
+	{
+		SoundBank::manager.play("E14");
+		if((charisma < 14) && (specialPoints > 0))
+		{
+			charisma++;
+			specialPoints--;
+		}
+	}
+	if ((x > 258 && x < 278) && (y > 356 && y < 370))
+	{
+		SoundBank::manager.play("E14");
+		if((charisma > 10) && (specialPoints < 10))
+		{
+			charisma--;
+			specialPoints++;
+		}
+	}
+
+	// Warrior button
+	if ((x > 60 && x < 134) && (y > 445 && y < 465))
+	{
+		SoundBank::manager.play("E14");
+		strength = 14;
+		vitality = 12;
+		dexterity = 14;
+		intelligence = 10;
+		magic = 10;
+		charisma = 10;
+		specialPoints = 0;
+	}
+
+	// Magician button
+	if ((x > 145 && x < 219) && (y > 445 && y < 465))
+	{
+		SoundBank::manager.play("E14");
+		strength = 10;
+		vitality = 12;
+		dexterity = 10;
+		intelligence = 14;
+		magic = 14;
+		charisma = 10;
+		specialPoints = 0;
+	}
+
+	// Master button
+	if ((x > 230 && x < 304) && (y > 445 && y < 465))
+	{
+		SoundBank::manager.play("E14");
+		strength = 14;
+		vitality = 10;
+		dexterity = 10;
+		intelligence = 10;
+		magic = 12;
+		charisma = 14;
+		specialPoints = 0;
+	}
+
+	// Update special points label
+	snprintf(pointsLeftLabel, 30, "Special stat points left: %d", specialPoints);
+
+	// Cancel button
 	if ((x > 500 && x < 574) && (y > 445 && y < 465))
+	{
+		SoundBank::manager.play("E14");
 		Game::getInstance().changeScene(new SelectCharScene);
+	}
 }

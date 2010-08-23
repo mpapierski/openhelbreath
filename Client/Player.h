@@ -6,9 +6,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "SpriteID.h"
-#include "Timer.h"
 #include "SpriteBank.h"
+#include "Timer.h"
 
 class Player
 {
@@ -29,13 +28,16 @@ class Player
 		void setSex(Sex s);
 		Race race();
 		void setRace(Race r);
+		int hairStyle();
+		void setHairStyle(int hairStyle);
+		int underwearColor();
+		void setUnderwearColor(int underwear);
 		int orientation();
 		void setOrientation(int o);
 		int action();
 		void setAction(int a);
 
 		// equipment
-
 		int hauberk;
 		int leggings;
 		int chest;
@@ -51,6 +53,8 @@ class Player
 
 		Sex _sex;
 		Race _race;
+		int _hairStyle;
+		int _underwearColor;
 		int _orientation;
 		int _action; // running, standing, etc
 

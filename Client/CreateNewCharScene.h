@@ -9,6 +9,7 @@ class CreateNewCharScene : public Scene
 	public:
 		CreateNewCharScene();
 		virtual ~CreateNewCharScene();
+		void onLoop();
 		void onDraw(SDL_Surface* dest);
 		void onEvent(SDL_Event* eventSource);
 		void onMouseMove(int x, int y, int relX, int relY, bool left, bool right, bool middle);
@@ -32,8 +33,8 @@ class CreateNewCharScene : public Scene
 			MAGIC,
 			CHARISMA,
 			WARRIOR,
-			MAGE,
-			PRIEST,
+			MAGICIAN,
+			MASTER,
 			CREATE,
 			CANCEL
 		};
@@ -41,12 +42,15 @@ class CreateNewCharScene : public Scene
 		Focus itemFocus;
 		gui::TextEdit charNameEdit;
 		int specialPoints;
+		short strength, vitality, dexterity, intelligence, magic, charisma;
 		char pointsLeftLabel[30];
 		Player::Sex tmpSex;
 		Player::Race tmpRace;
 		int hairStyle;
-		// TODO: make hair color change (create temp surface, copy hair style, and put color)
-		int underWearColor;
+		// TODO: make hair color change (create temp surface, copy hair style from pak, and put color)
+		int underwearColor;
+		Player newPlayer;
+		Timer orientationTimer;
 };
 
 #endif // CREATENEWCHARSCENE_H

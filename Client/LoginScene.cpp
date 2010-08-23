@@ -274,13 +274,13 @@ void LoginScene::onUser(Uint8 type, int code, void* data1, void* data2)
 			char * WS = strdup(worldServerName.c_str()); // WHY.
 #ifdef DEBUG
 			puts("CONNECTED");
-			printf("Log in : %s/%s at %s\n", loginEdit.getText().c_str(),
-					passwordEdit.getText().c_str(), WS);
+			printf("Log in : %s/%s at %s\n", Game::getInstance().login.c_str(),
+					Game::getInstance().password.c_str(), WS);
 #endif
 			Packet p1(MSGID_REQUEST_LOGIN, DEF_MSGTYPE_CONFIRM);
 
-			p1.push<char> (loginEdit.getText().c_str(), 10);
-			p1.push<char> (passwordEdit.getText().c_str(), 10);
+			p1.push<char> (Game::getInstance().login.c_str(), 10);
+			p1.push<char> (Game::getInstance().password.c_str(), 10);
 			p1.push<char> (WS, 30);
 			delete WS;
 			p1.send(reinterpret_cast<NetSock*> (data1));
@@ -388,8 +388,11 @@ void LoginScene::connect()
 	SoundBank::manager.play("E14");
 	if (MLSocket != 0)
 		return;
+
+	Game::getInstance().login.assign(loginEdit.getText());
+	Game::getInstance().password.assign(passwordEdit.getText());
 #ifdef DEBUG
-	printf("Login: %s Password: %s\n", loginEdit.getText().c_str(), passwordEdit.getText().c_str());
+	printf("Login: %s Password: %s\n", Game::getInstance().login.c_str(), Game::getInstance().password.c_str());
 #endif
 
 	MLSocket = new Socket(DEF_SERVER_ADDR, DEF_SERVER_PORT);

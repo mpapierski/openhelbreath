@@ -48,8 +48,6 @@ void LoadingScene::onLoop()
     // HBTank.pak - heavy battle tank - 32 sprites inside
     // Howard.pak - howard npc - 8 sprites inside
     // item-dynamic.pak - fishes
-    // item-equipM.pak - m items in character screen
-    // item-equipW.pak - w items in character screen
     // item-ground.pak - items on ground
     // item-pack.pak - items in backpack
     // Kennedy.pak - kennedy npc - 8 sprites inside
@@ -63,7 +61,6 @@ void LoadingScene::onLoop()
     // McGaffin.pak - mcgaffin npc - 8 sprites inside
     // Mhr.pak - ???
     // monster.pak - minimap monsters
-    // Mpt.pak
     // MPTWK.pak
     // Msh.pak - shields
     // Msw.pak - swords
@@ -118,7 +115,6 @@ void LoadingScene::onLoop()
     // Wbo.pak
     // Whr.pak
     // William.pak - william npc - 8 sprites
-    // Wpt.pak
     // Wsh.pak
     // Wsw.pak
     // Wsw2.pak
@@ -278,6 +274,8 @@ void LoadingScene::onLoop()
             SpriteBank::manager.loadCreatureSprites("GiantFrog");
             SpriteBank::manager.loadCreatureSprites("GiantLizard");
             SpriteBank::manager.loadCreatureSprites("GiantPlant");
+            break;
+        case 25:
             SpriteBank::manager.loadCreatureSprites("GMG");
             SpriteBank::manager.loadCreatureSprites("GOL");
             SpriteBank::manager.loadCreatureSprites("GT-Arrow");
@@ -326,7 +324,8 @@ void LoadingScene::onLoop()
 
             // player equipment
             fprintf(stdout, "Loading player equipment sprites\r\n");
-
+            SpriteBank::manager.loadPlayerEquipment("Mhr", "Whr");
+            SpriteBank::manager.loadPlayerEquipment("Mpt", "Wpt");
             SpriteBank::manager.loadPlayerEquipment("MHauberk", "WHauberk");
             SpriteBank::manager.loadPlayerEquipment("MHHauberk1", "WHHauberk1");
             SpriteBank::manager.loadPlayerEquipment("MHHauberk2", "WHHauberk2");

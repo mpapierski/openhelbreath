@@ -52,6 +52,9 @@ class Game: public Event
 
 		Mouse mouseCursor;
 
+		std::string login;
+		std::string password;
+
 	private:
 		Game();
 		Game(const Game &);

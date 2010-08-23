@@ -9,13 +9,15 @@ Player::Player()
 {
     _sex = FEMALE;
     _race = ASIAN;
+    _hairStyle = PLAYER_HAIRSTYLE_0;
+    _underwearColor = PLAYER_UNDERWEAR_COLOR_0;
     _orientation = ORIENTATION_UP;
     _action = PLAYER_ACTION_STANDING_PEACE_MODE;
 
     // initial equipment
     hauberk = PLAYER_EQUIPMENT_UNEQUIPPED;
     leggings = PLAYER_EQUIPMENT_UNEQUIPPED;
-    chest = PLAYER_EQUIPMENT_ELVINE_HERO_ROBE;
+    chest = PLAYER_EQUIPMENT_UNEQUIPPED;
     feet = PLAYER_EQUIPMENT_UNEQUIPPED;
     cape = PLAYER_EQUIPMENT_UNEQUIPPED;
     head = PLAYER_EQUIPMENT_UNEQUIPPED;
@@ -23,13 +25,13 @@ Player::Player()
     secondary_weapon = PLAYER_EQUIPMENT_UNEQUIPPED;
 
     // just for test
-    hauberk = PLAYER_EQUIPMENT_ARESDEN_HERO_HAUBERK;
-    leggings = PLAYER_EQUIPMENT_CHAIN_HOSE;
+    /*hauberk = PLAYER_EQUIPMENT_ELVINE_HERO_HAUBERK;
+    leggings = PLAYER_EQUIPMENT_ELVINE_HERO_LEGGINGS;
     chest = PLAYER_EQUIPMENT_ELVINE_HERO_ROBE;
     feet = PLAYER_EQUIPMENT_SHOES;
-    //cape = PLAYER_EQUIPMENT_MANTLE;
+    cape = PLAYER_EQUIPMENT_ELVINE_HERO_MANTLE;
     //head = PLAYER_EQUIPMENT_HORNS_HELM;
-    primary_weapon = PLAYER_WEAPON_STORM_BRINGER;
+    //primary_weapon = PLAYER_WEAPON_STORM_BRINGER;*/
 
     framesCount = 0;
     resetTimerAndFrames();
@@ -175,8 +177,17 @@ void Player::draw(SDL_Surface* dest, int x, int y)
         // draw before model
         drawEquipment(dest, x, y, cape, equipmentFrameToShow);
     }
+
+    // draw model
     SpriteBank::manager.drawSprite(dest, SpriteBank::manager.players.at(player_sprite_id).at(player_animation_id), currentFrame, x, y);
 
+    // draw hair style
+    drawEquipment(dest, x, y, _hairStyle, equipmentFrameToShow);
+
+    // draw underwear
+    drawEquipment(dest, x, y, _underwearColor, equipmentFrameToShow);
+
+    // draw equipment
     drawEquipment(dest, x, y, leggings, equipmentFrameToShow);
     drawEquipment(dest, x, y, feet, equipmentFrameToShow);
     drawEquipment(dest, x, y, hauberk, equipmentFrameToShow);
@@ -242,4 +253,24 @@ void Player::setRace(Race r)
     _race = r;
 
     resetTimerAndFrames();
+}
+
+int Player::underwearColor()
+{
+	return _underwearColor;
+}
+
+void Player::setUnderwearColor(int color)
+{
+	_underwearColor = color;
+}
+
+int Player::hairStyle()
+{
+	return _hairStyle;
+}
+
+void Player::setHairStyle(int hairStyle)
+{
+	_hairStyle = hairStyle;
 }
