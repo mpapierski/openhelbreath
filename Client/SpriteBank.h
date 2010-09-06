@@ -11,7 +11,7 @@
 #include "SpriteID.h"
 #include "Player.h"
 
-#define SpriteArray std::vector<Sprite>
+typedef std::vector<Sprite> SpriteArray;
 
 class SpriteBank
 {
@@ -22,7 +22,6 @@ class SpriteBank
 		void load(const std::string& fileName);
 		void draw(SDL_Surface* dest, int x, int y, int sprID, int frameID);
 		void draw(SDL_Surface* dest, int x, int y, int w, int h, int sprID, int frameID);
-		void drawAnimated(SDL_Surface* dest, int x, int y, int sprID);
 		void cleanUp();
 
 		void drawSprite(SDL_Surface* dest, const Sprite& spr, int frame, int x, int y);

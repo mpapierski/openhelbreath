@@ -33,18 +33,25 @@ class Sprite
 		int getCurrentFrame() const;
 		void setMaxFrameH(int height);
 		int getMaxFrameH() const;
+		void setMaxFrameW(int width);
+		int getMaxFrameW() const;
 		void setColorKey();
-		void setColor(int r, int g, int b);
 
 		inline SDL_Surface* getSurface() const
 		{
 			return image;
 		}
 
-		void setSurface(SDL_Surface* source)
+		inline void setSurface(SDL_Surface* source)
 		{
 			this->image = SDL_ConvertSurface(source, source->format, source->flags);
 			SDL_FreeSurface(source);
+		}
+
+		inline void releaseSurface()
+		{
+			SDL_FreeSurface(image);
+			image = NULL;
 		}
 
 	private:
@@ -54,6 +61,7 @@ class Sprite
 		int framesCount;
 		int currentFrame;
 		int maxFrameH;
+		int maxFrameW;
 };
 
 #endif // SPRITE_H

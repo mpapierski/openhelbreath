@@ -66,18 +66,7 @@ void Window::update()
 
 void Window::initialize()
 {
-	// TODO: Move to separate function, add information about versions added in compilation proces
-	const SDL_version* sdlVersion = SDL_Linked_Version();
-	printf("Running with SDL version: %u.%u.%u\n", sdlVersion->major, sdlVersion->minor, sdlVersion->patch);
-
-	const SDL_version* imageVersion = IMG_Linked_Version();
-	printf("Running with SDL_image version: %u.%u.%u\n", imageVersion->major, imageVersion->minor, imageVersion->patch);
-
-	const SDL_version* ttfVersion = TTF_Linked_Version();
-	printf("Running with SDL_ttf version: %u.%u.%u\n", ttfVersion->major, ttfVersion->minor, ttfVersion->patch);
-
-	const SDL_version* mixerVersion = Mix_Linked_Version();
-	printf("Running with SDL_mixer version: %u.%u.%u\n", mixerVersion->major, mixerVersion->minor, mixerVersion->patch);
+	showDebugInfo();
 
     fprintf(stdout, "Initializing SDL system\r\n");
     if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER) != 0)
@@ -142,4 +131,22 @@ void Window::showCursor(bool show)
 	}
 	else
 		SDL_ShowCursor(SDL_ENABLE);
+}
+
+void Window::showDebugInfo()
+{
+	// TODO: add information about versions added in compilation proces
+	printf("Compiled with GCC version: %s\n", __VERSION__);
+
+	const SDL_version* sdlVersion = SDL_Linked_Version();
+	printf("Running with SDL version: %u.%u.%u\n", sdlVersion->major, sdlVersion->minor, sdlVersion->patch);
+
+	const SDL_version* imageVersion = IMG_Linked_Version();
+	printf("Running with SDL_image version: %u.%u.%u\n", imageVersion->major, imageVersion->minor, imageVersion->patch);
+
+	const SDL_version* ttfVersion = TTF_Linked_Version();
+	printf("Running with SDL_ttf version: %u.%u.%u\n", ttfVersion->major, ttfVersion->minor, ttfVersion->patch);
+
+	const SDL_version* mixerVersion = Mix_Linked_Version();
+	printf("Running with SDL_mixer version: %u.%u.%u\n", mixerVersion->major, mixerVersion->minor, mixerVersion->patch);
 }

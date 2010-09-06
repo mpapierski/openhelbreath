@@ -52,7 +52,6 @@ int Game::onExecute()
 /**
  *Font initialization
  */
-
 bool Game::initializeFonts()
 {
     Font::smallFont = TTF_OpenFont("FONTS/VeraSe.ttf", 10);
@@ -77,7 +76,6 @@ bool Game::initializeFonts()
 /**
  *Game initialization procedure
  */
-
 bool Game::onInitialize()
 {
     #ifdef DEF_FULLSCREEN
@@ -106,11 +104,7 @@ bool Game::onInitialize()
     SpriteBank::manager.load("SPRFONTS");
     SpriteBank::manager.getSprite(SPRID_SPRFONT).setColorKey();
     SpriteBank::manager.load("New-Dialog");
-    SpriteBank::manager.load("LoginDialog");
-    SpriteBank::manager.load("DialogText");
-    SpriteBank::manager.getSprite(SPRID_DIALOGTEXT_BUTTONS).setColorKey();
 
-    SoundBank::manager.load("E14");
     return true;
 }
 
@@ -125,10 +119,8 @@ void Game::onDraw()
 
 	mouseCursor.onDraw(mainWindow.getSurface());
 
-	//show fps
-	char fps[12];
-	snprintf(fps, 12, "fps: %d", mainWindow.getFps());
-	Font::putTextShaded(mainWindow.getSurface(), 0, 0, fps, Font::NORMAL, 255, 255, 255);
+	//draw fps
+	drawFPS(mainWindow.getSurface());
 }
 
 void Game::onEvent(SDL_Event* eventSource)
@@ -172,6 +164,13 @@ void Game::changeScene(Scene* newScene)
 {
 	previousScene = currentScene;
 	currentScene = newScene;
+}
+
+void Game::drawFPS(SDL_Surface* dest)
+{
+	char fps[12];
+	snprintf(fps, 12, "fps: %d", mainWindow.getFps());
+	Font::putTextShaded(dest, 0, 0, fps, Font::NORMAL, 255, 255, 255);
 }
 
 void Game::drawVersion(SDL_Surface* dest)

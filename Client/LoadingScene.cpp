@@ -225,6 +225,9 @@ void LoadingScene::onLoop()
     switch(percent)
     {
         case 0:
+			SpriteBank::manager.load("LoginDialog");
+			SpriteBank::manager.load("DialogText");
+			SpriteBank::manager.getSprite(SPRID_DIALOGTEXT_BUTTONS).setColorKey();
             SpriteBank::manager.load("GameDialog");
             SpriteBank::manager.getSprite(SPRID_GAMEDIALOG_3).setColorKey();
             SpriteBank::manager.load("item-equipM");
@@ -235,6 +238,8 @@ void LoadingScene::onLoop()
             SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_MODELS).setColorKey();
             SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_UNDERWEAR).setColorKey();
             SpriteBank::manager.getSprite(SPRID_ITEM_EQUIP_W_HAIR_STYLES).setColorKey();
+
+            SoundBank::manager.load("E14");
             break;
         case 1:
             // monsters
@@ -370,8 +375,8 @@ void LoadingScene::onLoop()
         if (maps.loadMap("middleland"))
         {
                 Debug() << "OK";
-                Debug() << "W" << maps.getMap("middleland").getSizeX();
-                Debug() << "H" << maps.getMap("middleland").getSizeY();
+                //Debug() << "W" << maps.getMap("middleland").getSizeX();
+                //Debug() << "H" << maps.getMap("middleland").getSizeY();
         }
         else
                 Debug() << "middleland loanding fail";

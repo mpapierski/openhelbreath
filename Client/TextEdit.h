@@ -29,7 +29,7 @@ namespace gui
 		private:
 			void create();
 
-			SDL_Surface *cursorSurface;
+			SDL_Surface* cursorSurface;
 			std::string widgetText;
 			bool passwordMode;
 			bool cursorVisible;

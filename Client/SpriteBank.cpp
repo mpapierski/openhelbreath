@@ -210,8 +210,15 @@ SpriteArray SpriteBank::getSpritesFromPakFile(const std::string& fileName)
         {
             if (tempSprite.getFrameRect(z).h > tempSprite.getFrameRect(max).h) max = z;
         }
-
         tempSprite.setMaxFrameH(tempSprite.getFrameRect(max).h);
+
+        max = 0;
+		for (int z = 0; z < framesCount; z++)
+		{
+			if (tempSprite.getFrameRect(z).w > tempSprite.getFrameRect(max).w)
+				max = z;
+		}
+		tempSprite.setMaxFrameW(tempSprite.getFrameRect(max).w);
 
         bitmapFileLoc = spriteInfo[i].offset + (108 + (12 * framesCount));
         bitmapFileSize = spriteInfo[i].size - (108 + (12 * framesCount));
@@ -322,6 +329,14 @@ void SpriteBank::load(const std::string& fileName)
 		}
 		tempSprite.setMaxFrameH(tempSprite.getFrameRect(max).h);
 
+		max = 0;
+		for (int z = 0; z < framesCount; z++)
+		{
+			if (tempSprite.getFrameRect(z).w > tempSprite.getFrameRect(max).w)
+				max = z;
+		}
+		tempSprite.setMaxFrameW(tempSprite.getFrameRect(max).w);
+
 		bitmapFileLoc = spriteInfo[i].offset + (108 + (12 * framesCount));
 		bitmapFileSize = spriteInfo[i].size - (108 + (12 * framesCount));
 
@@ -344,6 +359,7 @@ void SpriteBank::load(const std::string& fileName)
 		delete[] bitmapFile;
 	}
 
+	printf("Not animated: %s.pak loaded. %i sprites found\r\n", fileName.c_str(), spritesCount);
 	fclose(pakFile);
 }
 
@@ -372,38 +388,20 @@ void SpriteBank::draw(SDL_Surface* dest, int x, int y, int w, int h, int sprID, 
 			SpritesContainer[sprID].getFrameRect(frameID).y, w, h);
 }
 
-void SpriteBank::drawAnimated(SDL_Surface* dest, int x, int y, int sprID)
-{
-	if ((SpritesContainer.size() - 1) < static_cast<unsigned int> (sprID))
-		return;
-
-	int frame, tmpX, tmpY;
-
-	SpritesContainer[sprID].update();
-
-	frame = SpritesContainer[sprID].getCurrentFrame();
-
-	tmpX = x + SpritesContainer[sprID].getFrameRect(frame).xOffset;
-	tmpY = y + SpritesContainer[sprID].getFrameRect(frame).yOffset;
-
-	Surface::draw(dest, SpritesContainer[sprID].getSurface(), tmpX, tmpY,
-			SpritesContainer[sprID].getFrameRect(frame).x,
-			SpritesContainer[sprID].getFrameRect(frame).y,
-			SpritesContainer[sprID].getFrameRect(frame).w,
-			SpritesContainer[sprID].getFrameRect(frame).h);
-}
-
 void SpriteBank::cleanUp()
 {
     for (unsigned int i = 0; i < SpritesContainer.size(); i++)
     {
-        SDL_FreeSurface(SpritesContainer[i].getSurface());
+    	SpritesContainer[i].releaseSurface();
     }
+    SpritesContainer.clear();
 
     for (unsigned int i = 0 ; i < creatures.size(); i++)
     {
         SpriteArray arr = creatures[i];
-        for(unsigned int j = 0; j < arr.size(); j++) SDL_FreeSurface(arr[j].getSurface());
+        for(unsigned int j = 0; j < arr.size(); j++)
+			arr[j].releaseSurface();
+
         arr.clear();
     }
     creatures.clear();
@@ -411,7 +409,9 @@ void SpriteBank::cleanUp()
     for (unsigned int i = 0 ; i < players.size(); i++)
     {
         SpriteArray arr = players[i];
-        for(unsigned int j = 0; j < arr.size(); j++) SDL_FreeSurface(arr[j].getSurface());
+        for(unsigned int j = 0; j < arr.size(); j++)
+			arr[j].releaseSurface();
+
         arr.clear();
     }
     players.clear();

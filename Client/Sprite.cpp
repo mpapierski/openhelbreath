@@ -5,7 +5,12 @@ static FrameSize emptyFrameRect = { 0, 0, 0, 0, 0, 0 };
 Sprite::Sprite()
 {
 	image = NULL;
-        currentFrame = 0;
+	currentFrame = 0;
+}
+
+Sprite::~Sprite()
+{
+
 }
 
 void Sprite::update()
@@ -65,6 +70,16 @@ void Sprite::setMaxFrameH(int height)
 int Sprite::getMaxFrameH() const
 {
 	return maxFrameH;
+}
+
+void Sprite::setMaxFrameW(int width)
+{
+	maxFrameW = width;
+}
+
+int Sprite::getMaxFrameW() const
+{
+	return maxFrameW;
 }
 
 void Sprite::setColorKey()
@@ -127,14 +142,4 @@ void Sprite::setColorKey()
 
 	SDL_SetColorKey(image, SDL_SRCCOLORKEY | SDL_RLEACCEL, SDL_MapRGB(
 							image->format, color.r, color.g, color.b));
-}
-
-void Sprite::setColor(int r, int g, int b)
-{
-
-}
-
-Sprite::~Sprite()
-{
-
 }

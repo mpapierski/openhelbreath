@@ -32,10 +32,10 @@
 class Game: public Event
 {
 	public:
-		static Game &getInstance()
+		static Game& getInstance()
 		{
-			static Game Instance;
-			return Instance;
+			static Game instance;
+			return instance;
 		}
 
 		int onExecute();
@@ -48,6 +48,7 @@ class Game: public Event
 		void onQuit();
 		void onCleanup();
 		void changeScene(Scene* newScene);
+		void drawFPS(SDL_Surface* dest);
 		static void drawVersion(SDL_Surface* dest);
 
 		Mouse mouseCursor;

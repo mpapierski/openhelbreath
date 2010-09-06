@@ -27,6 +27,7 @@ class Window : public Event
 		void setKeyRepeat(int delay, int interval);
 		void setCursorPos(unsigned short x, unsigned short y);
 		void showCursor(bool show);
+		void showDebugInfo();
 
 	private:
 		void initialize();
