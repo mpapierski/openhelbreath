@@ -117,6 +117,7 @@ class ClientSocket(object):
 	def __init__(self, (client, address)):
 		self.client = client
 		self.address = address[0]
+		self.buffer = ""
 		
 	def disconnect(self):
 		global ClientLocker

@@ -28,16 +28,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import socket, os, sys, select, struct, time, re, random, operator
+import socket, os, sys, select, struct, time, re, random, operator, datetime
 from Enum import Enum
 from threading import Thread, Semaphore, Event
 from NetMessages import Packets
-from GlobalDef import DEF, Account, Logfile, Version
+from GlobalDef import DEF, AccountInfo, Logfile, Version
 from Helpers import Callbacks, PutLogFileList, PutLogList
 from Sockets import ServerSocket
-from Database import DatabaseDriver
+from Database import Account, Character, BankItem, Item, Skill, DatabaseDriver
 from collections import namedtuple
 from Timer import TimerManager
+
+from sqlalchemy.exc import *
 
 nozeros = lambda x: x[0:x.find('\x00')] if x.find('\x00')>-1 else x
 fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
@@ -138,11 +140,14 @@ class CLoginServer(object):
 		"""
 		if not self.ReadProgramConfigFile("LServer.cfg"):
 			return False
+		
 		self.Database = DatabaseDriver()
-		if not self.Database.Initialize():
+		if not self.Database.Initialize(self.DatabaseAddress):
 			PutLogList("(!) DatabaseDriver initialization fails!")
 			return False
+		
 		return True
+		
 		
 	def GateServer_OnConnect(self, sender):
 		"""
@@ -196,105 +201,97 @@ class CLoginServer(object):
 			for j in i.GameServerSocket:
 				if j == sender:
 					return i
-		
 				
 	def GateServer_OnReceive(self, sender, buffer):
 		"""
 			Triggered when any data is available on Sock's buffer
 		"""
-		size = len(buffer)
-		try:
-			format = '<Bh'
-			header_size = struct.calcsize(format)
-			if len(buffer) < header_size:
-				raise Exception
-			s = struct.unpack(format, buffer[:header_size])
-			Header = namedtuple('Header', 'cKey dwSize')._make(s)
-			buffer = buffer[header_size:]
-		except:
-			sender.disconnect()
-			return
+		sender.buffer += buffer
+		while len(sender.buffer):
+			buffer = "" #
+			if len(sender.buffer) >= 3:
+				s = struct.unpack('<Bh', sender.buffer[:3])
+				Header = namedtuple('Header', 'cKey dwSize')._make(s)
+				if Header.dwSize >= len(sender.buffer) - 3:
+					buffer = sender.buffer[:Header.dwSize]
+					sender.buffer = sender.buffer[Header.dwSize:]
+					buffer = buffer[3:]
+					
+			if not buffer:
+				return
+				
+			if Header.cKey > 0:
+				Decode = lambda buffer, dwSize, cKey: "".join(map(lambda n: (lambda asdf: chr(asdf & 255))((ord(buffer[n]) ^ (cKey ^ (dwSize - n))) - (n ^ cKey)), range(len(buffer))))
+				buffer = Decode(buffer, Header.dwSize-3, Header.cKey)
+					
+			MsgID = struct.unpack('<L', buffer[:4])[0]
+			RawBuffer = buffer
+			buffer = buffer[4:]
 			
-		if Header.dwSize != size or size < 4 or Header.dwSize < 4:
-			PutLogList("(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address, Logfile.HACK)
-			sender.disconnect()
-			return
-
-		if Header.cKey > 0:
-			Decode = lambda buffer, dwSize, cKey: "".join(map(lambda n: (lambda asdf: chr(asdf & 255))((ord(buffer[n]) ^ (cKey ^ (dwSize - n))) - (n ^ cKey)), range(len(buffer))))
-			buffer = Decode(buffer, Header.dwSize-3, Header.cKey)
+			if MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVER:
+				self.RegisterGameServer(sender, buffer)
 				
-		MsgID = struct.unpack('<L', buffer[:4])[0]
-		RawBuffer = buffer
-		buffer = buffer[4:]
-		
-		if MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVER:
-			self.RegisterGameServer(sender, buffer)
-			
-		elif MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVERSOCKET:
-			self.RegisterGameServerSocket(sender, buffer)
-			
-		elif MsgID == Packets.MSGID_GAMESERVERALIVE:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.GameServerAliveHandler(GS, buffer)
+			elif MsgID == Packets.MSGID_REQUEST_REGISTERGAMESERVERSOCKET:
+				self.RegisterGameServerSocket(sender, buffer)
 				
-		elif MsgID == Packets.MSGID_REQUEST_PLAYERDATA:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.ProcessRequestPlayerData(sender, buffer, GS)
+			elif MsgID == Packets.MSGID_GAMESERVERALIVE:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.GameServerAliveHandler(GS, buffer)
+					
+			elif MsgID == Packets.MSGID_REQUEST_PLAYERDATA:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.ProcessRequestPlayerData(sender, buffer, GS)
 
-		elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.ServerStockMsgHandler(GS, RawBuffer);
+			elif MsgID == Packets.MSGID_SERVERSTOCKMSG:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.ServerStockMsgHandler(GS, RawBuffer);
 
-		elif MsgID in [Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT, Packets.MSGID_REQUEST_SAVEPLAYERDATA_REPLY]:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.ProcessClientLogout(buffer, GS, True)
-				
-		elif MsgID == Packets.MSGID_REQUEST_NOSAVELOGOUT:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.ProcessClientLogout(buffer, GS, False)
+			elif MsgID in [Packets.MSGID_REQUEST_SAVEPLAYERDATALOGOUT, Packets.MSGID_REQUEST_SAVEPLAYERDATA_REPLY]:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.ProcessClientLogout(buffer, GS, True)
+					
+			elif MsgID == Packets.MSGID_REQUEST_NOSAVELOGOUT:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.ProcessClientLogout(buffer, GS, False)
 
-		elif MsgID == Packets.MSGID_ENTERGAMECONFIRM:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.EnterGameConfirm(buffer, GS)
+			elif MsgID == Packets.MSGID_ENTERGAMECONFIRM:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.EnterGameConfirm(buffer, GS)
 
-		elif MsgID == Packets.MSGID_GAMEMASTERLOG:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				PutLogFileList(buffer, Logfile.GM, True)
+			elif MsgID == Packets.MSGID_GAMEMASTERLOG:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					PutLogFileList(buffer, Logfile.GM, True)
 
-		elif MsgID in [Packets.MSGID_GAMEITEMLOG, Packets.MSGID_ITEMLOG]:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				PutLogFileList(buffer, Logfile.ITEM, True)
+			elif MsgID in [Packets.MSGID_GAMEITEMLOG, Packets.MSGID_ITEMLOG]:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					PutLogFileList(buffer, Logfile.ITEM, True)
 
-		elif MsgID == Packets.MSGID_GAMECRUSADELOG:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				PutLogFileList(buffer, Logfile.CRUSADE, True)
+			elif MsgID == Packets.MSGID_GAMECRUSADELOG:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					PutLogFileList(buffer, Logfile.CRUSADE, True)
 
-		elif MsgID == Packets.MSGID_REQUEST_SETACCOUNTWAITSTATUS:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.SetAccountServerChangeStatus(buffer, True)
-				
-		elif MsgID in [Packets.MSGID_REQUEST_CREATENEWGUILD, 
-						Packets.MSGID_REQUEST_DISBANDGUILD,
-						Packets.MSGID_REQUEST_UPDATEGUILDINFO_NEWGUILDSMAN,
-						Packets.MSGID_REQUEST_UPDATEGUILDINFO_DELGUILDSMAN]:
-			GS = self.SockToGS(sender)
-			if GS != None and GS.IsRegistered:
-				self.GuildHandler(MsgID, buffer, GS)
-				
-		else:
-			if MsgID in Packets:
-				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
+			elif MsgID == Packets.MSGID_REQUEST_SETACCOUNTWAITSTATUS:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.SetAccountServerChangeStatus(buffer, True)
+					
+			elif MsgID in [Packets.MSGID_REQUEST_CREATENEWGUILD, 
+							Packets.MSGID_REQUEST_DISBANDGUILD,
+							Packets.MSGID_REQUEST_UPDATEGUILDINFO_NEWGUILDSMAN,
+							Packets.MSGID_REQUEST_UPDATEGUILDINFO_DELGUILDSMAN]:
+				GS = self.SockToGS(sender)
+				if GS != None and GS.IsRegistered:
+					self.GuildHandler(MsgID, buffer, GS)
+					
 			else:
 				PutLogFileList("MsgID: 0x%08X %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETGS)
 				
@@ -345,7 +342,7 @@ class CLoginServer(object):
 			Reading HG cfgs in order
 		"""
 		Files = ["Item.cfg", "Item2.cfg", "Item3.cfg", "Item4.cfg", "BuildItem.cfg",
-				"DupItemID.cfg", "Magic.cfg", "noticement.txt", 
+				"DupItemID.cfg", "Magic.cfg", "NPCItem.cfg", "noticement.txt", 
 				"NPC.cfg", "Potion.cfg", "Quest.cfg", "Skill.cfg",
 				"AdminSettings.cfg", "Settings.cfg"]
 		self.Config = {}
@@ -402,6 +399,10 @@ class CLoginServer(object):
 				if token[0] == "world-server-name":
 					self.WorldServerName = token[1]
 					PutLogList("(*) World Server Name : %s" % self.WorldServerName)
+					
+				if token[0] == "database-address":
+					self.DatabaseAddress = token[1]
+					PutLogList("(*) Database address: %s" % self.DatabaseAddress)
 		finally:
 			fin.close()
 		return True
@@ -521,7 +522,8 @@ class CLoginServer(object):
 					(Packets.MSGID_QUESTCONFIGURATIONCONTENTS, 'Quest'),
 					(Packets.MSGID_SKILLCONFIGURATIONCONTENTS, 'Skill'), 
 					(Packets.MSGID_ADMINSETTINGSCONFIGURATIONCONTENTS, 'AdminSettings'),
-					(Packets.MSGID_SETTINGSCONFIGURATIONCONTENTS, 'Settings')
+					(Packets.MSGID_SETTINGSCONFIGURATIONCONTENTS, 'Settings'),
+					(Packets.MSGID_NPCITEMCONFIGCONTENTS, 'NPCItem')
 				)
 				
 		for packet_id, key in Order:
@@ -560,7 +562,9 @@ class CLoginServer(object):
 			PutLogList("GameServerAliveHandler: Size mismatch!")
 			return	
 		(MsgType, TotalPlayers) = struct.unpack('<hh', data[:4])
+		print "PING"
 		if MsgType == Packets.DEF_MSGTYPE_CONFIRM:
+			
 			GS.AliveResponseTime = time.time()
 			GS.TotalPlayers = TotalPlayers
 			
@@ -574,24 +578,18 @@ class CLoginServer(object):
 		PutLogList("(*) MainSocket -> Server open")
 		
 	def MainSocket_OnReceive(self, sender, buffer):
-		size = len(buffer)
-		PutLogList("(*) MainSocket -> Received %d bytes" % size)
-		try:
-			format = '<Bh'
-			header_size = struct.calcsize(format)
-			if len(buffer) < header_size:
-				raise Exception
-			s = struct.unpack(format, buffer[:header_size])
+		sender.buffer += buffer
+		buffer = "" #
+		if len(sender.buffer) >= 3:
+			s = struct.unpack('<Bh', sender.buffer[:3])
 			Header = namedtuple('Header', 'cKey dwSize')._make(s)
-			buffer = buffer[header_size:]
-		except:
-			PutLogList("[%s] Except in MainSocket_OnReceive" % sender.address, Logfile.HACK)
-			sender.disconnect()
-			return
-			
-		if Header.dwSize != size or size < 4 or Header.dwSize < 4:
-			PutLogList("(!) %s Header.dwSize does not match buffer size. Hack!" % sender.address, Logfile.HACK)
-			sender.disconnect()
+			if Header.dwSize >= len(sender.buffer) - 3:
+				buffer = sender.buffer[:Header.dwSize]
+				sender.buffer = sender.buffer[Header.dwSize:]
+				buffer = buffer[3:]
+				size = len(buffer)
+				
+		if not buffer:
 			return
 
 		if Header.cKey > 0:
@@ -614,10 +612,7 @@ class CLoginServer(object):
 		elif MsgID == Packets.MSGID_REQUEST_ENTERGAME:
 			self.ProcessClientRequestEnterGame(sender, buffer)
 		else:
-			if MsgID in Packets:
-				PutLogFileList("MsgID: %s (0x%08X) %db * %s" % (Packets.reverse_lookup_without_mask(MsgID), MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
-			else:
-				PutLogFileList("MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
+			PutLogFileList("MsgID: (0x%08X) %db * %s" % (MsgID, len(buffer), repr(buffer)), Logfile.PACKETMS)
 			
 	def MainSocket_OnClose(self, sender):
 		pass
@@ -670,31 +665,36 @@ class CLoginServer(object):
 			self.SendMsgToClient(sender, SendData)
 			return
 			
-		OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
-		if OK[0] == Account.OK:
+		#OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
+		account = Account.ByName(self.Database.session(), Packet.AccountName)		
+		"""if account:
 			PutLogList("(*) Login success: %s" % Packet.AccountName)
 			SendData = struct.pack('<L3hB12s', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM,
 												Version.UPPER, Version.LOWER,
 												0, #account status
 												'') #dates, converted to 12 * \0x00
-			ChLst = self.GetCharList(Packet.AccountName, Packet.AccountPassword)
+			ChLst = self.GetCharList(account)
 			SendData += ChLst
-			self.SendMsgToClient(sender, SendData)
-			
-		elif OK[0] == Account.WRONGPASS:
-			PutLogList( "(!) Wrong password: Account[ %s ] - Correct Password[ %s ] - Password received[ %s ]" % (Packet.AccountName, OK[2], OK[1]), Logfile.ERROR)
-			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
-			self.SendMsgToClient(sender, SendData)
-			
-		elif OK[0] == Account.NOTEXISTS:
+			self.SendMsgToClient(sender, SendData)"""
+		if not account:
 			PutLogList("(!) Account does not exists: %s" % Packet.AccountName, Logfile.ERROR)
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGACCOUNT)
 			self.SendMsgToClient(sender, SendData)
 			
-		elif OK[0] == Account.BLOCKED:
-			PutLogList("(!) Account %s blocked until %d-%d-%d and tries to login!" % (Packet.AccountName, OK[1], OK[2], OK[3]), Logfile.ERROR)
-			SendData = struct.pack('<Lh3i', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_REJECT, 
-												OK[1], OK[2], OK[3]) #Y-m-d
+		elif account.Password != Packet.AccountPassword:
+			PutLogList("(!) Wrong password: Account[ %s ] - Correct Password[ %s ] - Password received[ %s ]" % (Packet.AccountName, account.Password, Packet.AccountPassword), Logfile.ERROR)
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
+			self.SendMsgToClient(sender, SendData)
+		else:
+			PutLogList("(*) Login success: %s" % Packet.AccountName)
+			SendData = struct.pack('<L3hB12x', Packets.MSGID_RESPONSE_LOG, Packets.DEF_MSGTYPE_CONFIRM,
+												Version.UPPER, Version.LOWER,
+												0
+												#+ dates(?) as 12 pad bytes
+												)
+			
+			ChLst = self.GetCharList(account)
+			SendData += ChLst
 			self.SendMsgToClient(sender, SendData)
 			
 	def ChangePassword(self, sender, buffer):
@@ -709,32 +709,32 @@ class CLoginServer(object):
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
 			return
-
-		OK = self.Database.CheckAccountLogin(Packet.Login, Packet.Password)
 		
-		if Packet.NewPass1 != Packet.NewPass2 or len(Packet.NewPass1) < 8 or len(Packet.NewPass2) < 8:
+#		OK = self.Database.CheckAccountLogin(Packet.Login, Packet.Password)
+		session = self.Database.session()
+		account = Account.ByName(session, Packet.Login)
+				
+		if Packet.NewPass1 != Packet.NewPass2 or len(Packet.NewPass1) < 8 or len(Packet.NewPass2) < 8 or not account:
 			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (Password confirmation)" % (Packet.Login, Packet.Password, Packet.NewPass1))
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
 			return
-			
-		if OK[0] == Account.WRONGPASS:
+		
+		if account.Password != Packet.Password:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDMISMATCH)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (Password mismatch)" % (Packet.Login, Packet.Password, Packet.NewPass1))
-			return
-			
-		if OK[0] != Account.OK:
-			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
-			self.SendMsgToClient(sender, SendData)
-			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (%s)" % (Packet.Login, Packet.Password, Packet.NewPass1, Account.reverse_lookup_without_mask(OK[0])))
-			return
-			
-		if self.Database.ChangePassword(Packet.Login, Packet.Password, Packet.NewPass1):
+			return		
+		
+		account.Password = Packet.NewPass1
+		
+		try:
+			session.commit()
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGESUCCESS)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(*) Password changed on account %s (%s -> %s) SUCCESS!" % (Packet.Login, Packet.Password, Packet.NewPass1))
-		else:
+		except:	
+			session.rollback()
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_CHANGEPASSWORD, Packets.DEF_LOGRESMSGTYPE_PASSWORDCHANGEFAIL)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Password changed on account %s (%s -> %s) FAIL! (Database failed)" % (Packet.Login, Packet.Password, Packet.NewPass1))
@@ -751,23 +751,30 @@ class CLoginServer(object):
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
 			return
-			
-		OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
-		if OK[0] != Account.OK or Packet.PlayerName == "" or Packet.WS != self.WorldServerName:
+		
+		sess = self.Database.session()
+		account = Account.Match(sess, Packet.AccountName, Packet.AccountPassword)
+		if not account or Packet.PlayerName == "" or Packet.WS != self.WorldServerName:
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Create new character -> Wrong account data on creating new character!", Logfile.HACK)
 			return
-			
-		if self.Database.CharacterExists(Packet.PlayerName):
+		
+		if Character.Exists(sess, Packet.PlayerName):
+		#if filter(lambda ch: ch.CharName == Packet.PlayerName, account.CharList):
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGCHARACTER)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Create new character -> Character %s already exists." % Packet.PlayerName, Logfile.HACK)
 			return
-			
-		CharList = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
+		
+		if len(account.CharList) >= 4: #more than 4 chars?
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
+			self.SendMsgToClient(sender, SendData)
+			PutLogList("(!) Create new character -> Account %s tries make to more than 4 characters!" % Packet.AccountName, Logfile.HACK)
+			return
+		#CharList = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
 		Stat = [getattr(Packet, x) for x in ['Str','Vit','Dex','Int','Mag','Agi']]
-		if filter(lambda x: x not in [10,11,12,13,14], Stat) < 6: #test if requested Stats are not in valid values
+		if filter(lambda x: x not in [10, 11, 12, 13, 14], Stat): #test if requested Stats are not in valid values
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Create new character -> Stat values not in [10, 11, 12, 13, 14]", Logfile.HACK)
@@ -778,41 +785,75 @@ class CLoginServer(object):
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Create new character -> Stat values %d/70!" % (reduce(lambda a,b: a+b, Stat)), Logfile.HACK)
 			return
-			
-		if len(CharList) > 4: #more than 4 chars?
-			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
-			self.SendMsgToClient(sender, SendData)
-			PutLogList("(!) Create new character -> Account %s tries make to more than 4 characters!" % Packet.AccountName, Logfile.HACK)
-			return
 		
-		if not self.Database.CreateNewCharacter(Packet):
+		NewChar = Character(Packet.PlayerName,
+							Packet.Gender,
+							Packet.SkinCol,
+							Packet.HairStyle,
+							Packet.HairCol,
+							Packet.UnderCol,
+							Packet.Str,
+							Packet.Dex,
+							Packet.Int,
+							Packet.Mag,
+							Packet.Vit,
+							Packet.Agi)
+		
+		account.CharList.append(NewChar)
+		
+		try:
+			sess.commit()	
+		except:
+			print "Except :("
+			sess.rollback()
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERFAILED)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Create new character -> Create new character failed at CreateNewCharacter!", Logfile.HACK)
-		else:
-			SendData = struct.pack('<Lh10s',Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERCREATED,
-											Packet.PlayerName)
-			SendData += self.GetCharList(Packet.AccountName, Packet.AccountPassword)
-			self.SendMsgToClient(sender, SendData)
-			PutLogList("(*) Create new character -> Create new character success on account %s [CharName: %s ]!" % (Packet.AccountName, Packet.PlayerName))
+			return
+		SendData = struct.pack('<Lh10s',Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWCHARACTERCREATED,
+										Packet.PlayerName)
+		SendData += self.GetCharList(account)
+		self.SendMsgToClient(sender, SendData)
+		PutLogList("(*) Create new character -> Create new character success on account %s [CharName: %s ]!" % (Packet.AccountName, Packet.PlayerName))
+		
 
-	def GetCharList(self, account_name, account_password):
+	def GetCharList(self, account_instance):
 		global fillzeros
-		CharList = self.Database.GetAccountCharacterList(account_name, account_password)
-		Buffer = chr(len(CharList))		
-		for Char in CharList:
-			Tmp = struct.pack('<10sB6h2i6h12s10s',
-							Char['char_name'],
-							1, #wtf?
-							Char['Appr1'], Char['Appr2'], Char['Appr3'], Char['Appr4'],
-							Char['Gender'],
-							Char['Skin'],
-							Char['Level'],
-							Char['Exp'],
-							Char['Strength'], Char['Vitality'], Char['Dexterity'], Char['Intelligence'], Char['Magic'], Char['Agility'],
-							"", #will be converted to 12 * \0x00 -> Logout date
-							Char['MapLoc'])
-			Buffer += Tmp
+		Buffer = chr(len(account_instance.CharList))
+		for Char in account_instance.CharList:
+			print Char.CharName, Char.MapLoc, type(Char.MapLoc), type(str(Char.MapLoc)), Char.Appr1, Char.Appr2
+			print [Char.CharName,
+								 1, #wtf?
+								 Char.Appr1,
+								 Char.Appr2,
+								 Char.Appr3,
+								 Char.Appr4,
+								 Char.Gender,
+								 Char.Skin,
+								 Char.Level,
+								 Char.Experience,
+								 Char.Strength, Char.Vitality, Char.Dexterity, Char.Intelligence,
+								 Char.Magic, Char.Charisma, #"", #will be converted to 12 * \0x00 -> Logout date
+								 Char.MapLoc]
+			Tmp = struct.pack('<10sB6h2i6h12x10s',
+								str(Char.CharName),
+								 1, #wtf?
+								 Char.Appr1,
+								 Char.Appr2,
+								 Char.Appr3,
+								 Char.Appr4,
+								 Char.Gender,
+								 Char.Skin,
+								 Char.Level,
+								 Char.Experience,
+								 Char.Strength,
+								 Char.Vitality,
+								 Char.Dexterity,
+								 Char.Intelligence,
+								 Char.Magic,
+								 Char.Charisma, #"", #will be converted to 12 * \0x00 -> Logout date
+								 str(Char.MapLoc))
+			Buffer += Tmp		
 		return Buffer
 		
 	def DeleteCharacter(self, sender, buffer):
@@ -828,13 +869,34 @@ class CLoginServer(object):
 			self.SendMsgToClient(sender, SendData)
 			return
 			
-		if Packet.WS != self.WorldServerName or not self.Database.DeleteCharacter(Packet.AccountName, Packet.AccountPassword, Packet.CharName):
+		sess = self.Database.session()
+		account = Account.Match(sess, Packet.AccountName, Packet.AccountPassword)
+		if Packet.WS != self.WorldServerName:
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
+			self.SendMsgToClient(sender, SendData)
+			return
+		if not account:
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
+			self.SendMsgToClient(sender, SendData)
+			return
+		Char = account.Has(Packet.CharName)
+		if not Char:
+			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
+			self.SendMsgToClient(sender, SendData)
+			return
+		
+		Char[0].Erase(sess)
+		
+		try:
+			sess.commit()
+		except:
+			sess.rollback()
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NOTEXISTINGCHARACTER)
 			self.SendMsgToClient(sender, SendData)
 			return
 		PutLogList("Character deleted success! [ %s ] Account[%s]" % (Packet.CharName, Packet.AccountName))
 		SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_CHARACTERDELETED, 1)
-		SendData += self.GetCharList(Packet.AccountName, Packet.AccountPassword)
+		SendData += self.GetCharList(account)
 		self.SendMsgToClient(sender, SendData)
 		
 	def CreateNewAccount(self, sender, buffer):
@@ -852,19 +914,40 @@ class CLoginServer(object):
 			self.SendMsgToClient(sender, SendData)
 			return
 		
-		OK = self.Database.CreateNewAccount(Packet.AccountName, Packet.AccountPassword, Packet.Mail, Packet.AccountQuiz, Packet.AccountAnswer, sender.address)
-		if OK == Account.OK:
-			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED)
-			self.SendMsgToClient(sender, SendData)
-			PutLogList("(*) Create account success [ %s/%s ]." % (Packet.AccountName, Packet.Mail))
-		elif OK == Account.FAIL:
+		#OK = self.Database.CreateNewAccount(Packet.AccountName, Packet.AccountPassword, Packet.Mail, Packet.AccountQuiz, Packet.AccountAnswer, sender.address)
+		session = self.Database.session()
+		
+		new_account = Account(Packet.AccountName,
+							  Packet.AccountPassword,
+							  Packet.Mail,
+							  Packet.AccountQuiz,
+							  Packet.AccountAnswer,
+							  sender.address) # IP
+		
+		session.add(new_account)
+		try:
+			session.commit()
+		except IntegrityError, errstr:
+			print errstr
+			if "is not unique" in str(errstr):
+				#PutLogList("(!) Already existing account - %s." % account_name)
+				SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT)
+				self.SendMsgToClient(sender, SendData)
+				PutLogList("(!) Create account fails [ %s ]. Account already exists" % Packet.AccountName, Logfile.HACK)
+				return
+			else:
+				PutLogFileList(str(errstr), Logfile.MYSQL)
+		except OperationalError, errstr:
+			print errstr
+			session.rollback()
 			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTFAILED)
 			self.SendMsgToClient(sender, SendData)
 			PutLogList("(!) Create account fails [ %s ]. Unknown error occured!" % Packet.AccountName, Logfile.HACK)
-		elif OK == Account.EXISTS:
-			SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_ALREADYEXISTINGACCOUNT)
-			self.SendMsgToClient(sender, SendData)
-			PutLogList("(!) Create account fails [ %s ]. Account already exists" % Packet.AccountName, Logfile.HACK)
+			return
+
+		SendData = struct.pack('<Lh', Packets.MSGID_RESPONSE_LOG, Packets.DEF_LOGRESMSGTYPE_NEWACCOUNTCREATED)
+		self.SendMsgToClient(sender, SendData)
+		PutLogList("(*) Create account success [ %s/%s ]." % (Packet.AccountName, Packet.Mail))
 
 	def ProcessClientRequestEnterGame(self, sender, buffer):
 		try:
@@ -885,19 +968,23 @@ class CLoginServer(object):
 			self.SendMsgToClient(sender, SendData)
 			return
 			
-		OK = self.Database.CheckAccountLogin(Packet.AccountName, Packet.AccountPassword)
-		if OK[0] != Account.OK:
+		sess = self.Database.session()
+		
+		account = Account.Match(sess, Packet.AccountName, Packet.AccountPassword)
+		
+		if not account:
 			SendData = struct.pack('<LhB', Packets.MSGID_RESPONSE_ENTERGAME, Packets.DEF_ENTERGAMERESTYPE_REJECT, Packets.DEF_REJECTTYPE_DATADIFFERENCE)
 			self.SendMsgToClient(sender, SendData)
 			return
 		
-		Ch = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
-		Found = False
-		for C in Ch:
-			if C['char_name'] == Packet.PlayerName:
-				Found = True
 		
-		if Found:
+		#Ch = self.Database.GetAccountCharacterList(Packet.AccountName, Packet.AccountPassword)
+		#Found = False
+		#for C in Ch:
+		#	if C['char_name'] == Packet.PlayerName:
+		#		Found = True
+		
+		if account.Has(Packet.PlayerName):
 
 			GS = self.IsMapAvailable(Packet.MapName)
 			(InUse, ID) = self.IsAccountInUse(Packet.AccountName)
@@ -987,7 +1074,7 @@ class CLoginServer(object):
 			global packet_format
 			format = '<h10s10s10s15sB'
 			if len(buffer) != struct.calcsize(format):
-				print "(!) RequestPlayerData size mismatch!"
+				print "(!) RequestPlayerData size mismatch!", len(buffer), struct.calcsize(format)
 				raise Exception				
 			s = map(packet_format, struct.unpack(format, buffer))
 			Packet = namedtuple('Packet', 'MsgType CharName AccountName AccountPassword Address AccountStatus')._make(s)
@@ -1031,132 +1118,128 @@ class CLoginServer(object):
 			self.SendMsgToGS(GS, SendData)
 
 	def GetCharacterInfo(self, AccountName, AccountPassword, CharName):
-		OK = self.Database.GetCharacter(AccountName, AccountPassword, CharName)
-		if OK == False:
-			"OK == False"
-			return
-		Ch = OK['Content']
-		
+		account = Account.Match(self.Database.session(), AccountName, AccountPassword)
+		if not account:
+			return False
+		Ch = account.Find(CharName)
+		if not Ch:
+			return False
 		Data = struct.pack('<10s2b10s2h5B20sbih7Bi100s',
-									CharName,
+									str(Ch.CharName),
 									0, #Account Status - outdated
-									Ch['GuildID'], #Guild Status - outdated
-									Ch['MapLoc'],
-									Ch['LocX'], Ch['LocY'],
-									Ch['Gender'],
-									Ch['Skin'],
-									Ch['HairStyle'],
-									Ch['HairColor'],
-									Ch['Underwear'],
-									Ch['GuildName'],
-									Ch['GuildRank'],
-									Ch['HP'],
-									Ch['Level'],
-									Ch['Strength'],
-									Ch['Vitality'],
-									Ch['Dexterity'],
-									Ch['Intelligence'],
-									Ch['Magic'],
-									Ch['Agility'],
-									Ch['Luck'],
-									Ch['Exp'],
-									Ch['MagicMastery'])
+									Ch.GuildID, #Guild Status - outdated
+									str(Ch.MapLoc),
+									Ch.LocX, Ch.LocY,
+									Ch.Gender,
+									Ch.Skin,
+									Ch.HairStyle,
+									Ch.HairColor,
+									Ch.Underwear,
+									str(Ch.GuildName),
+									Ch.GuildRank,
+									Ch.HP,
+									Ch.Level,
+									Ch.Strength,
+									Ch.Vitality,
+									Ch.Dexterity,
+									Ch.Intelligence,
+									Ch.Magic,
+									Ch.Charisma,
+									Ch.Luck,
+									Ch.Experience,
+									str(Ch.MagicMastery))
 		
-		for each in OK['Skill']:
-			for key, value in each.iteritems():
-				if key == "SkillMastery":
-					Data += struct.pack('B', value)
+		for each in map(lambda s: s.SkillMastery, Ch.Skills):
+			Data += struct.pack('<B', each)
 					
 		Data += struct.pack('<10s2iB3i', 
-									Ch['Nation'],
-									Ch['MP'],
-									Ch['SP'],
+									str(Ch.Nation),
+									Ch.MP,
+									Ch.SP,
 									0, # LU-pool - outdated
-									Ch['EK'],
-									Ch['PK'],
-									Ch['RewardGold'])
+									Ch.EK,
+									Ch.PK,
+									Ch.RewardGold)
 		
-		for each in OK['Skill']:
-			for key, value in each.iteritems():
-				if key == "SkillSSN":
-					Data += struct.pack('i', value)
+		for each in map(lambda s: s.SkillSSN, Ch.Skills):
+			Data += struct.pack('i', each)
 		
 		Data += struct.pack('<4x2B4iB4i20s3h3iB3ihBiB2i10siB4ihB', #4x = 4 byte padding
-									Ch['Hunger'],
-									Ch['AdminLevel'],
-									Ch['LeftShutupTime'],
-									Ch['LeftPopTime'],
-									Ch['Popularity'],
-									Ch['GuildID'], # changed to I (unsigned int) previously h (short)-
-									Ch['DownSkillID'] & 255,
-									Ch['CharID'],
-									Ch['ID1'],
-									Ch['ID2'],
-									Ch['ID3'],
-									str(Ch['BlockDate']) if Ch['BlockDate'] != None else "0000-00-00 00:00:00",
-									Ch['QuestNum'],
-									Ch['QuestCount'],
-									Ch['QuestRewType'],
-									Ch['QuestRewAmmount'],
-									Ch['Contribution'],
-									Ch['QuestID'],
-									Ch['QuestCompleted'],
-									Ch['LeftForceRecallTime'],
-									Ch['LeftFirmStaminarTime'],
-									Ch['EventID'],
-									Ch['LeftSAC'],
-									Ch['FightNum'],
-									Ch['FightDate'],
-									Ch['FightTicket'],
-									Ch['LeftSpecTime'],
-									Ch['WarCon'],
-									Ch['LockMapName'],
-									Ch['LockMapTime'],
-									Ch['CruJob'],
-									Ch['CruConstructPoint'],
-									Ch['CruID'],
-									Ch['LeftDeadPenaltyTime'],
-									Ch['PartyID'],
-									Ch['GizonItemUpgradeLeft'],
-									len(OK['Item']))
+									Ch.Hunger,
+									Ch.AdminLevel,
+									Ch.LeftShutupTime,
+									Ch.LeftPopTime,
+									Ch.Popularity,
+									Ch.GuildID, # changed to I (unsigned int) previously h (short)-
+									Ch.DownSkillID & 255,
+									Ch.CharacterID,
+									Ch.ID1,
+									Ch.ID2,
+									Ch.ID3,
+									str(Ch.BlockDate if Ch.BlockDate != None else "0000-00-00 00:00:00"),
+									Ch.QuestNum,
+									Ch.QuestCount,
+									Ch.QuestRewType,
+									Ch.QuestRewAmmount,
+									Ch.Contribution,
+									Ch.QuestID,
+									Ch.QuestCompleted,
+									Ch.LeftForceRecallTime,
+									Ch.LeftFirmStaminarTime,
+									Ch.EventID,
+									Ch.LeftSAC,
+									Ch.FightNum,
+									Ch.FightDate,
+									Ch.FightTicket,
+									Ch.LeftSpecialTime,
+									Ch.WarCon,
+									str(Ch.LockedMapName),
+									Ch.LockedMapTime,
+									Ch.CruJob,
+									Ch.CruConstructPoint,
+									Ch.CruID,
+									Ch.LeftDeadPenaltyTime,
+									Ch.PartyID,
+									Ch.GizonItemUpgradeLeft,
+									len(Ch.Items))
 		
-		for each in OK['Item']:
+		for each in Ch.Items:
 			Data += struct.pack('<20sih3iB4hiB2hi',
-									each['ItemName'],
-									each['Count'],
-									each['ItemType'],
-									each['ID1'],
-									each['ID2'],
-									each['ID3'],
-									each['Color'],
-									each['Effect1'],
-									each['Effect2'],
-									each['Effect3'],
-									each['LifeSpan'],
-									each['Attribute'],
-									each['ItemEquip'],
-									each['ItemPosX'],
-									each['ItemPosY'],
-									each['ItemID'])
-									
-		Data += struct.pack('<xB', len(OK['Bank'])) #Padding (1 byte), Bank items count
-		for each in OK['Bank']:
+									str(each.Name),
+									each.Count,
+									each.Type,
+									each.ID1,
+									each.ID2,
+									each.ID3,
+									each.Color,
+									each.Effect1,
+									each.Effect2,
+									each.Effect3,
+									each.LifeSpan,
+									each.Attribute,
+									each.Equip,
+									each.X,
+									each.Y,
+									each.ItemID)
+								
+		Data += struct.pack('<xB', len(Ch.BankItems)) #Padding (1 byte), Bank items count
+		for each in Ch.BankItems:
 			Data += struct.pack('<20sih3iB4h2i', 
-									each['ItemName'],
-									each['Count'],
-									each['ItemType'],
-									each['ID1'],
-									each['ID2'],
-									each['ID3'],
-									each['Color'],
-									each['Effect1'],
-									each['Effect2'],
-									each['Effect3'],
-									each['LifeSpan'],
-									each['Attribute'],
-									each['ItemID'])
+									str(each.Name),
+									each.Count,
+									each.Type,
+									each.ID1,
+									each.ID2,
+									each.ID3,
+									each.Color,
+									each.Effect1,
+									each.Effect2,
+									each.Effect3,
+									each.LifeSpan,
+									each.Attribute,
+									each.ItemID)
 
-		Data += struct.pack('<10s', Ch['Profile'])
+		Data += struct.pack('<10s', str(Ch.Profile))
 		return Data
 		
 	def ServerStockMsgHandler(self, GS, buffer):
@@ -1188,18 +1271,7 @@ class CLoginServer(object):
 				if self.GameServer[i].IsRegistered and self.GameServer[i] != GS:
 					self.SendMsgToGS(self.GameServer[i], SendBuffer)
 
-	def SavePlayerData(self, buffer, GS):
-		global packet_format
-		fmt = "<h10s10s10s"
-		s=map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
-		Header = namedtuple("Header", "MsgType CharName AccountName AccountPassword")._make(s)
-		buffer = buffer[struct.calcsize(fmt)+1:]
-		Data = self.DecodeSavePlayerDataContents(buffer)
-		if self.Database.SavePlayerContents(Header.CharName, Header.AccountName, Header.AccountPassword, Data):
-			PutLogList("(!) Player [ %s ] data contents saved !" % Header.CharName)
-		else:
-			PutLogList("(!!!) Player [ %s ] data contents not saved !" % Header.CharName)
-
+		
 	def DecodeSavePlayerDataContents(self, buffer):
 		global packet_format
 		Values = "wYear wMonth wDay wHour wMinute wSecond m_cLocation m_cMapName " + \
@@ -1217,7 +1289,7 @@ class CLoginServer(object):
 								"m_iCrusadeDuty m_dwCrusadeGUID m_iConstructionPoint m_iDeadPenaltyTime " + \
 								"m_iPartyID m_iGizonItemUpgradeLeft m_iSpecialAbilityTime2 " + \
 								"m_sAppr1 m_sAppr2 m_sAppr3 m_sAppr4 m_iApprColor MagicMastery"
-								
+		
 		format = "<h5B10s10s2h20s2h3ihi7B4ib3i6B4iB20s4h3iBihBiBi10siB4ih6i100s"
 		SkillsFormat = "<24B24I"
 		ContentSize = struct.calcsize(format)
@@ -1324,7 +1396,158 @@ class CLoginServer(object):
 		else:
 			PutLogList("Unknown data 2", Logfile.HACK)
 			print Packet
+	def SavePlayerData(self, Header, Data):
+		"""global packet_format
+		fmt = "<h10s10s10s"
+		s=map(packet_format, struct.unpack(fmt, buffer[:struct.calcsize(fmt)]))
+		Header = namedtuple("Header", "MsgType CharName AccountName AccountPassword")._make(s)
+		buffer = buffer[struct.calcsize(fmt)+1:]
+		"""
+		
+		sess = self.Database.session()
+		
+		account = Account.Match(sess, Header.AccountName, Header.AccountPassword)
+		if not account:
+			return False
+		
+		Ch = account.Find(Header.PlayerName)
+		
+		if not Ch:
+			return False
+		
+		Player = Data['Player']
+		Ch.LocX = Player.m_sX
+		Ch.LocY = Player.m_sY
+		Ch.GuildName = Player.m_cGuildName
+		Ch.Nation = Player.m_cLocation
+		Ch.MapLoc = Player.m_cMapName
+		Ch.GuildID = Player.m_iGuildGuid
+		Ch.GuildRank = Player.m_cGuildRank
+		Ch.HP = Player.m_iHP
+		Ch.MP = Player.m_iMP
+		Ch.SP = Player.m_iSP
+		Ch.Level = Player.m_iLevel
+		Ch.Rating = Player.m_iRating
+		Ch.Strength = Player.m_iStr
+		Ch.Vitality = Player.m_iVit
+		Ch.Dexterity = Player.m_iDex
+		Ch.Intelligence = Player.m_iInt
+		Ch.Magic = Player.m_iMag
+		Ch.Charisma = Player.m_iAgi
+		Ch.Luck = Player.m_iLuck
+		Ch.Experience = Player.m_iExp
+		Ch.EK = Player.m_iEnemyKillCount
+		Ch.PK = Player.m_iPKCount
+		Ch.RewardGold = Player.m_iRewardGold
+		Ch.DownSkillIndex = Player.m_iDownSkillIndex
+		Ch.ID1 = Player.m_sCharIDnum1
+		Ch.ID2 = Player.m_sCharIDnum2
+		Ch.ID3 = Player.m_sCharIDnum3
+		Ch.Gender = Player.m_cSex
+		Ch.Skin = Player.m_cSkin
+		Ch.HairStyle = Player.m_cHairStyle
+		Ch.HairColor = Player.m_cHairColor
+		Ch.Underwear = Player.m_cUnderwear
+		Ch.Hunger = Player.m_iHungerStatus
+		Ch.LeftShutupTime = Player.m_iTimeLeft_ShutUp
+		Ch.LeftPopTime = Player.m_iTimeLeft_Rating
+		Ch.LeftForceRecallTime = Player.m_iTimeLeft_ForceRecall
+		Ch.LeftFirmStaminarTime = Player.m_iTimeLeft_FirmStaminar
+		Ch.iAdminUserLevel = Player.m_iAdminUserLevel
+		try:
+			raw_date = map(int, re.compile('(\d+)(?:[\-\: ]+)?').findall(Player.m_iBlockDate))
+			
+			Ch.BlockDate = datetime.datetime(*raw_date)
+		except:
+			Ch.BlockDate = None
+			
+		#Ch.BlockDate = Player.m_iBlockDate
+		Ch.QuestNum = Player.m_iQuest
+		Ch.QuestID = Player.m_iQuestID
+		Ch.QuestCount = Player.m_iCurQuestCount
+		Ch.QuestRewType = Player.m_iQuestRewardType
+		Ch.QuestRewAmmount = Player.m_iQuestRewardAmount
+		Ch.Contribution = Player.m_iContribution
+		Ch.WarCon = Player.m_iWarContribution
+		Ch.QuestCompleted = Player.m_bIsQuestCompleted
+		Ch.EventID = Player.m_iSpecialEventID
+		Ch.LeftSAC = Player.m_iSuperAttackLeft
+		Ch.FightNum = Player.m_iFightzoneNumber
+		Ch.FightDate = Player.m_iReserveTime
+		Ch.FightTicket = Player.m_iFightZoneTicketNumber
+		Ch.LeftSpecialTime = Player.m_iSpecialAbilityTime
+		Ch.LockedMapName = Player.m_cLockedMapName
+		Ch.LockedMapTime = Player.m_iLockedMapTime
+		Ch.CruJob = Player.m_iCrusadeDuty
+		Ch.CruID = Player.m_dwCrusadeGUID
+		Ch.CruConstructPoint = Player.m_iConstructionPoint
+		Ch.LeftDeadPenaltyTime = Player.m_iDeadPenaltyTime
+		Ch.PartyID = Player.m_iPartyID
+		Ch.GizonItemUpgradeLeft = Player.m_iGizonItemUpgradeLeft
+		Ch.Appr1 = Player.m_sAppr1
+		Ch.Appr2 = Player.m_sAppr2
+		Ch.Appr3 = Player.m_sAppr3
+		Ch.Appr4 = Player.m_sAppr4
+		Ch.ApprColor = Player.m_iApprColor
+		Ch.MagicMastery = Player.MagicMastery
+		Ch.LogoutDate = datetime.datetime.now()
+		Ch.Profile = Data['Profile']
 
+		""" Update skills """
+		for i in range(24):
+			Ch.Skills[i].SkillMastery = Data['Skills'][i]
+			Ch.Skills[i].SkillSSN = Data['Skills'][24 + i]
+		
+		""" Update items - TODO : update, not rewrite """
+		
+		while len(Ch.Items):
+			sess.delete(Ch.Items.pop(0))
+		
+		for item in Data['Items']:
+			Ch.Items.append(Item(
+								Name = item.m_cName,
+								ItemID = item.ItemUniqueID,
+								Count = item.m_dwCount,
+								Type = item.m_sTouchEffectType,
+								ID1 = item.m_sTouchEffectValue1,
+								ID2 = item.m_sTouchEffectValue2,
+								ID3 = item.m_sTouchEffectValue3,
+								Color = item.m_cItemColor,
+								Effect1 = item.m_sItemSpecEffectValue1,
+								Effect2 = item.m_sItemSpecEffectValue2,
+								Effect3 = item.m_sItemSpecEffectValue3,
+								LifeSpan = item.m_wCurLifeSpan,
+								Attribute = item.m_dwAttribute,
+								Equip = item.m_bIsItemEquipped,
+								X = item.X,
+								Y = item.Y))
+			
+		while len(Ch.BankItems):
+			sess.delete(Ch.BankItems.pop(0))
+			
+		for item in Data['BankItems']:
+			Ch.BankItems.append(BankItem(
+								Name = item.m_cName,
+								ItemID = item.ItemUniqueID,
+								Count = item.m_dwCount,
+								Type = item.m_sTouchEffectType,
+								ID1 = item.m_sTouchEffectValue1,
+								ID2 = item.m_sTouchEffectValue2,
+								ID3 = item.m_sTouchEffectValue3,
+								Color = item.m_cItemColor,
+								Effect1 = item.m_sItemSpecEffectValue1,
+								Effect2 = item.m_sItemSpecEffectValue2,
+								Effect3 = item.m_sItemSpecEffectValue3,
+								LifeSpan = item.m_wCurLifeSpan,
+								Attribute = item.m_dwAttribute))		
+						
+		try:
+			sess.commit()
+			return True
+		except:
+			sess.rollback()
+			return False
+		
 	def ProcessClientLogout(self, buffer, GS, bSave):
 		global packet_format
 		try:
@@ -1341,7 +1564,7 @@ class CLoginServer(object):
 			if Client['AccountPassword'] == Packet.AccountPassword and Client['AccountName'] == Packet.AccountName and Client['CharName'] == Packet.PlayerName:
 				if bSave:
 					Data = self.DecodeSavePlayerDataContents(buffer)
-					if self.Database.SavePlayerContents(Packet.PlayerName, Packet.AccountName, Packet.AccountPassword, Data):
+					if self.SavePlayerData(Packet, Data):
 						PutLogList("(*) Player [ %s ] Account [ %s ] data saved properly." % (Packet.PlayerName, Packet.AccountName))
 					else:
 						PutLogList("(!) Player [ %s ] data contents not saved !" % Packet.PlayerName)
@@ -1428,7 +1651,7 @@ class CLoginServer(object):
 		return True
 		
 	def __gameserver_alive(self):
-		CGameServer.GS_Lock.acquire()
+		"""CGameServer.GS_Lock.acquire()
 		for (k, v) in self.GameServer.items():
 			if abs(v.AliveResponseTime - time.time()) >= 10:
 				PutLogList("(*) Game Server : %s@%s:%d (%d maps) is not responding!" % (v.Data['ServerName'], v.Data['ServerIP'], v.Data['ServerPort'], len(v.MapName)))
@@ -1436,7 +1659,7 @@ class CLoginServer(object):
 					s = v.GameServerSocket.pop(0)
 					s.disconnect()
 				v.socket.disconnect()
-		CGameServer.GS_Lock.release()
+		CGameServer.GS_Lock.release()"""
 		return True
 		
 	def __sendtotalplayers(self):

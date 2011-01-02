@@ -1,653 +1,271 @@
-import MySQLdb, _mysql_exceptions, time, random, os, re
+from sqlalchemy.orm import mapper, relationship, sessionmaker, backref
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import *
+from sqlalchemy.sql import exists
+from sqlalchemy.sql.expression import *
+from sqlalchemy import (MetaData, Table, Column, DateTime, SmallInteger, Integer, Boolean,
+					   String, ForeignKey, create_engine,
+					   and_, or_)
+
+import time, random, os, re, datetime
 from Helpers import PutLogFileList, PutLogList
-from GlobalDef import Account, DEF, Logfile
-from threading import Semaphore, BoundedSemaphore
+from GlobalDef import AccountInfo, DEF, Logfile
+from sqlalchemy.orm.exc import NoResultFound
 
-MySQL_Auth = {'host' : 'localhost', 'port': 3307, 'user': 'root', 'passwd': '', 'db': 'playerdb'}
+Base = declarative_base()
 
-class DatabaseDriver(object):
-	def __init__(self):
-		global MySQL_Auth
-		MySQL_Auth = self.ReadDatabaseConfigFile('LServer.cfg')
-		Default = {'host' : 'localhost', 'port': 3306, 'user': 'root', 'passwd': '', 'db': 'playerdb'}
-		for k in Default.keys():
-			if k not in MySQL_Auth:
-				MySQL_Auth[k] = Default[k]
-		self.Ready = False
-		self.Access = Semaphore() #change if server is laggy
-		self.Logout = []
-		
-	def Initialize(self):
-		if self.Ready:
-			PutLogList("(!) MySQL Driver already initialized!")
-			return False
-		global MySQL_Auth
-		PutLogList("(*) Connecting to MySQL database...")
-		try:
-			self.db = MySQLdb.connect(**MySQL_Auth)
-		except _mysql_exceptions.OperationalError as (E_No, E_Str):
-			PutLogList("(!!!) MySQL ERROR #%d - %s!" % (E_No, E_Str), Logfile.MYSQL)
-			return False
-		except:
-			PutLogList("(!!!) Unhandled MySQL error (!!!)", Logfile.MYSQL)
-			return False
-		
-		self.Ready = True
-		if not self.CheckDatabase():
-			PutLogList("(!) Database tables are corrupted!", Logfile.MYSQL)
-			return False
-
-		PutLogList("(*) Connection to MySQL database was successfully established!")
-		return True
-		
-	def ReadyToLoad(self, char_name, timeout = 7): #7 sec timeout
-		if char_name not in self.Logout:
-			return True
-			
-		start = time.time()
-		while True:
-			if time.time() - start > timeout:
-				return False
-			if char_name not in self.Logout:
-				break
-		return True
-		
-	def __querybuilder(self, Query, *Args):
-		"""
-			Mapping every string Arg to escape_string. Private method.
-			Returns: valid query string
-		"""
-		if not self.Ready:
-			return Query
-		Values = tuple(map(lambda x: self.db.escape_string(x) if type(x) == str else x, Args))
-		return Query % Values if len(Args)>0 else Query
+class Account(Base):
+	__tablename__ = "account"
+	AccountID = Column(Integer, primary_key = True)
+	Name = Column(String(10), nullable = False, unique = True)
+	Password = Column(String(10), nullable = False)
+	Mail = Column(String(50), nullable = False)
+	Quiz = Column(String(45))
+	Answer = Column(String(20))
+	SignupDate = Column(DateTime(), nullable = False)
+	BlockDate = Column(DateTime())
+	IpAddress = Column(String(15), nullable = False)
 	
-	def ExecuteSQL(self, Query, *Args):
-		if not self.Ready:
-			return False
-		self.Access.acquire()
-		QueryConsult = self.__querybuilder(Query, *Args)
+	def __init__(self, name, password, mail, quiz, answer, address):
+		self.Name = name
+		self.Password = password
+		self.Mail = mail
+		self.Quiz = quiz
+		self.Answer = answer
+		self.SignupDate = datetime.datetime.now()
+		self.IpAddress = address
+		
+	def __repr__(self):
+		return "<User('%s', '%s', '%s')>" % (str(self.AccountID), self.Name, self.Password)
+	@staticmethod
+	def ByName(session, name):
 		try:
-			self.db.query(QueryConsult)
-		except:
-			PutLogFileList(QueryConsult, Logfile.MYSQL)
-			self.Access.release()
+			return session.query(Account).\
+				filter(Account.Name == name).\
+				one()
+		except NoResultFound:
 			return False
-
-		self.Access.release()
-		return True
-		
-	def fetch_array(self, result):
-		"""
-			Fetching dictionary {field_name: row} instead of tuple.
-			This must be optimized before use.
-		"""
-		row = result.fetch_row()
-		if row == ():
-			return {}
-		descr = result.describe()
-		d={}
-		
-		for i in range(len(descr)):
-			d[descr[i][0]]=row[0][i]
-			
-		return d
-		
-	def CheckDatabase(self):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
-			
-		if not self.ExecuteSQL("SHOW TABLES"):
-			return False
-			
-		r = self.db.store_result()
-		Tables = ('account_database',
-				  'bank_item',
-				  'char_database',
-				  'guild', 
-				  'guild_member',
-				  'item',
-				  'skill')
-		PlayerDB = []
-		while True:
-			row = r.fetch_row()
-			if row == ():
-				break
-			table_name = row[0][0]
-			PlayerDB += [table_name]
-
-		if len(PlayerDB) != len(Tables):
-			return False
-			
-		ile = 0
-		for i in PlayerDB: #count how much elements from PlayerDB is in Tables
-			ok = False
-			for j in Tables:
-				if i == j:
-					ile += 1
-		return ile == len(Tables)
-		
-	def ChangePassword(self, LoginName, Password, NewPassword):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
+	@staticmethod
+	def Match(session, name, pwd):
 		try:
-			QueryConsult = "UPDATE `account_database` SET `password` = '%s' WHERE BINARY `name` = '%s' AND BINARY `password` = '%s' LIMIT 1"
-			if not self.ExecuteSQL(QueryConsult, NewPassword, LoginName, Password):
-				return False
-		except:
+			return session.query(Account).\
+				filter(Account.Name == name).\
+				filter(Account.Password == pwd).\
+				one()
+		except NoResultFound:
 			return False
-			
-		return self.db.affected_rows() > 0
 		
-	def CheckAccountLogin(self, LoginName, Password):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
-		QueryConsult = "SELECT `name`, `password`, `BlockDate` FROM `account_database` WHERE BINARY `name` = '%s' LIMIT 1"
-		if not self.ExecuteSQL(QueryConsult, LoginName):
-			return (Account.BLOCKED, 0, 0, 0) #SQL Failed -> Account blocked, please try again later
-		try:
-			r = self.db.store_result()
-			if r.num_rows() == 0:
-				return (Account.NOTEXISTS,)
-			
-			row = r.fetch_row()[0]
-			if Password != row[1]:
-				return (Account.WRONGPASS, Password, row[1])
-			
-			if row[2] != None: #BLOCKED?!
-				BlockDate = str(row[2])
-				try:
-					tm = time.strptime(BlockDate, "%Y-%m-%d %H:%M:%S")
-				except:
-					PutLogList("(WTF) Account invalid BlockDate value %s (Acc: %s)" % (row[2], LoginName), Logfile.ERROR)
-					return (Account.BLOCKED, 0, 0, 0)
-				if tm > time.localtime():
-					return (Account.BLOCKED, tm.tm_year, tm.tm_mon, tm.tm_mday)
-				else:
-					return (Account.OK, )
-		except:
-			return (Account.BLOCKED, 0, 0, 0)
-			
-		return (Account.OK,)
-		
-	def CharacterExists(self, char_name):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
-		QueryConsult = "SELECT `CharID` FROM `char_database` WHERE BINARY `char_name` = '%s'"
-		if not self.ExecuteSQL(QueryConsult, char_name):
-			return False
-		r = self.db.store_result()
-		return r.num_rows() > 0
-		
-	def GetAccountCharacterList(self, account_name, account_password):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
-		QueryConsult = "SELECT chr.* FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' ORDER BY chr.CreateDate ASC"
-		if not self.ExecuteSQL(QueryConsult, account_name, account_password):
-			return []
-		try:
-			r = self.db.store_result()
-			if r.num_rows() == 0:
-				return []
-			rows = []	
-			while True:
-				#row = r.fetch_row()
-				row = self.fetch_array(r)
-				if row == {}:
-					break
-				rows += [row]
-		except:
-			return []
-			
-		return rows
-		
-	def CreateNewCharacter(self, Packet):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
-
-		QueryConsult = "INSERT INTO `char_database` (`account_name`, `char_name`, `Strength` , `Vitality` , `Dexterity` , `Intelligence` , `Magic` , `Agility` , `Appr1`, `Gender` , `Skin` , `HairStyle` , `HairColor` , `Underwear` , `HP` , `MP` , `SP`, `CreateDate`)" + \
-							"VALUES ( '%s', '%s' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d', '%d' , '%d' , '%d' , '%d' , '%d' , '%d' , '%d', NOW())"
-		if not self.ExecuteSQL(QueryConsult,
-							Packet.AccountName,
-							Packet.PlayerName,
-							Packet.Str,
-							Packet.Vit,
-							Packet.Dex,
-							Packet.Int,
-							Packet.Mag,
-							Packet.Agi,
-							((Packet.HairStyle << 8) | (Packet.HairCol << 4) | (Packet.UnderCol)), #Appr1
-							Packet.Gender,
-							Packet.SkinCol,
-							Packet.HairStyle,
-							Packet.HairCol,
-							Packet.UnderCol,
-							(Packet.Vit * 3) + (Packet.Str / 2) + 2,
-							(Packet.Mag * 2) + (Packet.Int / 2) + 2,
-							(Packet.Str * 2) + 2):
-			return False #False means no query was executed so no worry about empty skills or no items
-		if self.db.affected_rows() > 0:
-			try:
-				Char_ID = self.db.insert_id()
-				self.CreateNewItem(Char_ID, 10, 30, 300, 1, "Dagger")
-				self.CreateNewItem(Char_ID, 20, 30, 25, 1, "Map")
-				self.CreateNewItem(Char_ID, 30, 30, 1, 1, "RedPotion")
-				self.CreateNewItem(Char_ID, 40, 30, 1, 1, "RedPotion")
-				self.CreateNewItem(Char_ID, 50, 30, 1, 1, "BluePotion")
-				self.CreateNewItem(Char_ID, 60, 30, 1, 1, "GreenPotion")
-				self.CreateNewItem(Char_ID, 70, 30, 1, 1, "RecallScroll")
-				if Packet.Gender == 1:# Male
-					if random.randint(1, 16) == 16:
-						self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shoes")
-					else:
-						self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shirt(M)")
-					self.CreateNewItem(Char_ID, 50, 40, 1, 1, "KneeTrousers(M)")
-				if Packet.Gender == 2:# Female
-					self.CreateNewItem(Char_ID, 30, 40, 1, 1, "Shirt(W)")
-					self.CreateNewItem(Char_ID, 50, 40, 1, 1, "KneeTrousers(W)")
-
-				for s in range(DEF.MAXSKILLS):
-					if s in [4, 5, 7]:
-						SkillMastery = 20
-					elif s == 3:
-						SkillMastery = 3
-					else:
-						SkillMastery = 0
-					QueryConsult = "INSERT INTO `skill` ( `CharID` , `SkillID`, `SkillMastery` , `SkillSSN`)" + \
-													"VALUES ('%d', '%d', '%d', '%d')"
-					if not self.ExecuteSQL(QueryConsult, Char_ID, s, SkillMastery, 0):
-						raise Exception('This is only for sure. Propably will not ever appear.')
-			except:
-				PutLogList("(MySQL) Exception in CreateCharacter! Deleting char %s..." % Packet.PlayerName, Logfile.ERROR)
-				self.DeleteCharacter(Packet.AccountName, Packet.AccountPassword, Packet.PlayerName)
-				return False
-		return True
-		
-	def DeleteCharacter(self, account_name, account_password, char_name):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
-		try:
-			QueryConsult = "SELECT chr.CharID FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
-			if not self.ExecuteSQL(QueryConsult, account_name, account_password, char_name):
-				return False
-
-			r = self.db.store_result()
-			if r.num_rows() == 0:
-				return False
-			
-			CharID = int(r.fetch_row()[0][0])
-			
-			QueryConsult = "DELETE FROM `char_database` WHERE BINARY account_name='%s' AND BINARY char_name='%s'"
-			if not self.ExecuteSQL(QueryConsult, account_name, char_name):
-				return False
-			
-			if self.db.affected_rows() == 0:
-				#For sure, propably will not happen
-				return False
-
-			for table_name in ['skill','item','bank_item']:
-				QueryConsult = "DELETE FROM `%s` WHERE CharID = '%d'"
-				if not self.ExecuteSQL(QueryConsult, table_name, CharID):
-					#For sure, propably will not happen
-					return False
-		except:
-			return False
-
-		return True
-	def CreateNewAccount(self, account_name, account_password, mail, quiz, answer, address):
-		if not self.Ready:
-			raise Exception('Database driver not ready!')
-		QueryConsult = "SELECT AccountID FROM `account_database` WHERE BINARY `name` = '%s'"
-		if not self.ExecuteSQL(QueryConsult, account_name):
-			return Account.FAIL
-		r = self.db.store_result()
-		if r.num_rows() > 0:
-			return Account.EXISTS
-		QueryConsult = "INSERT INTO `account_database` (`name`, `password`, `Email`, `Quiz`, `Answer`, `SignUpIpAddress`, `SignUpDate`, `SignUpFromClient`)" + \
-							"VALUES ('%s', '%s', '%s', '%s', '%s', '%s', NOW(), 1)"
-		if not self.ExecuteSQL(QueryConsult, account_name, account_password, mail, quiz, answer, address):
-			return Account.FAIL
-			
-		return Account.OK
-		
-	def GetCharacter(self, account_name, account_password, char_name):
-		if self.ReadyToLoad(char_name):
-			self.Logout += [char_name]
-			ok = self.TryGetCharacter(account_name, account_password, char_name)
-			self.Logout.remove(char_name)
-			return ok
-		if char_name in self.Logout:
-			self.Logout.remove(char_name)
-		return False
-		
-	def TryGetCharacter(self, account_name, account_password, char_name):
-		QueryConsult = "SELECT chr.* FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
-		if not self.ExecuteSQL(QueryConsult, account_name, account_password, char_name):
-			return False
-		r = self.db.store_result()
-		if r.num_rows() == 0:
-			return False
-			
-		Character = {}
-		Character['Content'] = self.fetch_array(r)
+	def Has(self, player_name):
+		return filter(lambda ch: ch.CharName == player_name, self.CharList)
+	def Find(self, player_name):
+		return (lambda x: x[0] if x else False)(self.Has(player_name))
 	
-		QueryConsult = "SELECT `SkillID`, `SkillMastery`, `SkillSSN` FROM `skill` WHERE `CharID` = '%d' LIMIT %d"
-		if not self.ExecuteSQL(QueryConsult, Character['Content']['CharID'], DEF.MAXSKILLS):
-			return False
-		r = self.db.store_result()
-		if r.num_rows() == 0:
-			return False
-		Character['Skill'] = []
-		while True:
-			row = r.fetch_row()
-			if row == ():
-				break
-			Character['Skill'] += [dict(zip(['SkillID', 'SkillMastery', 'SkillSSN'], row[0]))]
-
-		QueryConsult = "SELECT `ItemName`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`, `ItemEquip`, `ItemPosX`, `ItemPosY`, `ItemID` FROM `item` WHERE `CharID` = '%d' LIMIT %d"
-		if not self.ExecuteSQL(QueryConsult, Character['Content']['CharID'], DEF.MAXITEMS):
-			return False
-		r = self.db.store_result()
-		Character['Item'] = []
-		while True:
-			row = r.fetch_row()
-			if row == ():
-				break
-			Character['Item'] += [dict(zip(['ItemName', 'Count', 'ItemType', 'ID1', 'ID2', 'ID3', 'Color', 'Effect1', 'Effect2', 'Effect3', 'LifeSpan', 'Attribute', 'ItemEquip', 'ItemPosX', 'ItemPosY', 'ItemID'], row[0]))]
-
-		QueryConsult = "SELECT `ItemName`, `Count`, `ItemType`, `ID1`, `ID2`, `ID3`, `Color`, `Effect1`, `Effect2`, `Effect3`, `LifeSpan`, `Attribute`, `ItemID` FROM `bank_item` WHERE `CharID` = '%d' LIMIT %d"
-		if not self.ExecuteSQL(QueryConsult, Character['Content']['CharID'], DEF.MAXBANKITEMS):
-			return False
-		r = self.db.store_result()
-		Character['Bank'] = []
-		while True:
-			row = r.fetch_row()
-			if row == ():
-				break
-			Character['Bank'] += [dict(zip(['ItemName', 'Count', 'ItemType', 'ID1', 'ID2', 'ID3', 'Color', 'Effect1', 'Effect2', 'Effect3', 'LifeSpan', 'Attribute', 'ItemID'], row[0]))]
-		return Character
-		
-	def SavePlayerContents(self, char_name, account_name, account_password, Data):
-		if self.ReadyToLoad(char_name):
-			self.Logout += [char_name]
-			ok = self.TrySavePlayerContents(char_name, account_name, account_password, Data)
-			self.Logout.remove(char_name)
-			return ok
-			
-		if char_name in self.Logout:
-			self.Logout.remove(char_name)
-			
-		return False
-		
-	def TrySavePlayerContents(self, char_name, account_name, account_password, Data):
-		QueryConsult = "SELECT chr.* FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
-
-		if not self.ExecuteSQL(QueryConsult, account_name, account_password, char_name):
-			return False
-		r = self.db.store_result()
-		if r.num_rows() == 0:
-			return False
+class Character(Base):
+	__tablename__ = "character"
+	AccountID = Column(Integer, ForeignKey("account.AccountID"))
+	CharacterID = Column(Integer, primary_key = True)
+	CharName = Column(String(10), nullable = False, unique = True)
+	ID1 = Column(Integer, default = 0)
+	ID2 = Column(Integer, default = 0)
+	ID3 = Column(Integer, default = 0)
+	Level = Column(Integer, default = 1)
+	Strength = Column(Integer, default = 10)
+	Dexterity = Column(Integer, default = 10)
+	Intelligence = Column(Integer, default = 10)
+	Magic = Column(Integer, default = 10)
+	Vitality = Column(Integer, default = 10)
+	Charisma = Column(Integer, default = 10)
+	Luck = Column(Integer, default = 0)
+	Experience = Column(Integer, default = 0)
+	Gender = Column(SmallInteger, default = 0)
+	Skin = Column(SmallInteger, default = 0)
+	HairStyle = Column(SmallInteger, default = 0)
+	HairColor = Column(SmallInteger, default = 0)
+	Underwear = Column(SmallInteger, default = 0)
+	ApprColor = Column(Integer, default = 0)
+	Appr1 = Column(Integer, default = 0)
+	Appr2 = Column(Integer, default = 0)
+	Appr3 = Column(Integer, default = 0)
+	Appr4 = Column(Integer, default = 0)
+	Nation = Column(String(10), default = "NONE")
+	MapLoc = Column(String(10), default = "default")
+	LocX = Column(SmallInteger, default = 0)
+	LocY = Column(SmallInteger, default = 0)
+	Profile = Column(String(255))
+	AdminLevel = Column(SmallInteger, default = 0)
+	Contribution = Column(Integer, default = 0)
+	LeftSpecialTime = Column(Integer, default = 0)
+	LockedMapName = Column(String(10), default = "")
+	LockedMapTime = Column(Integer, default = 0)
+	CreateDate = Column(DateTime)
+	LogoutDate = Column(DateTime)
+	BlockDate = Column(DateTime)
+	GuildName = Column(String(20))
+	GuildID = Column(Integer, default = -1)
+	GuildRank = Column(Integer, default = -1)
+	FightNum = Column(SmallInteger, default = 0)
+	FightDate = Column(SmallInteger, default = 0)
+	FightTicket = Column(SmallInteger, default = 0)
+	QuestNum = Column(SmallInteger, default = 0)
+	QuestID = Column(SmallInteger, default = 0)
+	QuestCount = Column(SmallInteger, default = 0)
+	QuestRewType = Column(SmallInteger, default = 0)
+	QuestRewAmmount = Column(SmallInteger, default = 0)
+	QuestCompleted = Column(SmallInteger, default = 0)
+	EventID = Column(Integer, default = 0)
+	WarCon = Column(Integer, default = 0)
+	CruJob = Column(Integer, default = 0)
+	CruID = Column(Integer, default = 0)
+	CruConstructPoint = Column(SmallInteger, default = 0)
+	Popularity = Column(Integer, default = 0)
+	HP = Column(Integer, default = 0)
+	MP = Column(Integer, default = 0)
+	SP = Column(Integer, default = 0)
+	EK = Column(Integer, default = 0)
+	PK = Column(Integer, default = 0)
+	RewardGold = Column(Integer, default = 0)
+	DownSkillID = Column(Integer, default = -1)
+	Hunger = Column(SmallInteger, default = 100)
+	LeftSAC = Column(Integer, default = 0)
+	LeftShutupTime = Column(Integer, default = 0)
+	LeftPopTime = Column(Integer, default = 0)
+	LeftForceRecallTime = Column(Integer, default = 0)
+	LeftFirmStaminarTime = Column(Integer, default = 0)
+	LeftDeadPenaltyTime = Column(Integer, default = 0)
+	MagicMastery = Column(String(100), default = "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+	PartyID = Column(Integer, default = 0)
+	GizonItemUpgradeLeft = Column(Integer, default = 0)
+	Account = relationship(Account, backref = backref("CharList", order_by = Level))
+	
+	@staticmethod
+	def Exists(session, Name):
 		try:
-			CharID = int(r.fetch_row()[0][0])
-		except:
-			return False
-		QueryConsult = "UPDATE `char_database` SET `LastSaveDate` = NOW(), `ID1` = '%d', `ID2` = '%d', `ID3` = '%d'," + \
-						"`Level` = '%d',`Strength` = '%d',`Vitality` = '%d',`Dexterity` = '%d',"+\
-						"`Intelligence` = '%d',`Magic` = '%d',`Agility` = '%d',"+\
-						"`Luck` = '%d',`Exp` = '%lu',`Gender` = '%d',`Skin` = '%d',"+\
-						"`HairStyle` = '%d',`HairColor` = '%d',`Underwear` = '%d',"+\
-						"`ApprColor` = '%d',`Appr1` = '%d',`Appr2` = '%d',`Appr3` = '%d',`Appr4` = '%d',"+\
-						"`Nation` = '%s',`MapLoc` = '%s',`LocX` = '%d',`LocY` = '%d',"+\
-						"`Profile` = '%s',`Contribution` = '%d',`LeftSpecTime` = '%lu',"+\
-						"`LockMapName` = '%s',`LockMapTime` = '%d',`BlockDate` = '%s',"+\
-						"`GuildName` = '%s',`GuildID` = '%d',`GuildRank` = '%d',`FightNum` = '%d',"+\
-						"`FightDate` = '%d',`FightTicket` = '%d',`QuestNum` = '%d',`QuestID` = '%d',"+\
-						"`QuestCount` = '%d',`QuestRewType` = '%d',`QuestRewAmmount` = '%d'," +\
-						"`QuestCompleted` = '%d',`EventID` = '%d',`WarCon` = '%d',`CruJob` = '%d',"+\
-						"`CruID` = '%d',`CruConstructPoint` = '%d', `Popularity` = '%li' ,"+\
-						"`HP` = '%d',`MP` = '%d',`SP` = '%d',`EK` = '%d',`PK` = '%d',"+\
-						"`RewardGold` = '%d',`DownSkillID` = '%d',`Hunger` = '%d',`LeftSAC` = '%d',"+\
-						"`LeftShutupTime` = '%d',`LeftPopTime` = '%lu',`LeftForceRecallTime` = '%d',"+\
-						"`LeftFirmStaminarTime` = '%d',`LeftDeadPenaltyTime` = '%d',`MagicMastery` = '%s',"+\
-						"`PartyID` = '%lu',`GizonItemUpgradeLeft` = '%d' WHERE `CharID` = '%d' LIMIT 1;"
-		Content = Data['Player']
-		if not self.ExecuteSQL(QueryConsult, 
-								Content.m_sCharIDnum1, Content.m_sCharIDnum2, Content.m_sCharIDnum1, 
-								Content.m_iLevel, Content.m_iStr, Content.m_iVit, Content.m_iDex,
-								Content.m_iInt,Content.m_iMag,Content.m_iAgi,Content.m_iLuck,
-								Content.m_iExp, Content.m_cSex, Content.m_cSkin,Content.m_cHairStyle,
-								Content.m_cHairColor,Content.m_cUnderwear,Content.m_iApprColor,
-								Content.m_sAppr1,Content.m_sAppr2,Content.m_sAppr3,Content.m_sAppr4,
-								Content.m_cLocation, Content.m_cMapName, Content.m_sX,Content.m_sY, 
-								Data['Profile'], 
-								Content.m_iContribution, Content.m_iSpecialAbilityTime, Content.m_cLockedMapName, Content.m_iLockedMapTime,
-								Content.m_iBlockDate, Content.m_cGuildName, Content.m_iGuildGuid, Content.m_cGuildRank,
-								Content.m_iFightzoneNumber, Content.m_iReserveTime, Content.m_iFightZoneTicketNumber, Content.m_iQuest,
-								Content.m_iQuestID, Content.m_iCurQuestCount, Content.m_iQuestRewardType, Content.m_iQuestRewardAmount, 
-								Content.m_bIsQuestCompleted, Content.m_iSpecialEventID, Content.m_iWarContribution, Content.m_iCrusadeDuty, Content.m_dwCrusadeGUID,
-								Content.m_iConstructionPoint, Content.m_iRating,Content.m_iHP,Content.m_iMP,Content.m_iSP,Content.m_iEnemyKillCount,Content.m_iPKCount,
-								Content.m_iRewardGold,Content.m_iDownSkillIndex,Content.m_iHungerStatus,Content.m_iSuperAttackLeft,
-								Content.m_iTimeLeft_ShutUp,Content.m_iTimeLeft_Rating,Content.m_iTimeLeft_ForceRecall,
-								Content.m_iTimeLeft_FirmStaminar,Content.m_iDeadPenaltyTime,Content.MagicMastery,Content.m_iPartyID,
-								Content.m_iGizonItemUpgradeLeft, CharID):
-			return False
-		for i in range(24):
-			SkillMastery = Data['Skills'][i]
-			SkillSSN = Data['Skills'][24+i]
-			if not self.ExecuteSQL("UPDATE `skill` SET `SkillMastery` = '%d',`SkillSSN` = '%d' WHERE `CharID` = '%d' AND `SkillID` = '%d' LIMIT 1;",
-								SkillMastery, SkillSSN, CharID, i):
-					return False
-		if not self.ExecuteSQL("DELETE FROM `item` WHERE CharID='%d'", CharID):
-			return False
-		for item in Data['Items']:
-			self.CheckDupeItem(item.m_cName, item.m_sTouchEffectValue1, item.m_sTouchEffectValue2, item.m_sTouchEffectValue3)
-			Query = "INSERT INTO `item` (`CharID`,`ItemName`,`ItemID`,`Count`,`ItemType`,`ID1`,`ID2`,`ID3`,`Color`,`Effect1`,`Effect2`,`Effect3`,`LifeSpan`,`Attribute`,`ItemEquip`,`ItemPosX`,`ItemPosY`) "+\
-					"VALUES('%d','%s','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d')"
-			if not self.ExecuteSQL(Query, CharID, 
-							item.m_cName,
-							item.ItemUniqueID,
-							item.m_dwCount,
-							item.m_sTouchEffectType,
-							item.m_sTouchEffectValue1,
-							item.m_sTouchEffectValue2,
-							item.m_sTouchEffectValue3,
-							item.m_cItemColor,
-							item.m_sItemSpecEffectValue1,
-							item.m_sItemSpecEffectValue2,
-							item.m_sItemSpecEffectValue3,
-							item.m_wCurLifeSpan,item.m_dwAttribute,item.m_bIsItemEquipped, 
-							item.X, item.Y):
-				return False
-		if not self.ExecuteSQL("DELETE FROM `bank_item` WHERE CharID='%d'", CharID):
-			return False
-		for item in Data["BankItems"]:
-			self.CheckDupeItem(item.m_cName, item.m_sTouchEffectValue1, item.m_sTouchEffectValue2, item.m_sTouchEffectValue3)
-			Query = "INSERT INTO `bank_item` (`CharID`, `ItemName`,`ItemID`,`Count`,`ItemType`,`ID1`,`ID2`,`ID3`,`Color`,`Effect1`,`Effect2`,`Effect3`,`LifeSpan`,`Attribute`)" + \
-						"VALUES('%d', '%s','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d','%d')"
-			if not self.ExecuteSQL(Query, CharID,
-					item.m_cName,
-					item.ItemUniqueID,
-					item.m_dwCount,
-					item.m_sTouchEffectType,
-					item.m_sTouchEffectValue1,
-					item.m_sTouchEffectValue2,
-					item.m_sTouchEffectValue3,
-					item.m_cItemColor,
-					item.m_sItemSpecEffectValue1,
-					item.m_sItemSpecEffectValue2,
-					item.m_sItemSpecEffectValue3,
-					item.m_wCurLifeSpan,
-					item.m_dwAttribute):
-				return False
-		return True
-
-	def CreateNewItem(self, CharID, PosX, PosY, LifeSpan, Count, Name):
-		if CharID == None:
-			return False
-		Query = "INSERT INTO `item` (`CharID`,`ItemName`,`Count`,`LifeSpan`,`ItemPosX`,`ItemPosY`) "+\
-		"VALUES('%d','%s','%d','%d','%d','%d')"
-		if not self.ExecuteSQL(Query, CharID, Name, Count, LifeSpan, PosX, PosY):
+			return session.query(Character).\
+				filter(Character.CharName == Name).\
+				one()
+		except NoResultFound:
 			return False
 		
-	def ReadDatabaseConfigFile(self, cFn):
-		"""
-			Parse database configuration file
-		"""
-		if not os.path.exists(cFn) and not os.path.isfile(cFn):
-			PutLogList("(!) Cannot open database configuration file.")
-			return False
-
-		sHost = MySQL_Auth['host']
-		iPort = MySQL_Auth['port']
-		sUser = MySQL_Auth['user']
-		sPass = MySQL_Auth['passwd']
-		sDB   = MySQL_Auth['db']
-		reg = re.compile('[a-zA-Z]')
-		fin = open(cFn, 'r')
-		try:
-			for line in fin:
-				if reg.match(line) == None:
-					continue
-					
-				token = filter(lambda l: True if type(l) == int else (l.strip() != ""), map(lambda x: (lambda y: int(y) if y.isdigit() else y)(x.strip().replace('\t',' ').replace('\r', '').replace('\n','')), line.split('=')))
-				
-				if len(token)<2:
-					continue
-					
-				if token[0] == "mysql-server-host":
-					sHost = token[1]
-					
-				if token[0] == "mysql-server-port":
-					iPort = token[1]
-					
-				if token[0] == "mysql-username":
-					sUser = token[1]
-					
-				if token[0] == "mysql-password":
-					sPass = token[1]
-						
-				if token[0] == "mysql-database":
-					sDB = token[1]
-					
-		finally:
-			fin.close()
-		return {'host' : sHost, 'port': int(iPort), 'user': sUser, 'passwd': sPass, 'db': sDB}
-
-	def CheckDupeItem(self, sName, sID1, sID2, sID3):
-		if sID1 == 0 and sID2 == 0 and sID3 == 0:
-			return
-
-		QueryConsult = "SELECT `ItemName` FROM `item` WHERE `ItemName` = '%s' AND `ID1` = '%s' AND `ID2` = '%s' AND `ID3` = '%s';"
-		self.ExecuteSQL(QueryConsult, sName, sID1, sID2, sID3)
-		r = self.db.store_result()
-		if r.num_rows() >= 1:
-			PutLogList("(!) Item [ %s ] with duplicate ID in `item` database! ID1 [ %s ] ID2 [ %s ] ID3 [ %s ]" % (sName, sID1, sID2, sID3), Logfile.HACK)
-			return
-
-		QueryConsult = "SELECT `ItemName` FROM `bank_item` WHERE `ItemName` = '%s' AND `ID1` = '%s' AND `ID2` = '%s' AND `ID3` = '%s';"
-		self.ExecuteSQL(QueryConsult, sName, sID1, sID2, sID3)
-		r = self.db.store_result()
-		ItemInBank = r.num_rows()
-		if r.num_rows() >= 1:
-			PutLogList("(!) Item [ %s ] with duplicate ID in `bank_item` database! ID1 [ %s ] ID2 [ %s ] ID3 [ %s ]" % (sName, sID1, sID2, sID3), Logfile.HACK)
-			return
-
-		return
-		
-	def GuildExists(self, GuildName, get_sql_result = False):
-		QueryConsult = "SELECT `GuildID` FROM `guild` WHERE BINARY GuildName = '%s' LIMIT 1"
-		try:
-			if not self.ExecuteSQL(QueryConsult, GuildName):
-				raise Exception()
-			r = self.db.store_result()
-			if r.num_rows() > 0:
-				return True if get_sql_result == False else (True, r)
-		except:
-			return False if get_sql_result == False else (False, None)
-		
-	def CreateNewGuild(self, CharName, AccountName, AccountPassword, GuildName, GuildLoc):
-		GUID = -1
-		try:
-			QueryConsult = "SELECT chr.CharID FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
-			if not self.ExecuteSQL(QueryConsult, AccountName, AccountPassword, CharName):
-				raise Exception()
-			r = self.db.store_result()
-			
-			if r.num_rows() == 0:
-				PutLogList("(!) Fake user tries to register Guild! Rejected!", Logfile.ERROR)
-				exit()
-				
-			if self.GuildExists(GuildName):
-				PutLogList("(!) Can not create new guild Guild[ %s ] Character [ %s@%s ]. Guild already exists!" % (GuildName, CharName, AccountName),Logfile.ERROR)
-				raise Exception()
-				
-			QueryConsult = "INSERT INTO `guild` (`GuildName`, `MasterName`, `Nation`, `CreateDate`) " + \
-							"VALUES ('%s', '%s', '%s', NOW())"
-
-			if not self.ExecuteSQL(QueryConsult,
-									GuildName,
-									CharName,
-									GuildLoc):
-				raise Exception()
-			GUID = self.db.insert_id()
-			
-			QueryConsult = "INSERT INTO `guild_member` (`GuildID`, `MemberName`, `JoinDate`)" + \
-							"VALUES ('%d', '%s', NOW())"
-							
-			if not self.ExecuteSQL(QueryConsult, GUID, CharName):
-				raise Exception()
-			
-			return (True, GUID)
-		except:
-			self.ExecuteSQL("DELETE FROM `guild` WHERE BINARY GuildName = '%s' AND BINARY MasterName = '%s'", GuildName, CharName)
-			self.ExecuteSQL("DELETE FROM `guild_member` WHERE MemberName = '%s'", CharName)
-			return (False, -1)
-			
-	def DisbandGuild(self, CharName, AccountName, AccountPassword, GuildName):
-		try:
-			QueryConsult = "SELECT chr.CharID FROM `account_database` as acc, `char_database` as chr WHERE BINARY chr.account_name = acc.name AND BINARY acc.name = '%s' AND BINARY acc.password = '%s' AND BINARY chr.char_name = '%s'"
-			if not self.ExecuteSQL(QueryConsult, AccountName, AccountPassword, CharName):
-				raise Exception()
-			r = self.db.store_result()
-			
-			if r.num_rows() == 0:
-				PutLogList("(!) Fake user tries to disband guild!", Logfile.ERROR)
-				exit()
-			
-			(OK, Res) = self.GuildExists(GuildName, True)
-			
-			if not OK:
-				PutLogList("(!) Can not disband guild [ %s ] by %s@%s. Guild does not exists!" % (GuildName, CharName, AccountName),Logfile.ERROR)
-				raise Exception()
-			GUID = int(Res.fetch_row()[0][0])
-			if not self.ExecuteSQL("DELETE FROM `guild_member` WHERE GuildID = '%d'", GUID):
-				raise Exception()
-			if not self.ExecuteSQL("DELETE FROM `guild` WHERE BINARY GuildName = '%s'", GuildName):
-				raise Exception()
-			return True
-		except:
-			return False
-			
-	def AddGuildMember(self, CharName, GuildName):
-		try:
-			(OK, Res) = self.GuildExists(GuildName, True)
-			if not OK:
-				raise Exception()
+	def __init__(self, CharName, Gender, SkinColor,
+				 HairStyle, HairColor, UnderColor, Str, Dex, Int, Mag, Vit, Chr):
+		# TODO : fix ApprX values!
+		self.CharName = CharName
+		self.Gender = int(Gender)
+		self.Skin = int(SkinColor)
+		self.HairStyle = int(HairStyle)
+		self.HairColor = int(HairColor)
+		self.Underwear = int(UnderColor)
+		self.Strength = Str
+		self.Dexterity = Dex
+		self.Intelligence = Int
+		self.Magic = Mag
+		self.Vitality = Vit
+		self.Charisma = Chr
+		self.Appr1 = (HairStyle << 8) | (HairColor << 4) | (UnderColor)
+		self.HP = (Vit * 3) + (Str / 2) + 2
+		self.MP = (Mag * 2) + (Int / 2) + 2
+		self.SP = (Str * 2) + 2
+		self.CreateDate = datetime.datetime.now()
+		self.AddItem(56, "Gold", 0, 0, 0, 0, 65, 30)
+		self.CreateDate = datetime.datetime.now()
+		for s in range(24):
+			if s in [4, 5, 7]:
+				SkillMastery = 20
+			elif s == 3:
+				SkillMastery = 3
 			else:
-				GUID = int(Res.fetch_row()[0][0])
-				QueryConsult="INSERT INTO `guild_member` (`GuildID`, `MemberName`, `JoinDate`)" + \
-								"VALUES ('%d', '%s', NOW())"
-				if not self.ExecuteSQL(QueryConsult,GUID, CharName):
-					raise Exception()
-				return True
-		except:
+				SkillMastery = 0
+			self.Skills.append(Skill(SkillID = s,
+									 SkillMastery = SkillMastery))
+		
+	def __repr__(self):
+		return "<Character(CharName = '%s', Level = '%d')>" % (self.CharName, self.Level)
+	
+	def AddItem(self, _ID, _Name, _LifeSpan, _Color, _Attr, _Equip, _X, _Y):
+		self.Items.append(Item(Name = _Name,
+								ItemID = _ID,
+								Color = _Color,
+								LifeSpan = _LifeSpan,
+								Attribute = _Attr,
+								Equip = _Equip,
+								X = _X,
+								Y = _Y))
+	def Erase(self, sess):
+		while len(self.Skills):
+			sess.delete(self.Skills.pop(0))
+		while len(self.Items):
+			sess.delete(self.Items.pop(0))
+		while len(self.BankItems):
+			sess.delete(self.BankItems.pop(0))
+		sess.delete(self)
+		
+class BankItem(Base):
+	__tablename__ = "bankitem"
+	ID = Column(Integer, primary_key = True)
+	CharID = Column(Integer, ForeignKey("character.CharacterID"))
+	Name = Column(String(20), nullable = False)
+	ItemID = Column(Integer, nullable = False)
+	Count = Column(Integer, default = 1)
+	Type = Column(Integer, default = 0)
+	ID1 = Column(Integer, default = 0)
+	ID2 = Column(Integer, default = 0)
+	ID3 = Column(Integer, default = 0)
+	Color = Column(Integer, default = 0)
+	Effect1 = Column(Integer, default = 0)
+	Effect2 = Column(Integer, default = 0)
+	Effect3 = Column(Integer, default = 0)
+	LifeSpan = Column(Integer, default = 0)
+	Attribute = Column(Integer, default = 0)
+	Char = relationship(Character, backref = backref("BankItems"))
+#	def __init__(self, Name, ID, Count, Type, ID1, ID2, ID3, Color, Effect1, Effect2,Effect3, LifeSpan
+	
+class Item(Base):
+	__tablename__ = "item"
+	ID = Column(Integer, primary_key = True)
+	CharID = Column(Integer, ForeignKey("character.CharacterID"))
+	Name = Column(String(20), nullable = False)
+	ItemID = Column(Integer, nullable = False)
+	Count = Column(Integer, default = 1)
+	Type = Column(Integer, default = 0)
+	ID1 = Column(Integer, default = 0)
+	ID2 = Column(Integer, default = 0)
+	ID3 = Column(Integer, default = 0)
+	Color = Column(Integer, default = 0)
+	Effect1 = Column(Integer, default = 0)
+	Effect2 = Column(Integer, default = 0)
+	Effect3 = Column(Integer, default = 0)
+	LifeSpan = Column(Integer, default = 0)
+	Attribute = Column(Integer, default = 0)
+	Equip = Column(Boolean, default = False)
+	X = Column(Integer, default = 0)
+	Y = Column(Integer, default = 0)
+	Char = relationship(Character, backref = backref("Items"))
+	
+class Skill(Base):
+	__tablename__ = "skill"
+	ID = Column(Integer, primary_key = True)
+	CharacterID = Column(Integer, ForeignKey("character.CharacterID"))
+	SkillID = Column(Integer, default = 0)
+	SkillMastery = Column(Integer, default = 0)
+	SkillSSN = Column(Integer, default = 0)
+	SkillChar = relationship(Character, backref = backref("Skills", order_by = ID))
+
+"""class Guild(Base):
+	ID = Column(Integer, primary_key = True)
+	Name = Column(String(20))
+	Char = 	"""
+
+class DatabaseDriver:
+	def Initialize(self, URL):
+		self.engine = None
+		self.Session = None
+		try:
+			self.engine = create_engine(URL, echo = False)
+			Base.metadata.create_all(self.engine)
+		except ArgumentError:
 			return False
-			
-	def DeleteGuildMember(self, CharName, GuildName):
-		(OK, Res) = self.GuildExists(GuildName, True)
-		if OK:
-			GUID = int(Res.fetch_row()[0][0])
-			QueryConsult = "DELETE FROM `guild_member` WHERE `GuildID` = '%d' AND BINARY `MemberName` = '%s'"
-			if self.ExecuteSQL(QueryConsult, GUID, CharName):
-				return True
-		return False
+		self.Session = sessionmaker(bind = self.engine)
+		return True
+	
+	def session(self):
+		return self.Session()
