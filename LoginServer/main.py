@@ -36,12 +36,13 @@ from LoginServer import CLoginServer
 
 def main():
 	print "OpenHelbreath Login Server experimental" # Last stable revision
-	print "Copyright (C) 2009-2010 by openhelbreath team"
+	print "Copyright (C) 2009-2011 by openhelbreath team"
 	print "This program comes with ABSOLUTELY NO WARRANTY."
 	print "This is free software, and you are welcome to redistribute it under certain conditions."
 	print
 		
 	Server = CLoginServer()
+	
 	if not Server.DoInitialSetup():
 		print "(!) Stopped!"
 		del Server
@@ -50,14 +51,9 @@ def main():
 	if not Server.InitServer():
 		del Server
 		return False
-		
+	
 	while True:
-		try:
-			q = raw_input(">>> ")
-		except:
-			sys.exit(1)
-		if q != "":
-			Server.CommandHandler(q)
+		Server.MainLoop()
 	
 if __name__ == '__main__':
 	main()
