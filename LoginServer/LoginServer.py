@@ -45,7 +45,6 @@ fillzeros = lambda txt, count: (txt + ("\x00" * (count-len(txt))))[:count]
 packet_format = lambda x: nozeros(x) if type(x) != int else x
 
 class CGameServer(object):
-	GS_Lock = Semaphore()
 	def __init__(self, id, sock):
 		self.AliveResponseTime = time.time()
 		self.GSID = id
@@ -209,6 +208,8 @@ class CLoginServer(object):
 			return
 		
 		buffer = sender.pop_packet()
+		if not buffer:
+			return
 			
 		MsgID, = struct.unpack('<I', buffer[:4])
 		RawBuffer = buffer
@@ -411,16 +412,14 @@ class CLoginServer(object):
 		"""
 			Registering new Game Server
 		"""
-		CGameServer.GS_Lock.acquire()
 		(ok, GSID, GS) = self.TryRegisterGameServer(sender, data)
-		PacketID = Packets.DEF_MSGTYPE_REJECT if ok == False else Packets.DEF_MSGTYPE_CONFIRM
-		SendData = struct.pack('<BhL2h', 0, 11, Packets.MSGID_RESPONSE_REGISTERGAMESERVER, PacketID, GSID) #cKey -> 0, dwSize = 1* 4b int + 2* 2b word
+		PacketID = Packets.DEF_MSGTYPE_REJECT if not ok else Packets.DEF_MSGTYPE_CONFIRM
+		SendData = struct.pack('<I2h', Packets.MSGID_RESPONSE_REGISTERGAMESERVER, PacketID, GSID)
 		sender.send_msg(SendData)
 		if GS != None:
 			PutLogList("(*) Game Server registered at ID[%u]-[%u]. Maps: %s" % (GSID, GS.Data['InternalID'], ", ".join(GS.MapName)))
 		else:
 			PutLogList("(!) Game Server registration rejected! IP[%s]" % sender.address, Logfile.HACK)
-		CGameServer.GS_Lock.release()
 		
 	def FindNewGSID(self):
 		"""
@@ -514,7 +513,6 @@ class CLoginServer(object):
 		"""
 			Here we are adding socket to Game Server
 		"""
-		CGameServer.GS_Lock.acquire()
 		GSID = ord(data[0])
 		PutLogList("(*) Trying to register socket on GS[%d]." % GSID)
 		if not GSID in self.GameServer:
@@ -526,7 +524,6 @@ class CLoginServer(object):
 			self.GameServer[GSID].IsRegistered = True
 			PutLogList("(*) Gameserver(%s) registered!" % (self.GameServer[GSID].Data['ServerName']))
 			PutLogList("")
-		CGameServer.GS_Lock.release()
 			
 	def GameServerAliveHandler(self, GS, data):
 		"""

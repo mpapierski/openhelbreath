@@ -135,9 +135,6 @@ class HelbreathSocket(Socket):
 		except:
 			return False
 
-		if size < len(self.read_buffer) - 3:
-			return False
-
 		buffer = self.read(size - 3)
 
 		if key:

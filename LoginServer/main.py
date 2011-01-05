@@ -29,10 +29,23 @@
 """
 
 import warnings
+from threading import Thread
 warnings.filterwarnings("ignore")
 
 import sys
 from LoginServer import CLoginServer
+
+Server = None
+
+def CLIThread():
+	global Server
+	while Server:
+		cmd = raw_input()
+		if not cmd:
+			continue
+		if cmd.upper() == 'exit':
+			break
+		Server.CommandHandler(cmd)
 
 def main():
 	print "OpenHelbreath Login Server experimental" # Last stable revision
@@ -40,7 +53,8 @@ def main():
 	print "This program comes with ABSOLUTELY NO WARRANTY."
 	print "This is free software, and you are welcome to redistribute it under certain conditions."
 	print
-		
+	
+	global Server	
 	Server = CLoginServer()
 	
 	if not Server.DoInitialSetup():
@@ -52,8 +66,15 @@ def main():
 		del Server
 		return False
 	
-	while True:
-		Server.MainLoop()
+	clithread = Thread(target = CLIThread)
+	clithread.start()
+	
+	while Server:
+		try:
+			Server.MainLoop()
+		except KeyboardInterrupt as e:
+			del Server
+			Server = None
 	
 if __name__ == '__main__':
 	main()
