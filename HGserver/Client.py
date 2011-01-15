@@ -66,20 +66,21 @@ class ClientSocket(HelbreathSocket):
 				account_password = account_password,
 				client = self
 			)
-		elif MsgID == Packets.MSGID_REQUEST_NOTICEMENT:
-			fmt = '<I'
-			packet_len = struct.calcsize(fmt)
-			client_size, = struct.unpack(fmt, packet[:packet_len])
-			print 'Request noticement: %dbytes' % client_size
-			self.on_request_noticement(
-				client = self,
-				file_size = client_size
-			)
+		
+		#elif MsgID == Packets.MSGID_REQUEST_NOTICEMENT:
+		#	fmt = '<I'
+		#	packet_len = struct.calcsize(fmt)
+		#	client_size, = struct.unpack(fmt, packet[:packet_len])
+		#	print 'Request noticement: %dbytes' % client_size
+		#	self.on_request_noticement(
+		#		client = self,
+		#		file_size = client_size
+		#	)
 			
-			self.send_msg(struct.pack('<IH',
-				Packets.MSGID_RESPONSE_NOTICEMENT,
-				Packets.DEF_MSGTYPE_CONFIRM
-			))
+		#	self.send_msg(struct.pack('<IH',
+		#		Packets.MSGID_RESPONSE_NOTICEMENT,
+		#		Packets.DEF_MSGTYPE_CONFIRM
+		#	))
 			
 		elif MsgID == Packets.MSGID_REQUEST_FULLOBJECTDATA:
 			print 'msgid == MSGID_REQUEST_FULLOBJECTDATA'
@@ -126,7 +127,7 @@ class ClientSocket(HelbreathSocket):
 		fmt += '10s' # Location
 		fmt += '20s' # Guild Name
 		fmt += 'i' # Guild Rank
-		fmt += 'I' # Super Attack Left
+		fmt += 'B' # Super Attack Left
 		fmt += 'i' # Fight Zone number
 		
 		stats = 0
@@ -186,7 +187,20 @@ class ClientSocket(HelbreathSocket):
 		data += self.player_data['skill_mastery']
 		
 		self.send_msg(data)
-		 	
+	def get_type(self):
+		if self.player_data['admin_user_level'] >= 10:
+			return self.player_data['admin_user_level']
+		
+		t = 0
+		if self.player_data['sex'] == 1:
+			t = 1
+		elif self.player_data['sex'] == 2:
+			t = 4
+			
+		t += self.player_data['skin'] - 1
+
+		return t
+				
 	def do_response_initdata(self):
 		print 'do response initdata'
 		fmt = '<IH'
@@ -198,29 +212,30 @@ class ClientSocket(HelbreathSocket):
 		fmt += 'i' # Status (auras etc)
 		fmt += '10s' # Map name
 		fmt += '10s' # Location
-		fmt += '?' # Day or night
+		fmt += 'B' # Day or night (Sprite alpha degree?)
 		fmt += 'B' # Weather status
 		fmt += 'I' # Contribution
-		fmt += '?' # Is observer mode?
+		fmt += 'B' # Is observer mode?
 		fmt += 'i' # Rating
-		fmt += 'i' # HP
-		fmt += 'x' # "Unknown variable"
+		fmt += 'I' # HP
+		fmt += 'x' # "Discount" -> % cost
 		data = struct.pack(fmt,
 			Packets.MSGID_RESPONSE_INITDATA,
 			Packets.DEF_MSGTYPE_CONFIRM,
 			self.id,
 			self.player_data['x'] - 14 - 5,
 			self.player_data['y'] - 12 - 5,
-			0, # Type (is always 0 ?)
-			0, 0, 0, 0, # TODO: Appr 1 - 4
+			self.get_type(),
+			(self.player_data['hair_style'] << 8) | (self.player_data['hair_color'] << 4) | (self.player_data['underwear']),
+			0, 0, 0, # TODO: Appr 2 - 4
 			0, # TODO: Appr color
 			0, # Status
 			self.player_data['map_name'],
 			self.player_data['location'],
-			True, # Its always night :)
-			4, # Weather. 3 = Rainy 4 = Snowy ...
-			0, # TODO: Decode contribution
-			False, # Ofcourse, player is not in observer mode
+			2, # Its always night :) (1 = Day 2 = Night)
+			0, # Weather. 3 = Rainy 4 = Snowy ...
+			self.player_data['contribution'],
+			0, # Ofcourse, player is not in observer mode
 			self.player_data['rating'],
 			self.player_data['hp'],
 		)
@@ -229,6 +244,7 @@ class ClientSocket(HelbreathSocket):
 		
 		data += struct.pack('<H', 0) # Total tiles
 		
+		print 'initdata len', len(data)
 		self.send_msg(data)
 		
 	def do_event_motion(self, action, object):
@@ -267,6 +283,16 @@ class ClientSocket(HelbreathSocket):
 			return
 		
 		self.send_msg(header)
+	
+	def send_noticement(self, data):
+		print 'send_noticement', data
+		if not data:
+			self.send_msg(struct.pack('<IH', Packets.MSGID_RESPONSE_NOTICEMENT, Packets.DEF_MSGTYPE_CONFIRM))
+			return
+		
+		self.send_msg(struct.pack('<IH', Packets.MSGID_RESPONSE_NOTICEMENT, Packets.DEF_MSGTYPE_REJECT) + \
+			data
+		)
 		
 	def on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode, client):
 		pass

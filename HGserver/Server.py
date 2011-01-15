@@ -133,11 +133,11 @@ class Server(object):
 			elif socket == self.serversocket:
 				c = self.serversocket.accept(socketcls = ClientSocket)
 				c.setblocking(False)
-				while True:
-					client_id = random.randint(0, 9999)
-					if client_id not in map(lambda client: client.id == client_id, self.clients):
-						break
-				c.id = client_id
+				try:
+					c.id = max(map(lambda client: client.id, self.clients)) + 1
+				except ValueError as e:
+					c.id = 0
+				
 				self.clients.append(c)
 				self.setup_callbacks_client(c)
 				c.on_connect(c)
@@ -311,6 +311,7 @@ class Server(object):
 		
 	def client_on_request_noticement(self, client, file_size):
 		print 'Request noticement %db size' % file_size
+		client.send_noticement('http://openhelbreath.googlecode.com')
 		
 	def client_on_request_fullobjectdata(self, client, object_id):
 		print 'request fullobjectdata req:%d client:%d' % (object_id, client.id)

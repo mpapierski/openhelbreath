@@ -144,19 +144,42 @@ class GateProtocol(HelbreathSocket):
 		fmt += 'I' # EK-count
 		fmt += 'I' # PK count
 		fmt += 'I' # Reward gold
-		fmt += '24I' # Skill SSN
+		fmt += '96s' # Skill SSN
 		fmt += '4x' # padding (?)
 		fmt += 'B' # Hunger status
 		fmt += 'B' # Admin User Level
 		fmt += 'I' # TimeLeft_ShutUp
 		fmt += 'I' # TimeLeft_Rating
-		fmt += 'I' # Rating
-		fmt += 'I' # Guild GUID
+		fmt += 'i' # Rating
+		fmt += 'i' # Guild GUID
 		fmt += 'b' # Down skill index
 		fmt += 'I' # Char ID
 		fmt += '3I' # CharIDnum1, CharIDnum2, CharIDnum3
-		
-		fmt += '20s' # Block date
+		fmt += '20s' # Block date"""
+		fmt += 'h' # iQuest
+		fmt += 'h' # iCurQuestCount
+		fmt += 'h' # iQuestRewardType
+		fmt += 'i' # iQuestRewardAmount
+		fmt += 'i' # iContribution
+		fmt += 'i' # iQuestID
+		fmt += 'B' # bIsQuestCompleted
+		fmt += 'i' # iTimeLeft_ForceRecall
+		fmt += 'i' # iTimeLeft_FirmStaminar
+		fmt += 'i' # iSpecialEventID
+		fmt += 'h' # iSuperAttackLeft
+		fmt += 'B' # iFightzoneNumber
+		fmt += 'i' # iReserveTime
+		fmt += 'B' # iFightZoneTicketNumber
+		fmt += 'i' # iSpecialAbilityTime
+		fmt += 'i' # iWarContribution
+		fmt += '10s' # cLockedMapName
+		fmt += 'i' # iLockedMapTime
+		fmt += 'B' # iCrusadeDuty
+		fmt += 'i' # iConstructionPoint
+		fmt += 'i' # dwCrusadeGUID
+		fmt += 'i' # iDeadPenaltyTime
+		fmt += 'i' # iPartyID
+		fmt += 'h' # iGizonItemUpgradeLeft
 		
 		# TODO: parse rest of values items and bankitems ...
 		
@@ -204,11 +227,45 @@ class GateProtocol(HelbreathSocket):
 			'char_idnum1',
 			'char_idnum2',
 			'char_idnum3',
-			'block_date')
-		
-		playerrawdata = map(strip_zeros, struct.unpack(fmt, packet[:packet_size]))
-		player_data = dict(zip(fields, playerrawdata))
-		
+			'block_date',
+			'questnum',
+			'questcount',
+			'questrewtype',
+			'questrewammount',
+			'contribution',
+			'questid',
+			'questcompleted',
+			'leftforcerecalltime',
+			'leftfirmstaminartime',
+			'eventid',
+			'leftsac',
+			'fightnum',
+			'fightdate',
+			'fightticket',
+			'leftspecialtime',
+			'warcon',
+			'lockedmapname',
+			'lockedmaptime',
+			'crujob',
+			'cruconstructpoint',
+			'cruid',
+			'leftdeadpenaltytime',
+			'partyid',
+			'gizonitemupgradeleft'
+		)
+
+		playerrawdata = struct.unpack(fmt, packet[:packet_size])
+		print playerrawdata
+		player_data = zip(fields, playerrawdata)
+		print player_data
+		player_data = dict(player_data)
+
+		for key in ('char_name', 'location', 'lockedmapname', 'guild_name'):
+			player_data[key] = strip_zeros(player_data[key])
+			
+			
+		player_data['skill_ssn'] = struct.unpack('<24I', player_data['skill_ssn'])
+		print player_data['skill_ssn']
 		self.on_response_playerdata(
 			char_name = player_data['char_name'],
 			player_data = player_data
