@@ -7,7 +7,10 @@ class ClientSocket(HelbreathSocket):
 	'''
 		Gate server protocol class
 	'''
-	
+	dir = 0
+	type = 0
+	status = 0
+		
 	def __init__(self, instance):
 		'''
 			No need for address and port
@@ -77,6 +80,13 @@ class ClientSocket(HelbreathSocket):
 				Packets.MSGID_RESPONSE_NOTICEMENT,
 				Packets.DEF_MSGTYPE_CONFIRM
 			))
+			
+		elif MsgID == Packets.MSGID_REQUEST_FULLOBJECTDATA:
+			print 'msgid == MSGID_REQUEST_FULLOBJECTDATA'
+			self.on_request_fullobjectdata(
+				client = self,
+				object_id = MsgType				
+			)
 			
 		else:
 			print 'Client packet. MsgID: 0x%08X MsgType: 0x%04X' % (MsgID, MsgType)
@@ -199,8 +209,8 @@ class ClientSocket(HelbreathSocket):
 			Packets.MSGID_RESPONSE_INITDATA,
 			Packets.DEF_MSGTYPE_CONFIRM,
 			self.id,
-			self.player_data['x'],
-			self.player_data['y'],
+			self.player_data['x'] - 14 - 5,
+			self.player_data['y'] - 12 - 5,
 			0, # Type (is always 0 ?)
 			0, 0, 0, 0, # TODO: Appr 1 - 4
 			0, # TODO: Appr color
@@ -208,7 +218,7 @@ class ClientSocket(HelbreathSocket):
 			self.player_data['map_name'],
 			self.player_data['location'],
 			True, # Its always night :)
-			4, # Weather - 3
+			4, # Weather. 3 = Rainy 4 = Snowy ...
 			0, # TODO: Decode contribution
 			False, # Ofcourse, player is not in observer mode
 			self.player_data['rating'],
@@ -221,6 +231,43 @@ class ClientSocket(HelbreathSocket):
 		
 		self.send_msg(data)
 		
+	def do_event_motion(self, action, object):
+		print 'do event motion', action
+		
+		actions = {
+			'stop': Packets.DEF_OBJECTSTOP
+		}
+		
+		header = struct.pack('<IH', Packets.MSGID_EVENT_MOTION, actions[action])
+		
+		if object.id < 10000:
+			# Human
+			fmt = '<H' # Object ID
+			fmt += 'hh' # X, Y
+			fmt += 'h' # Type
+			fmt += 'h' # Dir
+			fmt += '10s' # Char name
+			fmt += '4h' # Appr 1 - 4
+			fmt += 'i' # Appr color
+			fmt += 'I' # Status
+			fmt += '?' # Is killed ?
+			header += struct.pack(fmt,
+				object.id,
+				object.player_data['x'], object.player_data['y'],
+				0, # Type
+				object.dir, # Direction
+				object.player_data['char_name'],
+				0, 0, 0, 0, # TODO: Appr 1 - 4
+				object.status,
+				object.player_data['hp'] <= 0
+			)
+		else:
+			# NPC
+			print 'Unimplemented: NPC event motion'
+			return
+		
+		self.send_msg(header)
+		
 	def on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode, client):
 		pass
 	
@@ -228,4 +275,7 @@ class ClientSocket(HelbreathSocket):
 		pass
 	
 	def on_request_noticement(self, client, file_size):
+		pass
+	
+	def on_request_fullobjectdata(self, client, object_id):
 		pass

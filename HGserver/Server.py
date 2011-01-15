@@ -134,7 +134,7 @@ class Server(object):
 				c = self.serversocket.accept(socketcls = ClientSocket)
 				c.setblocking(False)
 				while True:
-					client_id = random.randint(0, 65535)
+					client_id = random.randint(0, 9999)
 					if client_id not in map(lambda client: client.id == client_id, self.clients):
 						break
 				c.id = client_id
@@ -225,7 +225,7 @@ class Server(object):
 		
 		client.on_request_initplayer = self.client_on_request_initplayer
 		client.on_request_initdata = self.client_on_request_initdata
-		
+		client.on_request_fullobjectdata = self.client_on_request_fullobjectdata
 	def delete_client(self, client):
 		# TODO: options etc
 		client.close()
@@ -306,11 +306,19 @@ class Server(object):
 			print '(!) Error!', self.char_name, '!=', char_name
 			self.delete_client(client)
 			return
-		import time
 		client.do_playercharactercontents()
-		#time.sleep(2)
 		client.do_response_initdata()
 		
 	def client_on_request_noticement(self, client, file_size):
 		print 'Request noticement %db size' % file_size
 		
+	def client_on_request_fullobjectdata(self, client, object_id):
+		print 'request fullobjectdata req:%d client:%d' % (object_id, client.id)
+		try:
+			obj, = filter(lambda _: _.id == object_id, self.clients)
+		except ValueError as e:
+			print '(!) Client requests full data from unknown object.'
+			self.delete_client(client)
+			return
+		
+		self.do_event_motion('stop', obj)
