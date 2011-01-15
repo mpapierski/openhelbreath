@@ -92,7 +92,27 @@ class GateProtocol(HelbreathSocket):
 		
 		self.send_msg(data)
 	
-	
+	def do_entergame_confirm(self, account_name, account_password, server_name, address, level):
+		print 'do_entergame_confirm'
+		fmt = '<IH'
+		fmt += '10s' # Account name
+		fmt += '10s' # Account password
+		fmt += '10s' # Server name
+		fmt += '16s' # Client IP
+		fmt += 'I' # Level
+		
+		data = struct.pack(fmt,
+				Packets.MSGID_ENTERGAMECONFIRM,
+				Packets.DEF_MSGTYPE_CONFIRM,
+				account_name,
+				account_password,
+				server_name,
+				address,
+				level
+		)
+		
+		self.send_msg(data)
+		
 	'''
 		Parsers
 	'''

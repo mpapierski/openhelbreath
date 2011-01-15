@@ -204,6 +204,9 @@ class Server(object):
 	'''
 	
 	def setup_callbacks_gate(self, logsocket):
+		'''
+			Setup callbacks on gate socket
+		'''
 		logsocket.on_response_registergameserver = self.on_response_registergameserver
 		logsocket.on_connect = self.on_logsocket_connected
 		logsocket.on_disconnect = self.on_logsocket_connection_lost
@@ -259,8 +262,20 @@ class Server(object):
 		self.player_data = player_data
 		
 		client.do_response_initplayer(success = True)
+		
 		# TODO : when you call it with success = False client will get 
-		# 'World server full try other server'. Player limit could be implemented.
+		# 'World server full try other server'. Player limit could be 
+		# implemented.
+		
+		self.getlogsocket().do_entergame_confirm(
+			account_name = client.account_name,
+			account_password = client.account_password,
+			server_name = self.server_name,
+			address = client.address,
+			level = player_data['level']
+		)
+		
+		print '(TestLog) Enter Game Confirm Level: %d' % player_data['level']
 		
 	'''
 		Client socket handlers
@@ -272,7 +287,7 @@ class Server(object):
 		
 		client.char_name = char_name
 		client.account_name = account_name
-		# client.account_password = account_password
+		client.account_password = account_password
 		
 		self.getlogsocket().do_request_playerdata(
 			char_name = char_name,
