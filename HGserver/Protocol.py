@@ -55,7 +55,6 @@ class GateProtocol(HelbreathSocket):
 		)
 				
 		for map in maps:
-			print map
 			header += struct.pack('<11s', map)
 			
 		self.send_msg(header)
@@ -260,10 +259,9 @@ class GateProtocol(HelbreathSocket):
 		print player_data
 		player_data = dict(player_data)
 
-		for key in ('char_name', 'location', 'lockedmapname', 'guild_name'):
+		for key in ('map_name', 'char_name', 'location', 'lockedmapname', 'guild_name'):
 			player_data[key] = strip_zeros(player_data[key])
-			
-			
+		
 		player_data['skill_ssn'] = struct.unpack('<24I', player_data['skill_ssn'])
 		print player_data['skill_ssn']
 		self.on_response_playerdata(

@@ -54,8 +54,8 @@ class Server(object):
 		
 	def read_config(self):
 		# JSON configuration reader
-		import json
-		
+		import json, os
+		from HBMap import HBMap
 		config = json.load(open('settings.cfg'))
 		self.server_name = str(config['CONFIG']['game-server-name'])
 		self.address = str(config['CONFIG']['game-server-address'])
@@ -63,8 +63,25 @@ class Server(object):
 		
 		self.log_server_address = str(config['CONFIG']['log-server-address'])
 		self.gate_server_port = int(config['CONFIG']['gate-server-port'])
-
-		self.maps = map(str, config['MAPS'])
+		
+		self.maps = {}
+		
+		for map_name, options in config['MAPS'].items():
+			map_name = str(map_name)
+			print 'Initializing map %s...' % (map_name, )
+			file_name = os.path.join(os.path.dirname(__file__), 'MAPDATA', options['amd'])
+			
+			if not os.path.exists(file_name):
+				print 'Failure. Map %s does not exists.' % (map_name, )
+				continue
+			try:
+				amd = HBMap(file_name)
+			except Exception as e:
+				print 'Failure. %s.' % (e, )
+				continue
+			print 'OK! SIZE(%d, %d)' % (amd.MAPSIZEX, amd.MAPSIZEY)
+			self.maps[map_name] = config['MAPS'][map_name]
+			self.maps[map_name]['amd'] = amd
 		return True
 	
 	def initialize(self):
@@ -173,7 +190,7 @@ class Server(object):
 				server_name = self.server_name,
 				address = self.address,
 				port = self.port,
-				maps = self.maps
+				maps = self.maps.keys()
 			)
 			
 	def on_logsocket_connection_lost(self, logsocket):
@@ -262,10 +279,20 @@ class Server(object):
 			self.delete_client(client)
 			return
 		
-		print 'response_playerdata', player_data
+		if player_data['map_name'] not in self.maps:
+			print 'Player stuck on not existing map "%s" !' % (player_data['map_name'], )
+			self.delete_client(client)
+			return
 		
+		maploc = self.maps[player_data['map_name']]
+		
+		if (player_data['x'], player_data['y']) not in maploc:
+			player_data['x'], player_data['y'] = random.choice(maploc['initial-points'])
+			print '%s new initial point is', player_data['x'], player_data['y']
+			
 		client.player_data = player_data
-		
+		client.map = maploc
+				
 		client.do_response_initplayer(success = True)
 		
 		# TODO : when you call it with success = False client will get 
