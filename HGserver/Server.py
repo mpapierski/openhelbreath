@@ -32,10 +32,11 @@ import select
 import Settings
 from Sockets import ServerSocket
 from Protocol import GateProtocol
+from Client import ClientSocket
 
 class GateSocket(GateProtocol):
-	def __init__(self, address, port, server_instance):
-		super(GateSocket, self).__init__(address = address, port = port, server_instance = server_instance)
+	def __init__(self, address, port):
+		super(GateSocket, self).__init__(address = address, port = port)
 		self.setblocking(False)
 	
 class Server(object):
@@ -49,6 +50,7 @@ class Server(object):
 		self.maps = []
 		self.clients = []
 		self.logsockets = []
+		self.serversocket = None
 		
 	def read_config(self):
 		# JSON configuration reader
@@ -72,8 +74,7 @@ class Server(object):
 		for i in range(5):
 			socket = GateSocket(
 				address = self.log_server_address,
-				port = self.gate_server_port,
-				server_instance = self
+				port = self.gate_server_port
 			)
 			socket.on_response_registergameserver = self.on_response_registergameserver
 			socket.on_connect = self.on_logsocket_connected
@@ -83,11 +84,23 @@ class Server(object):
 			
 		self.logsockets[0].connect()
 		
+		self.serversocket = ServerSocket(
+			(self.address, self.port),
+			socketcls = ClientSocket
+		)
+		
+		self.serversocket.on_listen = self.on_gameserver_listen
+		self.serversocket.open_socket()
+		
 		return True
 		
 	def loop(self):
 		rinput = filter(lambda sock: sock.connected, self.logsockets)
+		rinput += self.clients
+		rinput += [self.serversocket]
+
 		winput = filter(lambda sock: sock.connecting or sock.write_buffer, self.logsockets)
+		winput += filter(lambda sock: sock.write_buffer, self.clients)
 		
 		(rlist, wlist, elist) = select.select(rinput, winput, [], 0.5)
 		
@@ -97,10 +110,29 @@ class Server(object):
 				if not n:
 					socket.on_disconnect(socket)
 					socket.close()
-					
+					continue
+													
 				while socket.pop_packet():
 					pass
-			
+				
+			elif socket in self.clients:
+				n = socket.recv()
+				if not n:
+					socket.on_disconnect(socket)
+					socket.close()
+					self.clients.remove(socket)
+					continue
+									
+				while socket.pop_packet():
+					pass
+				
+			elif socket == self.serversocket:
+				c = self.serversocket.accept(socketcls = ClientSocket)
+				c.setblocking(False)
+				self.clients.append(c)
+				self.setup_callbacks_client(c)
+				c.on_connect(c)
+				
 		for socket in wlist:
 			if socket.connecting:
 				socket.connecting = False
@@ -108,6 +140,10 @@ class Server(object):
 				socket.on_connect(socket)
 				
 			n = socket.flush()
+	
+	'''
+		Socket events
+	'''
 	
 	def on_logsocket_connected(self, logsocket):
 		'''
@@ -127,14 +163,45 @@ class Server(object):
 			logsocket.do_register_gameserver(
 				server_name = self.server_name,
 				address = self.address,
-				port = self.gate_server_port,
+				port = self.port,
 				maps = self.maps
 			)
 			
 	def on_logsocket_connection_lost(self, logsocket):
+		'''
+			Fired when gate server socket lost connection
+		'''
+		
 		print 'Lost connection to gate server on socket-%d' % self.logsockets.index(logsocket)
 		if not filter(lambda _: _.connected, self.logsockets):
 			print 'Lost connection to gate server!'
+	
+	def on_gameserver_listen(self):
+		print 'Game server socket is working!'
+		
+	def on_client_connect(self, client):
+		print 'Client connected!'
+	
+	def on_client_disconnect(self, client):
+		print 'Client disconnected!'
+
+	'''
+		Functions
+	'''
+
+	def setup_callbacks_client(self, client):
+		'''
+			Setup callbacks on client socket
+		'''
+		client.on_connect = self.on_client_connect
+		client.on_disconnect = self.on_client_disconnect
+		
+		client.on_request_initplayer = self.client_on_request_initplayer
+	
+
+	'''
+		Gate server handlers
+	'''
 	
 	def on_response_registergameserver(self, success, gsid = None):
 		if not success:
@@ -149,3 +216,11 @@ class Server(object):
 			if not socket.connected:
 				print 'Connecting gate server socket-%d!' % (i, )
 				socket.connect()
+				
+	'''
+		Client socket handlers
+	'''
+	
+	def client_on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode):
+		print 'Request init player'
+		print char_name, account_name, account_password, is_observer_mode

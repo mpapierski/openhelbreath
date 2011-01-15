@@ -2,12 +2,7 @@ import struct, os
 from Sockets import HelbreathSocket
 from NetMessages import Packets
 
-class BaseProtocolSocket(HelbreathSocket):
-	def __init__(self, address, port, server_instance):
-		super(BaseProtocolSocket, self).__init__(address = address, port = port)
-		self.server = server_instance
-
-class GateProtocol(BaseProtocolSocket):
+class GateProtocol(HelbreathSocket):
 	'''
 		Gate server protocol class
 	'''

@@ -184,7 +184,6 @@ class ServerSocket(object):
 	def __init__(self, (address, port), socketcls):
 		self.address, self.port = address, port
 		self.size = 8192
-		self.callbacks = Callbacks(callbacks)
 		self.socket_list = []
 		self.open_socket()
 		self.socketcls = socketcls
@@ -195,7 +194,7 @@ class ServerSocket(object):
 		"""
 		for socket in self.socket_list:
 			socket.close()
-		self.close()
+		self.server.close()
 		self.on_close()
 
 	def open_socket(self):
@@ -208,14 +207,19 @@ class ServerSocket(object):
 			self.server.bind()
 			self.server.listen(10)
 		except socket.error, (value, message):
+			import sys
 			print '[ERROR] %s\n' % message
 			self.close()
+			sys.exit(1)
 		
 		self.on_listen()
 
 	def fileno(self):
 		return self.server.fileno()
 
+	def accept(self, socketcls):
+		return self.server.accept(socketcls = socketcls)
+		
 	def on_accept(self):
 		'''
 			Fired when self.server is on readlist
@@ -244,3 +248,9 @@ class ServerSocket(object):
 		if not client.fileno():
 			self.on_disconnect()
 			self.client_list.remove(client)
+
+	def on_listen(self):
+		pass
+	
+	def on_close(self):
+		pass
