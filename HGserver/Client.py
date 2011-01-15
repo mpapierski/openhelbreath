@@ -47,10 +47,11 @@ class ClientSocket(HelbreathSocket):
 				char_name = char_name,
 				account_name = account_name,
 				account_password = account_password,
-				is_observer_mode = is_observer_mode									
+				is_observer_mode = is_observer_mode,
+				client = self						
 			)
 		else:
 			print 'Client packet. MsgID: 0x%08X MsgType: 0x%04X' % (MsgID, MsgType)
 		
-	def on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode):
+	def on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode, client):
 		pass

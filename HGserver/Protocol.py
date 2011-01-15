@@ -1,6 +1,7 @@
 import struct, os
 from Sockets import HelbreathSocket
 from NetMessages import Packets
+from Helpers import strip_zeros
 
 class GateProtocol(HelbreathSocket):
 	'''
@@ -27,6 +28,8 @@ class GateProtocol(HelbreathSocket):
 			)
 		elif MsgID == Packets.MSGID_RESPONSE_REGISTERGAMESERVERSOCKET:
 			self.on_response_registergameserversocket(self)
+		elif MsgID == Packets.MSGID_RESPONSE_PLAYERDATA:
+			self.__response_playerdata(packet)
 		else:
 			print '%s gets unknown message: MsgID: 0x%08X MsgType: 0x%04X' % (self.__class__.__name__, MsgID, MsgType)
 			
@@ -68,10 +71,133 @@ class GateProtocol(HelbreathSocket):
 		)
 		
 		self.send_msg(header)
-
+		
+	def do_request_playerdata(self, char_name, account_name, account_password, address):
+		print 'do_request_playerdata'
+		fmt = '<IH'
+		fmt += '10s' # character name
+		fmt += '10s' # account name
+		fmt += '10s' # account password
+		fmt += '15s' # address
+		fmt += 'x' # 1b padding, always zero. "Account Status"
+		print address, type(address)
+		data = struct.pack(fmt,
+			Packets.MSGID_REQUEST_PLAYERDATA,
+			Packets.DEF_MSGTYPE_CONFIRM,
+			char_name,
+			account_name,
+			account_password,
+			address
+		)
+		
+		self.send_msg(data)
+	
+	
+	'''
+		Parsers
+	'''
+	
+	def __response_playerdata(self, packet):
+		fmt = '<10s' # char_name
+		fmt += 'x' # Account Status - outdated
+		fmt += 'x' # Guild Status - outdated
+		fmt += '10s' # map name
+		fmt += 'hh' # X, Y
+		fmt += 'B' # Sex
+		fmt += 'B' # Skin
+		fmt += 'B' # Hair Style
+		fmt += 'B' # Hair Color
+		fmt += 'B' # Underwear
+		fmt += '20s' # Guild Name
+		fmt += 'b' # Guild Rank
+		fmt += 'I' # HP
+		fmt += 'H' # Level
+		fmt += 'BBBBBB' # Str, Vit, Dex, Int, Mag, Agi
+		fmt += 'B' # Luck
+		fmt += 'I' # Exp
+		fmt += '100s' # Magic mastery
+		fmt += '24s' # Skill mastery
+		fmt += '10s' # Location
+		fmt += 'I' # MP
+		fmt += 'I' # SP
+		fmt += 'x' # LU-pool
+		fmt += 'I' # EK-count
+		fmt += 'I' # PK count
+		fmt += 'I' # Reward gold
+		fmt += '24I' # Skill SSN
+		fmt += '4x' # padding (?)
+		fmt += 'B' # Hunger status
+		fmt += 'B' # Admin User Level
+		fmt += 'I' # TimeLeft_ShutUp
+		fmt += 'I' # TimeLeft_Rating
+		fmt += 'I' # Rating
+		fmt += 'I' # Guild GUID
+		fmt += 'b' # Down skill index
+		fmt += 'I' # Char ID
+		fmt += '3I' # CharIDnum1, CharIDnum2, CharIDnum3
+		
+		fmt += '20s' # Block date
+		
+		# TODO: parse rest of values items and bankitems ...
+		
+		packet_size = struct.calcsize(fmt)
+		
+		fields = (
+			'char_name',
+			'map_name',
+			'x',
+			'y',
+			'sex',
+			'skin',
+			'hair_style',
+			'hair_color',
+			'underwear',
+			'guild_name',
+			'guild_rank',
+			'hp',
+			'level',
+			'str',
+			'vit',
+			'dex',
+			'int',
+			'mag',
+			'agi',
+			'luck',
+			'exp',
+			'magic_mastery',
+			'skill_mastery',
+			'location',
+			'mp',
+			'sp',
+			'ek_count',
+			'pk_count',
+			'reward_gold',
+			'skill_ssn',
+			'hunger_status',
+			'admin_user_level',
+			'timeleft_shutup',
+			'timeleft_rating',
+			'rating',
+			'guild_guid',
+			'down_skill_index',
+			'char_id',
+			'char_idnum1',
+			'char_idnum2',
+			'char_idnum3',
+			'block_date')
+		
+		playerrawdata = map(strip_zeros, struct.unpack(fmt, packet[:packet_size]))
+		player_data = dict(zip(fields, playerrawdata))
+		
+		self.on_response_playerdata(
+			char_name = player_data['char_name'],
+			player_data = player_data
+		)
+		
 	'''
 		Callbacks
 	'''
+	
 	def on_response_registergameserver(self, success, gsid = None):
 		'''
 			Handler for MSGID_RESPONSE_REGISTERGAMESERVER
@@ -84,6 +210,12 @@ class GateProtocol(HelbreathSocket):
 		'''
 			Handle for MSGID_RESPONSE_REGISTERGAMESERVERSOCKET
 			Fired when Game server register more than one sockets on gate server.
+		'''
+		
+	def on_response_playerdata(self, char_name, player_data):
+		'''
+			Handle for MSGID_RESPONSE_PLAYERDATA
+			Fired when gate server gives us serialized player data
 		'''
 		
 	def on_receive_config_item(self, data):

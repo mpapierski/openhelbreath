@@ -76,10 +76,9 @@ class Server(object):
 				address = self.log_server_address,
 				port = self.gate_server_port
 			)
-			socket.on_response_registergameserver = self.on_response_registergameserver
-			socket.on_connect = self.on_logsocket_connected
-			socket.on_disconnect = self.on_logsocket_connection_lost
 			
+			self.setup_callbacks_gate(socket)
+	
 			self.logsockets += [socket]
 			
 		self.logsockets[0].connect()
@@ -113,7 +112,9 @@ class Server(object):
 					continue
 													
 				while socket.pop_packet():
-					pass
+					# Why would we even disconnect gate socket?
+					# Just do nothing
+					pass 
 				
 			elif socket in self.clients:
 				n = socket.recv()
@@ -124,7 +125,10 @@ class Server(object):
 					continue
 									
 				while socket.pop_packet():
-					pass
+					print 'Pop packet', socket.fileno()
+					if not socket.fileno():
+						socket.on_disconnect(socket)
+						self.clients.remove(socket)
 				
 			elif socket == self.serversocket:
 				c = self.serversocket.accept(socketcls = ClientSocket)
@@ -186,8 +190,24 @@ class Server(object):
 		print 'Client disconnected!'
 
 	'''
+		Communication
+	'''
+	
+	
+	def getlogsocket(self):
+		# TODO : Filter only connected logsockets?
+		import random
+		return random.choice(self.logsockets)
+		
+	'''
 		Functions
 	'''
+	
+	def setup_callbacks_gate(self, logsocket):
+		logsocket.on_response_registergameserver = self.on_response_registergameserver
+		logsocket.on_connect = self.on_logsocket_connected
+		logsocket.on_disconnect = self.on_logsocket_connection_lost
+		logsocket.on_response_playerdata = self.on_response_playerdata		
 
 	def setup_callbacks_client(self, client):
 		'''
@@ -197,8 +217,13 @@ class Server(object):
 		client.on_disconnect = self.on_client_disconnect
 		
 		client.on_request_initplayer = self.client_on_request_initplayer
-	
-
+		
+	def delete_client(self, client):
+		# TODO: options etc
+		client.close()
+		if client in self.clients:
+			self.clients.remove(client)
+		
 	'''
 		Gate server handlers
 	'''
@@ -216,11 +241,36 @@ class Server(object):
 			if not socket.connected:
 				print 'Connecting gate server socket-%d!' % (i, )
 				socket.connect()
-				
+		
+	def on_response_playerdata(self, char_name, player_data):
+		try:
+			client, = filter(lambda _: _.char_name, self.clients)
+		except ValueError as e:
+			print '(O) Got unknown player data %r' % char_name
+			return
+		
+		if not player_data:
+			print '(HACK?) Not existing character(%s) data request! Rejected!' % (char_name, )
+			self.delete_client(client)
+			return
+		
+		print 'response_playerdata', player_data
+		
 	'''
 		Client socket handlers
 	'''
 	
-	def client_on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode):
+	def client_on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode, client):
 		print 'Request init player'
 		print char_name, account_name, account_password, is_observer_mode
+		
+		client.char_name = char_name
+		client.account_name = account_name
+		# client.account_password = account_password
+		
+		self.getlogsocket().do_request_playerdata(
+			char_name = char_name,
+			account_name = account_name,
+			account_password = account_password,
+			address = client.address
+		)
