@@ -42,7 +42,6 @@ class ClientSocket(HelbreathSocket):
 			(char_name, account_name, account_password, is_observer_mode, ) = \
 				map(strip_zeros, struct.unpack(fmt, packet[:packet_len]))
 				
-			print char_name, account_name, account_password, is_observer_mode
 			self.on_request_initplayer(
 				char_name = char_name,
 				account_name = account_name,
@@ -52,6 +51,18 @@ class ClientSocket(HelbreathSocket):
 			)
 		else:
 			print 'Client packet. MsgID: 0x%08X MsgType: 0x%04X' % (MsgID, MsgType)
+		
+	def do_response_initplayer(self, success):
+		# Fun fact:
+		# If you call do_response_initplayer(success = False)
+		# Original client will show message 'World Server Full'
+		# 'Try other World server'
+		
+		data = struct.pack('<IH',
+			Packets.MSGID_RESPONSE_INITPLAYER,
+			Packets.DEF_MSGTYPE_CONFIRM if success else Packets.DEF_MSGTYPE_REJECT
+		)
+		self.send_msg(data)
 		
 	def on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode, client):
 		pass

@@ -256,6 +256,12 @@ class Server(object):
 		
 		print 'response_playerdata', player_data
 		
+		self.player_data = player_data
+		
+		client.do_response_initplayer(success = True)
+		# TODO : when you call it with success = False client will get 
+		# 'World server full try other server'. Player limit could be implemented.
+		
 	'''
 		Client socket handlers
 	'''
