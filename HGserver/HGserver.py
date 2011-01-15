@@ -36,11 +36,13 @@ class Application(object):
 		
 	def run(self):
 		print 'Initialize'
-		self.server.initialize()
+		if not self.server.initialize():
+			print 'Game server initialization fail'
+			return
 		print 'Initialized'
 		while True:
 			self.server.loop()
-		 
+
 if __name__ == '__main__':
 	app = Application()
 	app.run()

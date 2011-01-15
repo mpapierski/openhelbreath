@@ -57,6 +57,7 @@ class GateProtocol(BaseProtocolSocket):
 		)
 				
 		for map in maps:
+			print map
 			header += struct.pack('<11s', map)
 			
 		self.send_msg(header)

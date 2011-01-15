@@ -43,18 +43,36 @@ class Server(object):
 		New game server
 		2011 Drajwer
 	'''
+	
 	def __init__(self):
-		self.server_name = 'Test'
-		self.maps = ['aresden', 'elvine', 'default']
+		self.server_name = ''
+		self.maps = []
 		self.clients = []
 		self.logsockets = []
 		
+	def read_config(self):
+		# JSON configuration reader
+		import json
 		
+		config = json.load(open('settings.cfg'))
+		self.server_name = str(config['CONFIG']['game-server-name'])
+		self.address = str(config['CONFIG']['game-server-address'])
+		self.port = int(config['CONFIG']['game-server-port'])
+		
+		self.log_server_address = str(config['CONFIG']['log-server-address'])
+		self.gate_server_port = int(config['CONFIG']['gate-server-port'])
+
+		self.maps = map(str, config['MAPS'])
+		return True
+	
 	def initialize(self):
+		if not self.read_config():
+			return False
+		
 		for i in range(5):
 			socket = GateSocket(
-				address = '192.168.1.245',
-				port = 6502,
+				address = self.log_server_address,
+				port = self.gate_server_port,
 				server_instance = self
 			)
 			socket.on_response_registergameserver = self.on_response_registergameserver
@@ -64,6 +82,8 @@ class Server(object):
 			self.logsockets += [socket]
 			
 		self.logsockets[0].connect()
+		
+		return True
 		
 	def loop(self):
 		rinput = filter(lambda sock: sock.connected, self.logsockets)
@@ -106,8 +126,8 @@ class Server(object):
 			print 'Trying to register game server %s...' % self.server_name
 			logsocket.do_register_gameserver(
 				server_name = self.server_name,
-				address = '127.0.0.1',
-				port = 9001,
+				address = self.address,
+				port = self.gate_server_port,
 				maps = self.maps
 			)
 			
