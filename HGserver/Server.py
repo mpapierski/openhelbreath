@@ -58,6 +58,9 @@ class Server(object):
 				server_instance = self
 			)
 			socket.on_response_registergameserver = self.on_response_registergameserver
+			socket.on_connect = self.on_logsocket_connected
+			socket.on_disconnect = self.on_logsocket_connection_lost
+			
 			self.logsockets += [socket]
 			
 		self.logsockets[0].connect()
@@ -67,22 +70,51 @@ class Server(object):
 		winput = filter(lambda sock: sock.connecting or sock.write_buffer, self.logsockets)
 		
 		(rlist, wlist, elist) = select.select(rinput, winput, [], 0.5)
+		
 		for socket in rlist:
-			n = socket.recv()
-			if not n:
-				socket.on_disconnect()
-				socket.close()
-				
-			while socket.pop_packet():
-				pass
+			if socket in self.logsockets:
+				n = socket.recv()
+				if not n:
+					socket.on_disconnect(socket)
+					socket.close()
+					
+				while socket.pop_packet():
+					pass
 			
 		for socket in wlist:
 			if socket.connecting:
 				socket.connecting = False
 				socket.connected = True
-				socket.on_connect()
+				socket.on_connect(socket)
 				
 			n = socket.flush()
+	
+	def on_logsocket_connected(self, logsocket):
+		'''
+			Request game server registration
+		'''
+		
+		#How many connected sockets we have?
+		connected = len(filter(lambda _: _.connected, self.logsockets)) 
+		
+		if connected > 1:
+			print 'Trying to register game server socket'
+			logsocket.do_register_gameserversocket(
+				gsid = self.gsid
+			)
+		else:
+			print 'Trying to register game server %s...' % self.server_name
+			logsocket.do_register_gameserver(
+				server_name = self.server_name,
+				address = '127.0.0.1',
+				port = 9001,
+				maps = self.maps
+			)
+			
+	def on_logsocket_connection_lost(self, logsocket):
+		print 'Lost connection to gate server on socket-%d' % self.logsockets.index(logsocket)
+		if not filter(lambda _: _.connected, self.logsockets):
+			print 'Lost connection to gate server!'
 	
 	def on_response_registergameserver(self, success, gsid = None):
 		if not success:

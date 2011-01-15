@@ -37,49 +37,42 @@ class GateProtocol(BaseProtocolSocket):
 			
 		return True
 			
-	def on_connect(self):
+	'''
+		Actions
+	'''
+	
+	def do_register_gameserver(self, server_name, address, port, maps):
 		'''
-			Request game server registration
-			MsgID: MSGID_REQUEST_REGISTERGAMESERVER
-			MsgType: DEF_MSGTYPE_CONFIRM 
-			Server Name - 10b
-			Game server external address - 16b
-			Port - u2
-			Do I have configs? - bool
-				Note: First login socket must tell login server that he
-				does not have configs.
-			Total maps - u1
-			Server ID - u2
-		'''
-		
-		connected = len(filter(lambda _: _.connected, self.server.logsockets)) 
-		
-		print 'Trying to register game server %s...' % self.server.server_name
-		
-		if connected > 1:
-			header = struct.pack('<IH',
-				Packets.MSGID_REQUEST_REGISTERGAMESERVERSOCKET,
-				self.server.gsid
-			)
-			print 'Register game server socket'
-		else:
-			print 'Register game server main socket'
-			header = struct.pack('<IH10s16sHBBH', 
-				Packets.MSGID_REQUEST_REGISTERGAMESERVER, # MsgID
-				Packets.DEF_LOGRESMSGTYPE_CONFIRM, # MsgType
-				self.server.server_name, # Server name (10b)
-				'127.0.0.1', # External address (16b)
-				9001, # Port (u2)
-				False, # Configs (bool)
-				len(self.server.maps), # Total maps u1
-				os.getpid(), # Server ID u2
-			)
-			
-			for map in self.server.maps:
-				header += struct.pack('<11s', map)
+			Register game server main socket in gate server
+		'''	
+		header = struct.pack('<IH10s16sHBBH', 
+			Packets.MSGID_REQUEST_REGISTERGAMESERVER, # MsgID
+			Packets.DEF_LOGRESMSGTYPE_CONFIRM, # MsgType
+			server_name, # Server name (10b)
+			address, # External address (16b)
+			port, # Port (u2)
+			False, # Configs (bool)
+			len(maps), # Total maps u1
+			os.getpid(), # Server ID u2
+		)
+				
+		for map in maps:
+			header += struct.pack('<11s', map)
 			
 		self.send_msg(header)
 		
+	def do_register_gameserversocket(self, gsid):
+		'''
+			Register game server sub socket in gate server
+		'''
+		
+		header = struct.pack('<IH',
+			Packets.MSGID_REQUEST_REGISTERGAMESERVERSOCKET,
+			gsid
+		)
+		
+		self.send_msg(header)
+
 	'''
 		Callbacks
 	'''
