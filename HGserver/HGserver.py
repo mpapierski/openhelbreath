@@ -35,7 +35,11 @@ class Application(object):
 		self.server = Server()
 		
 	def run(self):
-		print 'Run'
+		print 'Initialize'
+		self.server.initialize()
+		print 'Initialized'
+		while True:
+			self.server.loop()
 		 
 if __name__ == '__main__':
 	app = Application()

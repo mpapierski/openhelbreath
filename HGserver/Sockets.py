@@ -51,7 +51,7 @@ class ISocket(object):
 	def on_listen(self):
 		pass
 	
-class Socket(object):
+class Socket(ISocket):
 	"""
 		Object wrapper for socket
 	"""
@@ -95,7 +95,17 @@ class Socket(object):
 		return bytes
 
 	def connect(self):
-		return self.connect()
+		self.connecting = True
+		try:
+			return self.instance.connect((self.address, self.port))
+		except socket.error as (errno, message):
+			if errno == 115:
+				# Operation now in progress
+				# ... since we use non-blocing sockets
+				# this exception is not needed
+				return
+			else:
+				raise socket.error, (errno, message)
 
 	def fileno(self):
 		return self.instance.fileno() if self.instance else None
@@ -151,11 +161,13 @@ class HelbreathSocket(Socket):
 	def pop_packet(self):
 		if len(self.read_buffer) < 3:
 			return False
-		try:
-			(key, size) = struct.unpack('<BH', self.read(3))
-		except:
-			return False
 
+		(key, size) = struct.unpack('<BH', self.read_buffer[:3])
+		
+		if size > len(self.read_buffer):
+			return False
+		
+		self.read_buffer = self.read_buffer[3:]
 		buffer = self.read(size - 3)
 
 		if key:
