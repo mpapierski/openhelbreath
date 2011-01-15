@@ -75,7 +75,11 @@ class Socket(ISocket):
 			sys.stderr.write("[ERROR] %s\n" % msg[1])
 
 	def recv(self, bytes = 32767):
-		buffer = self.instance.recv(bytes)
+		buffer = ''
+		try:
+			buffer = self.instance.recv(bytes)
+		except socket.error as (errno, value):
+			print 'Socket error [#%d] %s' % (errno, value)
 		self.read_buffer += buffer
 		return len(buffer)
 

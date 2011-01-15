@@ -181,7 +181,7 @@ class GateProtocol(HelbreathSocket):
 			'dex',
 			'int',
 			'mag',
-			'agi',
+			'chr',
 			'luck',
 			'exp',
 			'magic_mastery',

@@ -32,7 +32,6 @@ class ClientSocket(HelbreathSocket):
 		packet = packet[6:]
 		
 		if MsgID == Packets.MSGID_REQUEST_INITPLAYER:
-			print '%r %db' % (packet, len(packet))
 			fmt = '<10s' # char_name
 			fmt += '10s' # account_name
 			fmt += '10s' # account password
@@ -49,9 +48,43 @@ class ClientSocket(HelbreathSocket):
 				is_observer_mode = is_observer_mode,
 				client = self						
 			)
+		elif MsgID == Packets.MSGID_REQUEST_INITDATA:
+			fmt = '<10s' # char_name
+			fmt += '10s' # account_name
+			fmt += '10s' # account password
+			packet_len = struct.calcsize(fmt)
+			
+			(char_name, account_name, account_password, ) = \
+				map(strip_zeros, struct.unpack(fmt, packet[:packet_len]))
+			
+			self.on_request_initdata(
+				char_name = char_name,
+				account_name = account_name,
+				account_password = account_password,
+				client = self
+			)
+		elif MsgID == Packets.MSGID_REQUEST_NOTICEMENT:
+			fmt = '<I'
+			packet_len = struct.calcsize(fmt)
+			client_size, = struct.unpack(fmt, packet[:packet_len])
+			print 'Request noticement: %dbytes' % client_size
+			self.on_request_noticement(
+				client = self,
+				file_size = client_size
+			)
+			
+			self.send_msg(struct.pack('<IH',
+				Packets.MSGID_RESPONSE_NOTICEMENT,
+				Packets.DEF_MSGTYPE_CONFIRM
+			))
+			
 		else:
 			print 'Client packet. MsgID: 0x%08X MsgType: 0x%04X' % (MsgID, MsgType)
 		
+	'''
+		Client functions
+	'''
+	
 	def do_response_initplayer(self, success):
 		# Fun fact:
 		# If you call do_response_initplayer(success = False)
@@ -64,5 +97,135 @@ class ClientSocket(HelbreathSocket):
 		)
 		self.send_msg(data)
 		
+	def do_playercharactercontents(self):
+		# Assuming player_data contains any data
+		print 'do playercharactercontents'
+		fmt = '<IH'
+		fmt += '3I' # HP, MP, SP
+		fmt += 'I' # Defense Ratio
+		fmt += 'I' # Hit Ratio
+		fmt += 'I' # Level
+		fmt += '6I' # Str, Int, Vit, Dex, Mag, Chr
+		fmt += 'h' # LU pool
+		fmt += 'x' # cVar (???)
+		fmt += 'xxxx' # ???
+		fmt += 'I' # Experience
+		fmt += 'I' # EK
+		fmt += 'I' # PK
+		fmt += 'I' # Reward Gold
+		fmt += '10s' # Location
+		fmt += '20s' # Guild Name
+		fmt += 'i' # Guild Rank
+		fmt += 'I' # Super Attack Left
+		fmt += 'i' # Fight Zone number
+		
+		stats = 0
+		for field in ('str', 'vit', 'dex', 'int', 'mag', 'chr'):
+			stats += self.player_data[field]
+		
+		self.player_data['lu_pool'] = stats - self.player_data['level'] * 3
+		
+		data = struct.pack(fmt,
+			Packets.MSGID_PLAYERCHARACTERCONTENTS,
+			Packets.DEF_MSGTYPE_CONFIRM,
+			self.player_data['hp'],
+			self.player_data['mp'],
+			self.player_data['sp'],
+			0, # TODO: Calculate defense ratio
+			0, # TODO: Calculate hit ratio
+			self.player_data['level'],
+			self.player_data['str'],
+			self.player_data['int'],
+			self.player_data['vit'],
+			self.player_data['dex'],
+			self.player_data['mag'],
+			self.player_data['chr'],
+			self.player_data['lu_pool'],
+			self.player_data['exp'],
+			self.player_data['ek_count'],
+			self.player_data['pk_count'],
+			self.player_data['reward_gold'],
+			self.player_data['location'],
+			self.player_data['guild_name'],
+			self.player_data['guild_rank'],
+			69, # TODO: Decode super attack left from gate
+			-1 # TODO: Fightzone number
+		)
+		
+		self.send_msg(data)
+		
+		self.do_playeritemlistcontents()
+			
+	def do_playeritemlistcontents(self):
+		print 'do playeritemlistcontents'
+		# TODO: decode item list contents
+		data = struct.pack('<IH',
+			Packets.MSGID_PLAYERITEMLISTCONTENTS,
+			Packets.DEF_MSGTYPE_CONFIRM
+		)
+		data += chr(0) # Total items
+		# ...
+		data += chr(0) # Total bank items
+		# ...
+		
+		# FIXME: why does magic mastery is stored as string containing characters 0 and 1?
+		data += ''.join(
+			map(lambda spell: {'1': chr(1), '0': chr(0)}[spell], self.player_data['magic_mastery'])
+		)	
+		
+		data += self.player_data['skill_mastery']
+		
+		self.send_msg(data)
+		 	
+	def do_response_initdata(self):
+		print 'do response initdata'
+		fmt = '<IH'
+		fmt += 'H' # Client ID
+		fmt += 'hh' # X, Y
+		fmt += 'h' # Type
+		fmt += '4h' # Appr1 Appr2 Appr3 Appr4
+		fmt += 'i' # Appr color
+		fmt += 'i' # Status (auras etc)
+		fmt += '10s' # Map name
+		fmt += '10s' # Location
+		fmt += '?' # Day or night
+		fmt += 'B' # Weather status
+		fmt += 'I' # Contribution
+		fmt += '?' # Is observer mode?
+		fmt += 'i' # Rating
+		fmt += 'i' # HP
+		fmt += 'x' # "Unknown variable"
+		data = struct.pack(fmt,
+			Packets.MSGID_RESPONSE_INITDATA,
+			Packets.DEF_MSGTYPE_CONFIRM,
+			self.id,
+			self.player_data['x'],
+			self.player_data['y'],
+			0, # Type (is always 0 ?)
+			0, 0, 0, 0, # TODO: Appr 1 - 4
+			0, # TODO: Appr color
+			0, # Status
+			self.player_data['map_name'],
+			self.player_data['location'],
+			True, # Its always night :)
+			4, # Weather - 3
+			0, # TODO: Decode contribution
+			False, # Ofcourse, player is not in observer mode
+			self.player_data['rating'],
+			self.player_data['hp'],
+		)
+		
+		# Composed map data
+		
+		data += struct.pack('<H', 0) # Total tiles
+		
+		self.send_msg(data)
+		
 	def on_request_initplayer(self, char_name, account_name, account_password, is_observer_mode, client):
+		pass
+	
+	def on_request_initdata(self, char_name, account_name, account_password, client):
+		pass
+	
+	def on_request_noticement(self, client, file_size):
 		pass

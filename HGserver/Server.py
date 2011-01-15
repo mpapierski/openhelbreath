@@ -27,7 +27,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import select
+import select, random
 
 import Settings
 from Sockets import ServerSocket
@@ -133,6 +133,11 @@ class Server(object):
 			elif socket == self.serversocket:
 				c = self.serversocket.accept(socketcls = ClientSocket)
 				c.setblocking(False)
+				while True:
+					client_id = random.randint(0, 65535)
+					if client_id not in map(lambda client: client.id == client_id, self.clients):
+						break
+				c.id = client_id
 				self.clients.append(c)
 				self.setup_callbacks_client(c)
 				c.on_connect(c)
@@ -196,7 +201,6 @@ class Server(object):
 	
 	def getlogsocket(self):
 		# TODO : Filter only connected logsockets?
-		import random
 		return random.choice(self.logsockets)
 		
 	'''
@@ -220,6 +224,7 @@ class Server(object):
 		client.on_disconnect = self.on_client_disconnect
 		
 		client.on_request_initplayer = self.client_on_request_initplayer
+		client.on_request_initdata = self.client_on_request_initdata
 		
 	def delete_client(self, client):
 		# TODO: options etc
@@ -259,7 +264,7 @@ class Server(object):
 		
 		print 'response_playerdata', player_data
 		
-		self.player_data = player_data
+		client.player_data = player_data
 		
 		client.do_response_initplayer(success = True)
 		
@@ -295,3 +300,17 @@ class Server(object):
 			account_password = account_password,
 			address = client.address
 		)
+		
+	def client_on_request_initdata(self, char_name, account_name, account_password, client):
+		if client.char_name != char_name:
+			print '(!) Error!', self.char_name, '!=', char_name
+			self.delete_client(client)
+			return
+		import time
+		client.do_playercharactercontents()
+		#time.sleep(2)
+		client.do_response_initdata()
+		
+	def client_on_request_noticement(self, client, file_size):
+		print 'Request noticement %db size' % file_size
+		
