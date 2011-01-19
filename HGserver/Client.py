@@ -1,4 +1,4 @@
-import struct
+import struct, time
 from Sockets import HelbreathSocket
 from Helpers import strip_zeros
 from NetMessages import Packets
@@ -10,6 +10,7 @@ class ClientSocket(HelbreathSocket):
 	dir = 0
 	type = 0
 	status = 0
+	ping = 0
 		
 	def __init__(self, instance):
 		'''
@@ -83,12 +84,12 @@ class ClientSocket(HelbreathSocket):
 			))
 			
 		elif MsgID == Packets.MSGID_REQUEST_FULLOBJECTDATA:
-			print 'msgid == MSGID_REQUEST_FULLOBJECTDATA'
 			self.on_request_fullobjectdata(
 				client = self,
 				object_id = MsgType				
 			)
-			
+		elif MsgID == Packets.MSGID_COMMAND_CHECKCONNECTION:
+			self.on_command_checkconnection()
 		else:
 			print 'Client packet. MsgID: 0x%08X MsgType: 0x%04X' % (MsgID, MsgType)
 		
@@ -187,6 +188,7 @@ class ClientSocket(HelbreathSocket):
 		data += self.player_data['skill_mastery']
 		
 		self.send_msg(data)
+		
 	def get_type(self):
 		if self.player_data['admin_user_level'] >= 10:
 			return self.player_data['admin_user_level']
@@ -305,3 +307,17 @@ class ClientSocket(HelbreathSocket):
 	
 	def on_request_fullobjectdata(self, client, object_id):
 		pass
+	
+	def on_command_checkconnection(self):
+		'''
+			We dont need to handle this message in main Server module
+		'''
+		if self.ping:
+			print '(!) Player:%s Ping:%.4fms' % (
+				self.player_data['char_name'],
+				time.time() - self.ping
+			)
+			self.ping = time.time()
+			return
+		
+		self.ping = time.time()
