@@ -160,7 +160,7 @@ class ClientSocket(HelbreathSocket):
 			self.player_data['location'],
 			self.player_data['guild_name'],
 			self.player_data['guild_rank'],
-			69, # TODO: Decode super attack left from gate
+			self.player_data['leftsac'],
 			-1 # TODO: Fightzone number
 		)
 		
