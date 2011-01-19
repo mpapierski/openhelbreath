@@ -67,20 +67,20 @@ class ClientSocket(HelbreathSocket):
 				client = self
 			)
 		
-		#elif MsgID == Packets.MSGID_REQUEST_NOTICEMENT:
-		#	fmt = '<I'
-		#	packet_len = struct.calcsize(fmt)
-		#	client_size, = struct.unpack(fmt, packet[:packet_len])
-		#	print 'Request noticement: %dbytes' % client_size
-		#	self.on_request_noticement(
-		#		client = self,
-		#		file_size = client_size
-		#	)
-			
-		#	self.send_msg(struct.pack('<IH',
-		#		Packets.MSGID_RESPONSE_NOTICEMENT,
-		#		Packets.DEF_MSGTYPE_CONFIRM
-		#	))
+		elif MsgID == Packets.MSGID_REQUEST_NOTICEMENT:
+			fmt = '<I'
+			packet_len = struct.calcsize(fmt)
+			client_size, = struct.unpack(fmt, packet[:packet_len])
+			print 'Request noticement: %dbytes' % client_size
+			self.on_request_noticement(
+				client = self,
+				file_size = client_size
+			)
+		
+			self.send_msg(struct.pack('<IH',
+				Packets.MSGID_RESPONSE_NOTICEMENT,
+				Packets.DEF_MSGTYPE_CONFIRM
+			))
 			
 		elif MsgID == Packets.MSGID_REQUEST_FULLOBJECTDATA:
 			print 'msgid == MSGID_REQUEST_FULLOBJECTDATA'

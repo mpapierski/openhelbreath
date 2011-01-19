@@ -26,6 +26,9 @@ class GateProtocol(HelbreathSocket):
 				MsgType == Packets.DEF_MSGTYPE_CONFIRM,
 				GSID
 			)
+		elif MsgID == Packets.MSGID_NOTICEMENTFILECONTENTS:
+			self.on_receive_config_noticement(noticement = packet)
+			
 		elif MsgID == Packets.MSGID_RESPONSE_REGISTERGAMESERVERSOCKET:
 			self.on_response_registergameserversocket(self)
 		elif MsgID == Packets.MSGID_RESPONSE_PLAYERDATA:
@@ -319,7 +322,7 @@ class GateProtocol(HelbreathSocket):
 			Magic config data
 		'''
 		
-	def on_receive_config_noticement(self, data):
+	def on_receive_config_noticement(self, noticement):
 		'''
 			Noticement data
 		'''

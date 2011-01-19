@@ -51,6 +51,7 @@ class Server(object):
 		self.clients = []
 		self.logsockets = []
 		self.serversocket = None
+		self.noticement = ''
 		
 	def read_config(self):
 		# JSON configuration reader
@@ -231,7 +232,11 @@ class Server(object):
 		logsocket.on_response_registergameserver = self.on_response_registergameserver
 		logsocket.on_connect = self.on_logsocket_connected
 		logsocket.on_disconnect = self.on_logsocket_connection_lost
-		logsocket.on_response_playerdata = self.on_response_playerdata		
+		logsocket.on_response_playerdata = self.on_response_playerdata
+		
+		# Configs
+		
+		logsocket.on_receive_config_noticement = self.on_receive_config_noticement		
 
 	def setup_callbacks_client(self, client):
 		'''
@@ -240,9 +245,11 @@ class Server(object):
 		client.on_connect = self.on_client_connect
 		client.on_disconnect = self.on_client_disconnect
 		
+		client.on_request_noticement = self.client_on_request_noticement
 		client.on_request_initplayer = self.client_on_request_initplayer
 		client.on_request_initdata = self.client_on_request_initdata
 		client.on_request_fullobjectdata = self.client_on_request_fullobjectdata
+		
 	def delete_client(self, client):
 		# TODO: options etc
 		client.close()
@@ -252,6 +259,9 @@ class Server(object):
 	'''
 		Gate server handlers
 	'''
+	
+	def on_receive_config_noticement(self, noticement):
+		self.noticement = noticement.rstrip()
 	
 	def on_response_registergameserver(self, success, gsid = None):
 		if not success:
@@ -337,9 +347,10 @@ class Server(object):
 		client.do_response_initdata()
 		
 	def client_on_request_noticement(self, client, file_size):
-		print 'Request noticement %db size' % file_size
-		client.send_noticement('http://openhelbreath.googlecode.com')
-		
+		# Ignore client size of noticement data stored on disk and always
+		# send new noticement.
+		client.send_noticement(self.noticement)
+				
 	def client_on_request_fullobjectdata(self, client, object_id):
 		print 'request fullobjectdata req:%d client:%d' % (object_id, client.id)
 		try:
