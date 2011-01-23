@@ -17,7 +17,7 @@ class Array2d():
 		
 	def __setitem__(self, key, v):
 		assert isinstance(key, tuple)
-		if key >= (self.w, self.h):
+		if key >= (self.w, self.h) or key < (0, 0):
 			raise IndexError, 'list index out of range'
 		(x,y) = key
 		if x not in self.a:
@@ -169,16 +169,12 @@ class Struct(object):
 				setattr(self, attribute['key'], array)
 				
 		return data
-		
-		#if len(buffer) != self.size:
-		#	raise struct.error, 'struct len %d, data size %d' % (len(buffer), self.size)
-		
-		#attributes = list(self.struct_obj.unpack(buffer))
-		#for attribute in self.attributes:
-		#	if attribute['format'][-1] == 'x':
-		#		continue
-		#	attribute['value'] = attributes.pop(0)
-					
+	
+	def update(self, **values):
+		# Update struct with new values
+		for k, v in values.items():
+			setattr(self, k, v)
+			
 	def __getattr__(self, key):
 		# Getting struct attribute
 		try:
@@ -207,79 +203,3 @@ class Struct(object):
 				raise AttributeError, key
 			
 		attr['value'] = value
-		
-if __name__ == '__main__':
-	# Ensure that zeros will be always strip'd
-	assert strip_zeros('openhelbreath\x00\x00\x00\x00') == 'openhelbreath'
-	assert strip_zeros('openhelbreath') == 'openhelbreath'
-	assert strip_zeros(1325) == 1325
-	
-	t = Array2d((100, 100))
-	t[0,0] = 100
-	t[99, 99] = 100
-	ok = True
-	try:
-		t[100, 100] = 100
-		t[100, 100] += 100
-	except IndexError as e:
-		ok = False
-		
-	assert not ok
-	
-	format = (('value1', 'I'),
-		('value2', '4x'),
-		('value3', '10s'))
-
-	d = Struct(
-		format,
-		value1 = 666,
-		value3 = 'dupa.8'
-	)
-	
-	d2 = Struct(
-		format,
-	) 
-	
-	print 'packed %r' % d.pack()
-	
-	#d2.unpack(d.pack())
-	#assert d2.value1 == d.value1
-	#assert d2.value2 == d.value2
-	#assert d2.value3 == d.value3
-	
-	
-	# Struct array test
-	item = Struct(
-		(('id', 'b'),
-		('name', '770s'),
-		('attr', 'L'),
-		('pad', '10x')))
-	
-	chargen = lambda:Struct(
-		(('name', '10s'),
-		('count', 'I'),
-		('items', item, 'count'),
-		('text', '15s'),
-		)
-	)
-	
-	
-	char = chargen()
-	
-	char.name = 'drajwer'
-	char.count = 3
-	char.text = '12345'
-	char.items = [[0, 'test1', 7777], [1, 'test2', 8888], [2, 'test3', 9999]]
-	serialized = char.pack()
-	
-	char2 = chargen()
-	
-	print 'unpacked', char2.unpack(serialized)
-	
-	print 'decoded', char2.name, char2.count, char2.text, char2.count
-	print 'items', char2.items
-	assert char.name == char2.name
-	assert char.count == char2.count
-	print 't %r %r' % (char.text, char2.text)
-	assert char.text == char2.text
-	assert char.items == char2.items
