@@ -120,69 +120,6 @@ class GateProtocol(HelbreathSocket):
 	'''
 	
 	def __response_playerdata(self, packet):
-		fmt = '<10s' # char_name
-		fmt += 'x' # Account Status - outdated
-		fmt += 'x' # Guild Status - outdated
-		fmt += '10s' # map name
-		fmt += 'hh' # X, Y
-		fmt += 'B' # Sex
-		fmt += 'B' # Skin
-		fmt += 'B' # Hair Style
-		fmt += 'B' # Hair Color
-		fmt += 'B' # Underwear
-		fmt += '20s' # Guild Name
-		fmt += 'b' # Guild Rank
-		fmt += 'I' # HP
-		fmt += 'H' # Level
-		fmt += 'BBBBBB' # Str, Vit, Dex, Int, Mag, Agi
-		fmt += 'B' # Luck
-		fmt += 'I' # Exp
-		fmt += '100s' # Magic mastery
-		fmt += '24s' # Skill mastery
-		fmt += '10s' # Location
-		fmt += 'I' # MP
-		fmt += 'I' # SP
-		fmt += 'x' # LU-pool
-		fmt += 'I' # EK-count
-		fmt += 'I' # PK count
-		fmt += 'I' # Reward gold
-		fmt += '96s' # Skill SSN
-		fmt += '4x' # padding (?)
-		fmt += 'B' # Hunger status
-		fmt += 'B' # Admin User Level
-		fmt += 'I' # TimeLeft_ShutUp
-		fmt += 'I' # TimeLeft_Rating
-		fmt += 'i' # Rating
-		fmt += 'i' # Guild GUID
-		fmt += 'b' # Down skill index
-		fmt += 'I' # Char ID
-		fmt += '3I' # CharIDnum1, CharIDnum2, CharIDnum3
-		fmt += '20s' # Block date"""
-		fmt += 'h' # iQuest
-		fmt += 'h' # iCurQuestCount
-		fmt += 'h' # iQuestRewardType
-		fmt += 'i' # iQuestRewardAmount
-		fmt += 'i' # iContribution
-		fmt += 'i' # iQuestID
-		fmt += 'B' # bIsQuestCompleted
-		fmt += 'i' # iTimeLeft_ForceRecall
-		fmt += 'i' # iTimeLeft_FirmStaminar
-		fmt += 'i' # iSpecialEventID
-		fmt += 'h' # iSuperAttackLeft
-		fmt += 'B' # iFightzoneNumber
-		fmt += 'i' # iReserveTime
-		fmt += 'B' # iFightZoneTicketNumber
-		fmt += 'i' # iSpecialAbilityTime
-		fmt += 'i' # iWarContribution
-		fmt += '10s' # cLockedMapName
-		fmt += 'i' # iLockedMapTime
-		fmt += 'B' # iCrusadeDuty
-		fmt += 'i' # iConstructionPoint
-		fmt += 'i' # dwCrusadeGUID
-		fmt += 'i' # iDeadPenaltyTime
-		fmt += 'i' # iPartyID
-		fmt += 'h' # iGizonItemUpgradeLeft
-		
 		# TODO: parse rest of values items and bankitems ...
 		
 		packet_size = struct.calcsize(fmt)
