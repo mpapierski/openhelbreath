@@ -26,8 +26,9 @@ class Array2d():
 class Struct(object):
 	attributes = []
 	endianess = '<'
+	CACHE = {}
 	
-	def __init__(self, attributes, endianess = '<'):
+	def __init__(self, attributes, endianess = '<', **initial_data):
 		import struct
 		self.attributes = []
 		self.endianess = endianess
@@ -39,45 +40,54 @@ class Struct(object):
 				dict(
 					key = key,
 					format = format,
-					value = None
+					value = initial_data.get(key)
 				)
 			)
 			struct_format += format
 								
-		
-		# TODO: as struct.Struct is compiled here
-		# we should have a little factory here
-		# which caches all struct.Struct instances
-		
-		self.struct_obj = struct.Struct(struct_format)
+		def struct_factory(format):
+			# Caching magic
+			if format not in Struct.CACHE:
+				Struct.CACHE[format] = struct.Struct(format)
+			return Struct.CACHE[format]
+	
+		self.struct_obj = struct_factory(struct_format)
+		self.size = self.struct_obj.size
 		self.__initialised = True
 		
-	size = property(lambda self: self.struct_obj.size)
-	
 	def pack(self):
-		return self.struct_obj.pack(*map(lambda a: a['value'], self.attributes))
+		# Filter out padding bytes
+		attributes = filter(lambda a: a['format'][-1] != 'x', self.attributes)
+		# Convert attributes to list of values
+		values = map(lambda a: a['value'], attributes)
+		# Return packed data
+		return self.struct_obj.pack(*values)
 	
 	def unpack(self, buffer):
 		if len(buffer) != self.size:
 			raise struct.error, 'struct len %d, data size %d' % (len(buffer), self.size)
 		
-		attributes = self.struct_obj.unpack(buffer)
-		for attribute, new_value in zip(self.attributes, attributes):
-			attribute['value'] = new_value
-				
-		
+		attributes = list(self.struct_obj.unpack(buffer))
+		for attribute in self.attributes:
+			if attribute['format'][-1] == 'x':
+				continue
+			attribute['value'] = attributes.pop(0)
+					
 	def __getattr__(self, key):
+		# Getting struct attribute
 		try:
 			attr, = filter(lambda a: a['key'] == key, self.attributes)
 		except ValueError as e:
 			raise AttributeError, key
 		
 		if attr['format'][-1] == 's':
-			return strip_zeros(attr['value'])
+			return strip_zeros(attr['value']) # We dont want those \x00's
 		
 		return attr['value'] 
 	
 	def __setattr__(self, key, value):
+		# Setting struct attribute
+		
 		if not self.__dict__.has_key('_Struct__initialised'):  # this test allows attributes to be set in the __init__ method
 			return dict.__setattr__(self, key, value)
 		try:
@@ -85,7 +95,8 @@ class Struct(object):
 		except ValueError as e:
 			raise AttributeError, key
 		
-		# TODO: format and value type check
+		if attr['format'][-1] == 'x':
+			raise AttributeError, key
 		
 		attr['value'] = value
 		
@@ -108,24 +119,20 @@ if __name__ == '__main__':
 	assert not ok
 	
 	format = (('value1', 'I'),
-		('value2', 'I'),
+		('value2', '4x'),
 		('value3', '10s'))
 
 	d = Struct(
-		format
+		format,
+		value1 = 666,
+		value3 = 'dupa.8'
 	)
-	print 'size', d.size
 	
-	d.value1 = 31337
-	d.value2 = 69
-	d.value3 = 'dupa.8'
-
 	d2 = Struct(
-		format
+		format,
 	) 
 	
 	d2.unpack(d.pack())
-	
 	assert d2.value1 == d.value1
 	assert d2.value2 == d.value2
 	assert d2.value3 == d.value3
