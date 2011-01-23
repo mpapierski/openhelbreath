@@ -1,10 +1,11 @@
+from NetMessages import Packets
 from Helpers import Struct
 
 # Helbreath Packet definitions
 
 PLAYERDATA_ITEM = Struct(
 	(
-		('name','20s'),
+		('name', '20s'),
 		('count', 'i'),
 		('type', 'h'),
 		('id1', 'i'),
@@ -31,7 +32,7 @@ PLAYERDATA_SKILL_SSN = Struct(
 
 PLAYERDATA_BANKITEM = Struct(
 	(
-		('name','20s'),
+		('name', '20s'),
 		('count', 'i'),
 		('type', 'h'),
 		('id1', 'i'),
@@ -44,7 +45,7 @@ PLAYERDATA_BANKITEM = Struct(
 		('lifespan', 'h'),
 		('attribute', 'I'),
 		('item_id', 'I'),
-	)							
+	)
 )
 
 RESPONSE_PLAYERDATA = Struct(
@@ -82,7 +83,7 @@ RESPONSE_PLAYERDATA = Struct(
 		('pk_count', 'I'),
 		('reward_gold', 'I'),
 		('skill_ssn', PLAYERDATA_SKILL_SSN, 24),
-		('padding1', '4x'), # 
+		('padding1', '4x'), #
 		('hunger_status', 'B'),
 		('admin_user_level', 'B'),
 		('timeleft_shutup', 'I'),
@@ -94,30 +95,30 @@ RESPONSE_PLAYERDATA = Struct(
 		('char_idnum1', 'I'),
 		('char_idnum2', 'I'),
 		('char_idnum3', 'I'),
-		('block_date','20s'),
-		('questnum','h'),
-		('questcount','h'),
-		('questrewtype','h'),
-		('questrewammount','i'),
-		('contribution','i'),
-		('questid','i'),
-		('questcompleted','B'),
-		('leftforcerecalltime','i'),
-		('leftfirmstaminartime','i'),
-		('eventid','i'),
-		('leftsac','h'),
-		('fightnum','B'),
-		('fightdate','i'),
-		('fightticket','B'),
-		('leftspecialtime','i'),
-		('warcon','i'),
-		('lockedmapname','10s'),
-		('lockedmaptime','i'),
-		('crujob','B'),
-		('cruconstructpoint','i'),
-		('cruid','i'),
-		('leftdeadpenaltytime','i'),
-		('partyid','i'),
+		('block_date', '20s'),
+		('questnum', 'h'),
+		('questcount', 'h'),
+		('questrewtype', 'h'),
+		('questrewammount', 'i'),
+		('contribution', 'i'),
+		('questid', 'i'),
+		('questcompleted', 'B'),
+		('leftforcerecalltime', 'i'),
+		('leftfirmstaminartime', 'i'),
+		('eventid', 'i'),
+		('leftsac', 'h'),
+		('fightnum', 'B'),
+		('fightdate', 'i'),
+		('fightticket', 'B'),
+		('leftspecialtime', 'i'),
+		('warcon', 'i'),
+		('lockedmapname', '10s'),
+		('lockedmaptime', 'i'),
+		('crujob', 'B'),
+		('cruconstructpoint', 'i'),
+		('cruid', 'i'),
+		('leftdeadpenaltytime', 'i'),
+		('partyid', 'i'),
 		('gizonitemupgradeleft', 'h'),
 		('item_count', 'B'),
 		('items', PLAYERDATA_ITEM, 'item_count'),
@@ -126,4 +127,37 @@ RESPONSE_PLAYERDATA = Struct(
 		('bank_items', PLAYERDATA_BANKITEM, 'bankitem_count'),
 		('profile', '10s')
 	)
+)
+
+PLAYERCHARACTERCONTENTS = Struct(
+	(
+		('MsgID', 'I'),
+		('MsgType', 'H'),
+		('hp', 'I'),
+		('mp', 'I'),
+		('sp', 'I'),
+		('defense_ratio', 'I'),
+		('hit_ratio', 'I'),
+		('level', 'I'),
+		('str', 'I'),
+		('int', 'I'),
+		('vit', 'I'),
+		('dex', 'I'),
+		('mag', 'I'),
+		('chr', 'I'),
+		('lu_pool', 'h'),
+		('var', 'x'), # cVar (?)
+		('unknown0', '4x'), # Unknown vars
+		('exp', 'I'),
+		('ek_count', 'I'),
+		('pk_count', 'I'),
+		('reward_gold', 'I'),
+		('location', '10s'),
+		('guild_name', '20s'),
+		('guild_rank', 'i'),
+		('leftsac', 'B'),
+		('fightzone_number', 'i'),
+	),
+	MsgID = Packets.MSGID_PLAYERCHARACTERCONTENTS,
+	MsgType = Packets.DEF_MSGTYPE_CONFIRM
 )

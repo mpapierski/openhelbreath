@@ -2,6 +2,7 @@ import struct, time
 from Sockets import HelbreathSocket
 from Helpers import strip_zeros
 from NetMessages import Packets
+from Packets import *
 
 class ClientSocket(HelbreathSocket):
 	'''
@@ -110,29 +111,8 @@ class ClientSocket(HelbreathSocket):
 		self.send_msg(data)
 		
 	def do_playercharactercontents(self):
-		# Assuming player_data contains any data
-		print 'do playercharactercontents'
-		fmt = '<IH'
-		fmt += '3I' # HP, MP, SP
-		fmt += 'I' # Defense Ratio
-		fmt += 'I' # Hit Ratio
-		fmt += 'I' # Level
-		fmt += '6I' # Str, Int, Vit, Dex, Mag, Chr
-		fmt += 'h' # LU pool
-		fmt += 'x' # cVar (???)
-		fmt += 'xxxx' # ???
-		fmt += 'I' # Experience
-		fmt += 'I' # EK
-		fmt += 'I' # PK
-		fmt += 'I' # Reward Gold
-		fmt += '10s' # Location
-		fmt += '20s' # Guild Name
-		fmt += 'i' # Guild Rank
-		fmt += 'B' # Super Attack Left
-		fmt += 'i' # Fight Zone number
-		
-		stats = 0
-		
+		packet = PLAYERCHARACTERCONTENTS
+				
 		stats = self.player_data.str + \
 			self.player_data.vit + \
 			self.player_data.dex + \
@@ -142,37 +122,35 @@ class ClientSocket(HelbreathSocket):
 			
 		self.lu_pool = stats - self.player_data.level * 3
 		
-		data = struct.pack(fmt,
-			Packets.MSGID_PLAYERCHARACTERCONTENTS,
-			Packets.DEF_MSGTYPE_CONFIRM,
-			self.player_data.hp,
-			self.player_data.mp,
-			self.player_data.sp,
-			0, # TODO: Calculate defense ratio
-			0, # TODO: Calculate hit ratio
-			self.player_data.level,
-			self.player_data.str,
-			self.player_data.int,
-			self.player_data.vit,
-			self.player_data.dex,
-			self.player_data.mag,
-			self.player_data.chr,
-			self.lu_pool,
-			self.player_data.exp,
-			self.player_data.ek_count,
-			self.player_data.pk_count,
-			self.player_data.reward_gold,
-			self.player_data.location,
-			self.player_data.guild_name,
-			self.player_data.guild_rank,
-			self.player_data.leftsac,
-			-1 # TODO: Fightzone number
+		packet.update(
+			hp = self.player_data.hp,
+			mp = self.player_data.mp,
+			sp = self.player_data.sp,
+			defense_ratio = 0, # TODO: Calculate defense ratio
+			hit_ratio = 0, # TODO: Calculate hit ratio
+			level = self.player_data.level,
+			str = self.player_data.str,
+			int = self.player_data.int,
+			vit = self.player_data.vit,
+			dex = self.player_data.dex,
+			mag = self.player_data.mag,
+			chr = self.player_data.chr,
+			lu_pool = self.lu_pool,
+			exp = self.player_data.exp,
+			ek_count = self.player_data.ek_count,
+			pk_count = self.player_data.pk_count,
+			reward_gold = self.player_data.reward_gold,
+			location = self.player_data.location,
+			guild_name = self.player_data.guild_name,
+			guild_rank = self.player_data.guild_rank,
+			leftsac = self.player_data.leftsac,
+			fightzone_number = -1 # TODO: Fightzone number	
 		)
-		
-		self.send_msg(data)
+				
+		self.send_msg(packet.pack())
 		
 		self.do_playeritemlistcontents()
-			
+
 	def do_playeritemlistcontents(self):
 		print 'do playeritemlistcontents'
 		# TODO: decode item list contents
