@@ -29,6 +29,9 @@ class Struct(object):
 	endianess = '<'
 	CACHE = {}
 	
+	def __init__(self):
+		pass
+	
 	def __init__(self, attributes, endianess = '<', initial_data_list = [], **initial_data):
 		import struct
 		self.definition = attributes
@@ -115,6 +118,10 @@ class Struct(object):
 		for attribute in self.attributes + [{'type': 'array', 'format': None}]:
 			if attribute['type'] == 'attribute':
 				format += attribute['format']
+				
+				if attribute['format'][-1] == 'x': # Fixed: we dont to remember reference to pads
+					continue
+				
 				ref_list += [attribute]
 				
 			elif attribute['type'] == 'array':
@@ -168,7 +175,7 @@ class Struct(object):
 				
 				setattr(self, attribute['key'], array)
 				
-		return data
+		return self.__copy__()
 	
 	def update(self, **values):
 		# Update struct with new values
@@ -203,3 +210,24 @@ class Struct(object):
 				raise AttributeError, key
 			
 		attr['value'] = value
+		
+	def get_dict(self):
+		# Returns dict with attributes
+		return_dict = {}
+		
+		for attribute in self.attributes:
+			if attribute['type'] == 'attribute' and \
+				attribute['format'][-1] == 'x':
+				continue
+			return_dict[attribute['key']] = attribute['value']
+		
+		return return_dict
+	
+	def __copy__(self):
+		from copy import copy
+		s = Struct(
+			attributes = self.definition,
+			endianess = self.endianess,
+			**self.get_dict()
+		)
+		return s

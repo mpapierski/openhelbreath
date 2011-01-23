@@ -132,35 +132,40 @@ class ClientSocket(HelbreathSocket):
 		fmt += 'i' # Fight Zone number
 		
 		stats = 0
-		for field in ('str', 'vit', 'dex', 'int', 'mag', 'chr'):
-			stats += self.player_data[field]
 		
-		self.player_data['lu_pool'] = stats - self.player_data['level'] * 3
+		stats = self.player_data.str + \
+			self.player_data.vit + \
+			self.player_data.dex + \
+			self.player_data.int + \
+			self.player_data.mag + \
+			self.player_data.chr
+			
+		self.lu_pool = stats - self.player_data.level * 3
 		
 		data = struct.pack(fmt,
 			Packets.MSGID_PLAYERCHARACTERCONTENTS,
 			Packets.DEF_MSGTYPE_CONFIRM,
-			self.player_data['hp'],
-			self.player_data['mp'],
-			self.player_data['sp'],
+			self.player_data.hp,
+			self.player_data.mp,
+			self.player_data.sp,
 			0, # TODO: Calculate defense ratio
 			0, # TODO: Calculate hit ratio
-			self.player_data['level'],
-			self.player_data['str'],
-			self.player_data['int'],
-			self.player_data['vit'],
-			self.player_data['dex'],
-			self.player_data['mag'],
-			self.player_data['chr'],
-			self.player_data['lu_pool'],
-			self.player_data['exp'],
-			self.player_data['ek_count'],
-			self.player_data['pk_count'],
-			self.player_data['reward_gold'],
-			self.player_data['location'],
-			self.player_data['guild_name'],
-			self.player_data['guild_rank'],
-			self.player_data['leftsac'],
+			self.player_data.level,
+			self.player_data.str,
+			self.player_data.int,
+			self.player_data.vit,
+			self.player_data.dex,
+			self.player_data.mag,
+			self.player_data.chr,
+			self.lu_pool,
+			self.player_data.exp,
+			self.player_data.ek_count,
+			self.player_data.pk_count,
+			self.player_data.reward_gold,
+			self.player_data.location,
+			self.player_data.guild_name,
+			self.player_data.guild_rank,
+			self.player_data.leftsac,
 			-1 # TODO: Fightzone number
 		)
 		
@@ -182,24 +187,24 @@ class ClientSocket(HelbreathSocket):
 		
 		# FIXME: why does magic mastery is stored as string containing characters 0 and 1?
 		data += ''.join(
-			map(lambda spell: {'1': chr(1), '0': chr(0)}[spell], self.player_data['magic_mastery'])
+			map(lambda spell: {'1': chr(1), '0': chr(0)}[spell], self.player_data.magic_mastery)
 		)	
 		
-		data += self.player_data['skill_mastery']
+		data += self.player_data.skill_mastery
 		
 		self.send_msg(data)
 		
 	def get_type(self):
-		if self.player_data['admin_user_level'] >= 10:
-			return self.player_data['admin_user_level']
+		if self.player_data.admin_user_level >= 10:
+			return self.player_data.admin_user_level
 		
 		t = 0
-		if self.player_data['sex'] == 1:
+		if self.player_data.sex == 1:
 			t = 1
-		elif self.player_data['sex'] == 2:
+		elif self.player_data.sex == 2:
 			t = 4
 			
-		t += self.player_data['skin'] - 1
+		t += self.player_data.skin - 1
 
 		return t
 				
@@ -225,21 +230,21 @@ class ClientSocket(HelbreathSocket):
 			Packets.MSGID_RESPONSE_INITDATA,
 			Packets.DEF_MSGTYPE_CONFIRM,
 			self.id,
-			self.player_data['x'] - 14 - 5,
-			self.player_data['y'] - 12 - 5,
+			self.player_data.x - 14 - 5,
+			self.player_data.y - 12 - 5,
 			self.get_type(),
-			(self.player_data['hair_style'] << 8) | (self.player_data['hair_color'] << 4) | (self.player_data['underwear']),
+			(self.player_data.hair_style << 8) | (self.player_data.hair_color << 4) | (self.player_data.underwear),
 			0, 0, 0, # TODO: Appr 2 - 4
 			0, # TODO: Appr color
 			0, # Status
-			self.player_data['map_name'],
-			self.player_data['location'],
+			self.player_data.map_name,
+			self.player_data.location,
 			2, # Its always night :) (1 = Day 2 = Night)
 			0, # Weather. 3 = Rainy 4 = Snowy ...
-			self.player_data['contribution'],
+			self.player_data.contribution,
 			0, # Ofcourse, player is not in observer mode
-			self.player_data['rating'],
-			self.player_data['hp'],
+			self.player_data.rating,
+			self.player_data.hp,
 		)
 		
 		# Composed map data
@@ -271,13 +276,13 @@ class ClientSocket(HelbreathSocket):
 			fmt += '?' # Is killed ?
 			header += struct.pack(fmt,
 				object.id,
-				object.player_data['x'], object.player_data['y'],
+				object.player_data.x, object.player_data.y,
 				0, # Type
 				object.dir, # Direction
-				object.player_data['char_name'],
+				object.player_data.char_name,
 				0, 0, 0, 0, # TODO: Appr 1 - 4
 				object.status,
-				object.player_data['hp'] <= 0
+				object.player_data.hp <= 0
 			)
 		else:
 			# NPC
@@ -314,7 +319,7 @@ class ClientSocket(HelbreathSocket):
 		'''
 		if self.ping:
 			print '(!) Player:%s Ping:%.4fms' % (
-				self.player_data['char_name'],
+				self.player_data.char_name,
 				time.time() - self.ping
 			)
 			self.ping = time.time()

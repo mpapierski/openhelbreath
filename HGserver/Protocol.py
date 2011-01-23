@@ -1,6 +1,7 @@
 import struct, os
 from Sockets import HelbreathSocket
 from NetMessages import Packets
+from Packets import *
 from Helpers import strip_zeros
 
 class GateProtocol(HelbreathSocket):
@@ -121,91 +122,11 @@ class GateProtocol(HelbreathSocket):
 	
 	def __response_playerdata(self, packet):
 		# TODO: parse rest of values items and bankitems ...
-		
-		packet_size = struct.calcsize(fmt)
-		
-		fields = (
-			'char_name',
-			'map_name',
-			'x',
-			'y',
-			'sex',
-			'skin',
-			'hair_style',
-			'hair_color',
-			'underwear',
-			'guild_name',
-			'guild_rank',
-			'hp',
-			'level',
-			'str',
-			'vit',
-			'dex',
-			'int',
-			'mag',
-			'chr',
-			'luck',
-			'exp',
-			'magic_mastery',
-			'skill_mastery',
-			'location',
-			'mp',
-			'sp',
-			'ek_count',
-			'pk_count',
-			'reward_gold',
-			'skill_ssn',
-			'hunger_status',
-			'admin_user_level',
-			'timeleft_shutup',
-			'timeleft_rating',
-			'rating',
-			'guild_guid',
-			'down_skill_index',
-			'char_id',
-			'char_idnum1',
-			'char_idnum2',
-			'char_idnum3',
-			'block_date',
-			'questnum',
-			'questcount',
-			'questrewtype',
-			'questrewammount',
-			'contribution',
-			'questid',
-			'questcompleted',
-			'leftforcerecalltime',
-			'leftfirmstaminartime',
-			'eventid',
-			'leftsac',
-			'fightnum',
-			'fightdate',
-			'fightticket',
-			'leftspecialtime',
-			'warcon',
-			'lockedmapname',
-			'lockedmaptime',
-			'crujob',
-			'cruconstructpoint',
-			'cruid',
-			'leftdeadpenaltytime',
-			'partyid',
-			'gizonitemupgradeleft'
-		)
+		player_data = RESPONSE_PLAYERDATA.unpack(packet)
+		print player_data.get_dict()
 
-		playerrawdata = struct.unpack(fmt, packet[:packet_size])
-		print playerrawdata
-		player_data = zip(fields, playerrawdata)
-		print player_data
-		player_data = dict(player_data)
-
-		for key in ('map_name', 'char_name', 'location', 'lockedmapname', 'guild_name'):
-			player_data[key] = strip_zeros(player_data[key])
-		
-		player_data['skill_ssn'] = struct.unpack('<24I', player_data['skill_ssn'])
-		print player_data['skill_ssn']
 		self.on_response_playerdata(
-			char_name = player_data['char_name'],
+			char_name = player_data.char_name,
 			player_data = player_data
 		)
 		

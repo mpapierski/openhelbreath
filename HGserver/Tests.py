@@ -85,6 +85,52 @@ class TestStruct(unittest.TestCase):
 		self.assertEqual(header.msgid, 31337)
 		self.assertEqual(header.msgtype, 69)
 		
+	def test_simple(self):
+		el = Struct(
+			(('v1', '20s'),
+			('i', 'I'))
+		)
+		
+		header = Struct(
+			(('key', 'B'),
+			('size', 'H'),
+			('padding1', '2x'),
+			('count', 'L'),
+			('padding2', '2x'),
+			('array', el, 'count'),
+			('padding3', '2x'),
+			('msgid', 'I'),
+			('msgtype', 'H')),
+		)
+		
+		header.update(
+			key = 1,
+			size = 2,
+			msgid = 3,
+			msgtype = 4,
+			count = 0,
+			array = []			
+		)
+		
+		serialized = header.pack()
+		
+		new_header = header.unpack(serialized)
+		
+		self.assertEqual(header.count, 0)
+		self.assertEqual(header.key, 1)
+		self.assertEqual(header.size, 2)
+		self.assertEqual(header.msgid, 3)
+		self.assertEqual(header.msgtype, 4)
+		
+		self.assertEqual(header.get_dict(), dict(
+			key = 1,
+			size = 2,
+			msgid = 3,
+			msgtype = 4,
+			count = 0,
+			array = []								
+		))
+		
 	def test_complex(self):
 		self.char.char_name = 'test'
 		self.char.level = 69
@@ -109,7 +155,7 @@ class TestStruct(unittest.TestCase):
 		
 		char = self.char_gen()
 		
-		char.unpack(serialized)
+		char = char.unpack(serialized)
 		
 		self.assertEqual(self.char.profile, char.profile)
 		self.assertEqual(self.char.level, char.level)
@@ -119,7 +165,6 @@ class TestStruct(unittest.TestCase):
 		
 		self.assertEqual(len(char.items), self.char.item_count)
 		self.assertEqual(len(char.skills), 5)
-		
 		
 if __name__ == '__main__':
 	unittest.main()

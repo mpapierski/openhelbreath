@@ -337,16 +337,16 @@ class Server(object):
 			self.delete_client(client)
 			return
 		
-		if player_data['map_name'] not in self.maps:
-			print 'Player stuck on not existing map "%s" !' % (player_data['map_name'], )
+		if player_data.map_name not in self.maps:
+			print 'Player stuck on not existing map "%s" !' % (player_data.map_name, )
 			self.delete_client(client)
 			return
 		
-		maploc = self.maps[player_data['map_name']]
+		maploc = self.maps[player_data.map_name]
 		
-		if (player_data['x'], player_data['y']) not in maploc:
-			player_data['x'], player_data['y'] = random.choice(maploc['initial-points'])
-			print '%s new initial point is', player_data['x'], player_data['y']
+		if (player_data.x, player_data.y) not in maploc:
+			player_data.x, player_data.y = random.choice(maploc['initial-points'])
+			print '%s new initial point is', player_data.x, player_data.y
 			
 		client.player_data = player_data
 		client.map = maploc
@@ -362,10 +362,10 @@ class Server(object):
 			account_password = client.account_password,
 			server_name = self.server_name,
 			address = client.address,
-			level = player_data['level']
+			level = player_data.level
 		)
 		
-		print '(TestLog) Enter Game Confirm Level: %d' % player_data['level']
+		print '(TestLog) Enter Game Confirm Level: %d' % player_data.level
 		
 	'''
 		Client socket handlers
