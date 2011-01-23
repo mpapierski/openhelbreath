@@ -27,7 +27,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import select, random
+import select, random, time
+from threading import Thread
 
 import Settings
 from Sockets import ServerSocket
@@ -52,6 +53,13 @@ class Server(object):
 		self.logsockets = []
 		self.serversocket = None
 		self.noticement = ''
+		self.event_thread_alive = False
+		self.event_thread = False
+	
+	def stop_and_cleanup(self):
+		# Called when someone interrupts main thread
+		self.event_thread_alive = False
+		self.event_thread.join()
 		
 	def read_config(self):
 		# JSON configuration reader
@@ -168,6 +176,10 @@ class Server(object):
 				
 			n = socket.flush()
 	
+	def event_loop(self):
+		# Event thread main entry function
+		pass
+	
 	'''
 		Socket events
 	'''
@@ -276,7 +288,18 @@ class Server(object):
 			if not socket.connected:
 				print 'Connecting gate server socket-%d!' % (i, )
 				socket.connect()
-		
+				
+		def thread_ep(server_instance):
+			# Thread entry point
+			server_instance.event_thread_alive = True
+			while server_instance.event_thread_alive:
+				print 'Thread ep'
+				server_instance.event_loop()
+				time.sleep(1.0)
+				
+		self.event_thread = Thread(target = thread_ep, args = (self, ))
+		self.event_thread.start()
+			
 	def on_response_playerdata(self, char_name, player_data):
 		try:
 			client, = filter(lambda _: _.char_name, self.clients)

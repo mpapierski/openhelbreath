@@ -41,7 +41,12 @@ class Application(object):
 			return
 		print 'Initialized'
 		while True:
-			self.server.loop()
+			try:
+				self.server.loop()
+			except KeyboardInterrupt as e:
+				print 'Keyboard interrupt!'
+				self.server.stop_and_cleanup()
+				return
 
 if __name__ == '__main__':
 	app = Application()
