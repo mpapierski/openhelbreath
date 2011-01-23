@@ -6,6 +6,9 @@ class TimerManager(object):
 	
 	def invoke(self, name, function, delay_time, *args, **kwargs):
 		# Delayed call
+		if name is None:
+			name = function.__name__
+			
 		self.timers += [
 			dict(
 				name = name,
@@ -20,6 +23,9 @@ class TimerManager(object):
 		
 	def register_timer(self, name, function, delay_time, *args, **kwargs):
 		# Register continous timer
+		if name is None:
+			name = function.__name__
+
 		self.timers += [
 			dict(
 				name = name,

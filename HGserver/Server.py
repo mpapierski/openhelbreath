@@ -28,12 +28,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import select, random, time
-from threading import Thread
+from threading import Thread, Semaphore
 
 import Settings
 from Sockets import ServerSocket
 from Protocol import GateProtocol
 from Client import ClientSocket
+from Timer import TimerManager
 
 class GateSocket(GateProtocol):
 	def __init__(self, address, port):
@@ -55,7 +56,11 @@ class Server(object):
 		self.noticement = ''
 		self.event_thread_alive = False
 		self.event_thread = False
-	
+		
+		# Guards...
+		
+		self.clients_guard = Semaphore()
+		
 	def stop_and_cleanup(self):
 		# Called when someone interrupts main thread
 		self.event_thread_alive = False
@@ -120,8 +125,12 @@ class Server(object):
 		return True
 		
 	def loop(self):
+		# TODO: wrap around all clients_guard dependent code 
 		rinput = filter(lambda sock: sock.connected, self.logsockets)
+		self.clients_guard.acquire()
 		rinput += self.clients
+		self.clients_guard.release()
+		
 		rinput += [self.serversocket]
 
 		winput = filter(lambda sock: sock.connecting or sock.write_buffer, self.logsockets)
@@ -141,8 +150,10 @@ class Server(object):
 					# Why would we even disconnect gate socket?
 					# Just do nothing
 					pass 
-				
-			elif socket in self.clients:
+			
+			self.clients_guard.acquire()
+			
+			if socket in self.clients:
 				n = socket.recv()
 				if not n:
 					socket.on_disconnect(socket)
@@ -155,10 +166,13 @@ class Server(object):
 					if not socket.fileno():
 						socket.on_disconnect(socket)
 						self.clients.remove(socket)
-				
-			elif socket == self.serversocket:
+			
+			self.clients_guard.release()
+			
+			if socket == self.serversocket:
 				c = self.serversocket.accept(socketcls = ClientSocket)
 				c.setblocking(False)
+				self.clients_guard.acquire()
 				try:
 					c.id = max(map(lambda client: client.id, self.clients)) + 1
 				except ValueError as e:
@@ -167,6 +181,7 @@ class Server(object):
 				self.clients.append(c)
 				self.setup_callbacks_client(c)
 				c.on_connect(c)
+				self.clients_guard.release()
 				
 		for socket in wlist:
 			if socket.connecting:
@@ -178,8 +193,27 @@ class Server(object):
 	
 	def event_loop(self):
 		# Event thread main entry function
-		pass
-	
+		self.timers.process_all()
+
+	def timer_connected_players(self):
+		self.clients_guard.acquire() 
+		print '(O) Players connected:', len(self.clients)
+		self.clients_guard.release()
+		
+	def on_server_registered(self):
+		self.timers = TimerManager()
+		self.timers.register_timer(None, self.timer_connected_players, 1.0)
+		
+		def thread_ep(server_instance):
+			# Thread entry point
+			server_instance.event_thread_alive = True
+			while server_instance.event_thread_alive:
+				server_instance.event_loop()
+				time.sleep(0.1)
+				
+		self.event_thread = Thread(target = thread_ep, args = (self, ))
+		self.event_thread.start()
+		
 	'''
 		Socket events
 	'''
@@ -289,16 +323,7 @@ class Server(object):
 				print 'Connecting gate server socket-%d!' % (i, )
 				socket.connect()
 				
-		def thread_ep(server_instance):
-			# Thread entry point
-			server_instance.event_thread_alive = True
-			while server_instance.event_thread_alive:
-				print 'Thread ep'
-				server_instance.event_loop()
-				time.sleep(1.0)
-				
-		self.event_thread = Thread(target = thread_ep, args = (self, ))
-		self.event_thread.start()
+		self.on_server_registered()
 			
 	def on_response_playerdata(self, char_name, player_data):
 		try:
