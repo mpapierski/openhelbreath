@@ -1,4 +1,3 @@
-from xapian import UnimplementedError
 strip_zeros = lambda data: \
 	(data[:data.index('\x00')] if '\x00' in data else data) \
 		if isinstance(data, basestring) else \

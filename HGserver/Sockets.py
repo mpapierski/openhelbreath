@@ -180,8 +180,10 @@ class HelbreathSocket(Socket):
 
 		return buffer
 
-
-
+	def send_packet(self, packet, **args):
+		packet.update(**args)
+		self.send_msg(packet.pack())
+		
 class ServerSocket(object):
 	server = None
 

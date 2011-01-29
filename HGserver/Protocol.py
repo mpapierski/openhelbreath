@@ -1,7 +1,7 @@
 import struct, os
 from Sockets import HelbreathSocket
-from NetMessages import Packets
-from Packets import *
+import NetMessages
+import Packets
 from Helpers import strip_zeros
 
 class GateProtocol(HelbreathSocket):
@@ -21,18 +21,18 @@ class GateProtocol(HelbreathSocket):
 		MsgID, MsgType = struct.unpack('<IH', packet[:6])
 		packet = packet[6:]
 		
-		if MsgID == Packets.MSGID_RESPONSE_REGISTERGAMESERVER:
+		if MsgID == NetMessages.MSGID_RESPONSE_REGISTERGAMESERVER:
 			GSID, = struct.unpack('<h', packet[:2])
 			self.on_response_registergameserver(
-				MsgType == Packets.DEF_MSGTYPE_CONFIRM,
+				MsgType == NetMessages.DEF_MSGTYPE_CONFIRM,
 				GSID
 			)
-		elif MsgID == Packets.MSGID_NOTICEMENTFILECONTENTS:
+		elif MsgID == NetMessages.MSGID_NOTICEMENTFILECONTENTS:
 			self.on_receive_config_noticement(noticement = packet)
 			
-		elif MsgID == Packets.MSGID_RESPONSE_REGISTERGAMESERVERSOCKET:
+		elif MsgID == NetMessages.MSGID_RESPONSE_REGISTERGAMESERVERSOCKET:
 			self.on_response_registergameserversocket(self)
-		elif MsgID == Packets.MSGID_RESPONSE_PLAYERDATA:
+		elif MsgID == NetMessages.MSGID_RESPONSE_PLAYERDATA:
 			self.__response_playerdata(packet)
 		else:
 			print '%s gets unknown message: MsgID: 0x%08X MsgType: 0x%04X' % (self.__class__.__name__, MsgID, MsgType)
@@ -48,8 +48,8 @@ class GateProtocol(HelbreathSocket):
 			Register game server main socket in gate server
 		'''	
 		header = struct.pack('<IH10s16sHBBH', 
-			Packets.MSGID_REQUEST_REGISTERGAMESERVER, # MsgID
-			Packets.DEF_LOGRESMSGTYPE_CONFIRM, # MsgType
+			NetMessages.MSGID_REQUEST_REGISTERGAMESERVER, # MsgID
+			NetMessages.DEF_LOGRESMSGTYPE_CONFIRM, # MsgType
 			server_name, # Server name (10b)
 			address, # External address (16b)
 			port, # Port (u2)
@@ -69,7 +69,7 @@ class GateProtocol(HelbreathSocket):
 		'''
 		
 		header = struct.pack('<IH',
-			Packets.MSGID_REQUEST_REGISTERGAMESERVERSOCKET,
+			NetMessages.MSGID_REQUEST_REGISTERGAMESERVERSOCKET,
 			gsid
 		)
 		
@@ -85,8 +85,8 @@ class GateProtocol(HelbreathSocket):
 		fmt += 'x' # 1b padding, always zero. "Account Status"
 		print address, type(address)
 		data = struct.pack(fmt,
-			Packets.MSGID_REQUEST_PLAYERDATA,
-			Packets.DEF_MSGTYPE_CONFIRM,
+			NetMessages.MSGID_REQUEST_PLAYERDATA,
+			NetMessages.DEF_MSGTYPE_CONFIRM,
 			char_name,
 			account_name,
 			account_password,
@@ -105,8 +105,8 @@ class GateProtocol(HelbreathSocket):
 		fmt += 'I' # Level
 		
 		data = struct.pack(fmt,
-				Packets.MSGID_ENTERGAMECONFIRM,
-				Packets.DEF_MSGTYPE_CONFIRM,
+				NetMessages.MSGID_ENTERGAMECONFIRM,
+				NetMessages.DEF_MSGTYPE_CONFIRM,
 				account_name,
 				account_password,
 				server_name,
@@ -122,7 +122,7 @@ class GateProtocol(HelbreathSocket):
 	
 	def __response_playerdata(self, packet):
 		# TODO: parse rest of values items and bankitems ...
-		player_data = RESPONSE_PLAYERDATA.unpack(packet)
+		player_data = Packets.RESPONSE_PLAYERDATA.unpack(packet)
 		print player_data.get_dict()
 
 		self.on_response_playerdata(

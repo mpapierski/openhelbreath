@@ -1,4 +1,4 @@
-from NetMessages import Packets
+import NetMessages
 from Helpers import Struct
 
 # Helbreath Packet definitions
@@ -158,6 +158,6 @@ PLAYERCHARACTERCONTENTS = Struct(
 		('leftsac', 'B'),
 		('fightzone_number', 'i'),
 	),
-	MsgID = Packets.MSGID_PLAYERCHARACTERCONTENTS,
-	MsgType = Packets.DEF_MSGTYPE_CONFIRM
+	MsgID = NetMessages.MSGID_PLAYERCHARACTERCONTENTS,
+	MsgType = NetMessages.DEF_MSGTYPE_CONFIRM
 )

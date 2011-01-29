@@ -1,8 +1,8 @@
 import struct, time
 from Sockets import HelbreathSocket
 from Helpers import strip_zeros
-from NetMessages import Packets
-from Packets import *
+import NetMessages
+import Packets
 
 class ClientSocket(HelbreathSocket):
 	'''
@@ -36,7 +36,7 @@ class ClientSocket(HelbreathSocket):
 		MsgID, MsgType = struct.unpack('<IH', packet[:6])
 		packet = packet[6:]
 		
-		if MsgID == Packets.MSGID_REQUEST_INITPLAYER:
+		if MsgID == NetMessages.MSGID_REQUEST_INITPLAYER:
 			fmt = '<10s' # char_name
 			fmt += '10s' # account_name
 			fmt += '10s' # account password
@@ -53,7 +53,7 @@ class ClientSocket(HelbreathSocket):
 				is_observer_mode = is_observer_mode,
 				client = self						
 			)
-		elif MsgID == Packets.MSGID_REQUEST_INITDATA:
+		elif MsgID == NetMessages.MSGID_REQUEST_INITDATA:
 			fmt = '<10s' # char_name
 			fmt += '10s' # account_name
 			fmt += '10s' # account password
@@ -69,7 +69,7 @@ class ClientSocket(HelbreathSocket):
 				client = self
 			)
 		
-		elif MsgID == Packets.MSGID_REQUEST_NOTICEMENT:
+		elif MsgID == NetMessages.MSGID_REQUEST_NOTICEMENT:
 			fmt = '<I'
 			packet_len = struct.calcsize(fmt)
 			client_size, = struct.unpack(fmt, packet[:packet_len])
@@ -80,16 +80,16 @@ class ClientSocket(HelbreathSocket):
 			)
 		
 			self.send_msg(struct.pack('<IH',
-				Packets.MSGID_RESPONSE_NOTICEMENT,
-				Packets.DEF_MSGTYPE_CONFIRM
+				NetMessages.MSGID_RESPONSE_NOTICEMENT,
+				NetMessages.DEF_MSGTYPE_CONFIRM
 			))
 			
-		elif MsgID == Packets.MSGID_REQUEST_FULLOBJECTDATA:
+		elif MsgID == NetMessages.MSGID_REQUEST_FULLOBJECTDATA:
 			self.on_request_fullobjectdata(
 				client = self,
 				object_id = MsgType				
 			)
-		elif MsgID == Packets.MSGID_COMMAND_CHECKCONNECTION:
+		elif MsgID == NetMessages.MSGID_COMMAND_CHECKCONNECTION:
 			self.on_command_checkconnection()
 		else:
 			print 'Client packet. MsgID: 0x%08X MsgType: 0x%04X' % (MsgID, MsgType)
@@ -106,14 +106,12 @@ class ClientSocket(HelbreathSocket):
 		# 'Try other World server'
 		
 		data = struct.pack('<IH',
-			Packets.MSGID_RESPONSE_INITPLAYER,
-			Packets.DEF_MSGTYPE_CONFIRM if success else Packets.DEF_MSGTYPE_REJECT
+			NetMessages.MSGID_RESPONSE_INITPLAYER,
+			NetMessages.DEF_MSGTYPE_CONFIRM if success else NetMessages.DEF_MSGTYPE_REJECT
 		)
 		self.send_msg(data)
 		
 	def do_playercharactercontents(self):
-		packet = PLAYERCHARACTERCONTENTS
-				
 		stats = self.player_data.str + \
 			self.player_data.vit + \
 			self.player_data.dex + \
@@ -123,7 +121,8 @@ class ClientSocket(HelbreathSocket):
 			
 		self.lu_pool = stats - self.player_data.level * 3
 		
-		packet.update(
+		self.send_packet(
+			Packets.PLAYERCHARACTERCONTENTS,
 			hp = self.player_data.hp,
 			mp = self.player_data.mp,
 			sp = self.player_data.sp,
@@ -147,8 +146,6 @@ class ClientSocket(HelbreathSocket):
 			leftsac = self.player_data.leftsac,
 			fightzone_number = -1 # TODO: Fightzone number	
 		)
-				
-		self.send_msg(packet.pack())
 		
 		self.do_playeritemlistcontents()
 
@@ -156,8 +153,8 @@ class ClientSocket(HelbreathSocket):
 		print 'do playeritemlistcontents'
 		# TODO: decode item list contents
 		data = struct.pack('<IH',
-			Packets.MSGID_PLAYERITEMLISTCONTENTS,
-			Packets.DEF_MSGTYPE_CONFIRM
+			NetMessages.MSGID_PLAYERITEMLISTCONTENTS,
+			NetMessages.DEF_MSGTYPE_CONFIRM
 		)
 		data += chr(0) # Total items
 		# ...
@@ -206,8 +203,8 @@ class ClientSocket(HelbreathSocket):
 		fmt += 'I' # HP
 		fmt += 'x' # "Discount" -> % cost
 		data = struct.pack(fmt,
-			Packets.MSGID_RESPONSE_INITDATA,
-			Packets.DEF_MSGTYPE_CONFIRM,
+			NetMessages.MSGID_RESPONSE_INITDATA,
+			NetMessages.DEF_MSGTYPE_CONFIRM,
 			self.id,
 			self.player_data.x - 14 - 5,
 			self.player_data.y - 12 - 5,
@@ -237,10 +234,10 @@ class ClientSocket(HelbreathSocket):
 		print 'do event motion', action
 		
 		actions = {
-			'stop': Packets.DEF_OBJECTSTOP
+			'stop': NetMessages.DEF_OBJECTSTOP
 		}
 		
-		header = struct.pack('<IH', Packets.MSGID_EVENT_MOTION, actions[action])
+		header = struct.pack('<IH', NetMessages.MSGID_EVENT_MOTION, actions[action])
 		
 		if object.id < 10000:
 			# Human
@@ -273,10 +270,10 @@ class ClientSocket(HelbreathSocket):
 	def send_noticement(self, data):
 		print 'send_noticement', data
 		if not data:
-			self.send_msg(struct.pack('<IH', Packets.MSGID_RESPONSE_NOTICEMENT, Packets.DEF_MSGTYPE_CONFIRM))
+			self.send_msg(struct.pack('<IH', NetMessages.MSGID_RESPONSE_NOTICEMENT, NetMessages.DEF_MSGTYPE_CONFIRM))
 			return
 		
-		self.send_msg(struct.pack('<IH', Packets.MSGID_RESPONSE_NOTICEMENT, Packets.DEF_MSGTYPE_REJECT) + \
+		self.send_msg(struct.pack('<IH', NetMessages.MSGID_RESPONSE_NOTICEMENT, NetMessages.DEF_MSGTYPE_REJECT) + \
 			data
 		)
 		

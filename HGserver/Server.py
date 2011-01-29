@@ -27,7 +27,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import select, random, time
+import select, random, time, traceback
 from threading import Thread, Semaphore
 
 import Settings
@@ -154,21 +154,18 @@ class Server(object):
 			if socket in self.clients:
 				n = socket.recv()
 				if not n:
-					socket.on_disconnect(socket)
-					socket.close()
-					self.clients_guard.acquire()
-					self.clients.remove(socket)
-					self.clients_guard.release()
+					self.delete_client(socket, cleanup_only = True)
 					continue
 				
-				while socket.pop_packet():
-					print 'Pop packet', socket.fileno()
-					if not socket.fileno():
-						socket.on_disconnect(socket)
-						self.clients_guard.acquire()
-						self.clients.remove(socket)
-						self.clients_guard.release()			
-			
+				while True:
+					try:
+						if not socket.pop_packet():
+							break
+					except:
+						traceback.print_exc()
+						print
+						self.delete_client(socket, cleanup_only = True)
+						
 			if socket == self.serversocket:
 				c = self.serversocket.accept(socketcls = ClientSocket)
 				c.setblocking(False)
@@ -296,8 +293,16 @@ class Server(object):
 		client.on_request_initdata = self.client_on_request_initdata
 		client.on_request_fullobjectdata = self.client_on_request_fullobjectdata
 		
-	def delete_client(self, client):
+	def delete_client(self, client, cleanup_only = False):
 		# TODO: options etc
+		if cleanup_only:
+			client.on_disconnect(client)
+			client.close()
+			self.clients_guard.acquire()
+			self.clients.remove(client)
+			self.clients_guard.release()
+			return
+		
 		client.close()
 		if client in self.clients:
 			self.clients.remove(client)
