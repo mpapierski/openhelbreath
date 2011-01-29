@@ -151,24 +151,21 @@ class ClientSocket(HelbreathSocket):
 
 	def do_playeritemlistcontents(self):
 		print 'do playeritemlistcontents'
+		
 		# TODO: decode item list contents
-		data = struct.pack('<IH',
-			NetMessages.MSGID_PLAYERITEMLISTCONTENTS,
-			NetMessages.DEF_MSGTYPE_CONFIRM
-		)
-		data += chr(0) # Total items
-		# ...
-		data += chr(0) # Total bank items
-		# ...
 		
-		# FIXME: why does magic mastery is stored as string containing characters 0 and 1?
-		data += ''.join(
+		magic_mastery = ''.join(
 			map(lambda spell: {'1': chr(1), '0': chr(0)}[spell], self.player_data.magic_mastery)
-		)	
+		)
 		
-		data += self.player_data.skill_mastery
-		
-		self.send_msg(data)
+		self.send_packet(Packets.PLAYERITEMLISTCONTENT,
+			item_count = 0,
+			items = [],
+			bankitem_count = 0,
+			bankitems = [],
+			magicmastery = magic_mastery,
+			skills = self.player_data.skill_mastery,
+		)
 		
 	def get_type(self):
 		if self.player_data.admin_user_level >= 10:

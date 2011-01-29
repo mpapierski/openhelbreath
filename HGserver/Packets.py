@@ -24,6 +24,12 @@ PLAYERDATA_ITEM = Struct(
 	)
 )
 
+PLAYERDATA_SKILL_MASTERY = Struct(
+	(
+		('mastery', 'B'),
+	)
+)
+
 PLAYERDATA_SKILL_SSN = Struct(
 	(
 		('ssn', 'I'),
@@ -74,7 +80,7 @@ RESPONSE_PLAYERDATA = Struct(
 		('luck', 'B'),
 		('exp', 'I'),
 		('magic_mastery', '100s'),
-		('skill_mastery', '24s'),
+		('skill_mastery', PLAYERDATA_SKILL_MASTERY, 24),
 		('location', '10s'),
 		('mp', 'I'),
 		('sp', 'I'),
@@ -159,5 +165,58 @@ PLAYERCHARACTERCONTENTS = Struct(
 		('fightzone_number', 'i'),
 	),
 	MsgID = NetMessages.MSGID_PLAYERCHARACTERCONTENTS,
+	MsgType = NetMessages.DEF_MSGTYPE_CONFIRM
+)
+
+
+PLAYERITEMLISTCONTENT_ITEM = Struct(
+	(
+		('name', '20s'),
+		('count', 'i'),
+		('type', 'B'),
+		('equip_pos', 'B'),
+		('equipped', '?'),
+		('level_limit', 'H'),
+		('gender_limit', 'B'),
+		('lifespan', 'H'),
+		('weight', 'H'),
+		('sprite', 'H'),
+		('sprite_frame', 'H'),
+		('color', 'B'),
+		('effect2', 'B'),
+		('attribute', 'I')
+	)
+)
+
+PLAYERITEMLISTCONTENT_BANKITEM = Struct(
+	(
+		('name', '20s'),
+		('count', 'i'),
+		('type', 'B'),
+		('equip_pos', 'B'),
+		('level_limit', 'H'),
+		('gender_limit', 'B'),
+		('lifespan', 'H'),
+		('weight', 'H'),
+		('sprite', 'H'),
+		('sprite_frame', 'H'),
+		('color', 'B'),
+		('effect2', 'B'),
+		('attribute', 'I')
+	)
+)
+
+PLAYERITEMLISTCONTENT = Struct(
+	(
+		('MsgID', 'I'),
+		('MsgType', 'H'),
+		('item_count', 'B'),
+		('items', PLAYERITEMLISTCONTENT_ITEM, 'item_count'),
+		('bankitem_count', 'B'),
+		('bankitems', PLAYERITEMLISTCONTENT_BANKITEM, 'bankitem_count'),
+		('magicmastery', '100s'), # TODO: rewrite as 100 bool
+		('skills', PLAYERDATA_SKILL_MASTERY, 24) # Array of single byte
+	),
+	MsgID = NetMessages.MSGID_PLAYERITEMLISTCONTENTS,
 	MsgType = NetMessages.DEF_MSGTYPE_CONFIRM
 )

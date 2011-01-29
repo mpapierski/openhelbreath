@@ -94,12 +94,17 @@ class Struct(object):
 				else:
 					times = attribute['count_key']
 					
-				#format += 
 				(array_format, array_values) = self.serialize(attribute['format'].attributes)# * times
 				format += array_format * times
 				for array_value in attribute['value']:
 					# Each array in struct-array
-					values += array_value
+					if isinstance(array_value, (list, tuple)):
+						values += array_value
+					elif isinstance(array_value, dict):
+						# If array element is a dict...
+						for key in attribute['format'].get_keys():
+							# Extract each using the array definition
+							values.append(array_value[key])
 				
 		return (format, values)
 		
@@ -167,7 +172,7 @@ class Struct(object):
 					# Clean padding zeros from strings (if any)
 					data_tmp = map(strip_zeros, data_tmp) 
 					
-					array.append(data_tmp)
+					array.append(dict(zip(attribute['format'].get_keys(), data_tmp)))
 					times -= 1
 					
 				data.append(array)
@@ -191,7 +196,7 @@ class Struct(object):
 		if attr['type'] == 'attribute':		
 			if attr['format'][-1] == 's':
 				return strip_zeros(attr['value']) # We dont want those \x00's
-		
+
 		return attr['value'] 
 	
 	def __setattr__(self, key, value):
@@ -209,6 +214,16 @@ class Struct(object):
 				raise AttributeError, key
 			
 		attr['value'] = value
+		
+	def get_keys(self):
+		keys = []
+		for attribute in self.attributes:
+			if attribute['type'] == 'attribute' and \
+				attribute['format'][-1] == 'x':
+				continue
+			keys.append(attribute['key'])
+		return keys
+			#return_dict[attribute['key']] = attribute['value']
 		
 	def get_dict(self):
 		# Returns dict with attributes

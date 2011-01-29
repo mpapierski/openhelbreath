@@ -1,4 +1,4 @@
-import unittest
+import unittest, struct
 
 from Helpers import *
 
@@ -139,7 +139,7 @@ class TestStruct(unittest.TestCase):
 			[1, 'test xxx', 1234, 567, 89],
 			[2, 'test yyy', 666, 777, 888],
 			[3, 'test zzz', 31337, 31337, 31337],
-			[4, '', 0, 1, 2]
+			[4, 'item vvvv', 0, 1, 2]
 		]
 		self.char.skills = [
 			[1, 101],
@@ -160,11 +160,56 @@ class TestStruct(unittest.TestCase):
 		self.assertEqual(self.char.profile, char.profile)
 		self.assertEqual(self.char.level, char.level)
 		self.assertEqual(self.char.item_count, char.item_count)
-		self.assertEqual(self.char.items, char.items)
-		self.assertEqual(self.char.skills, char.skills)
+		
+		self.assertEqual(char.items[0]['item_name'], 'test xxx')
+		#self.assertEqual(self.char.items, char.items)
+		#self.assertEqual(self.char.skills, char.skills)
 		
 		self.assertEqual(len(char.items), self.char.item_count)
 		self.assertEqual(len(char.skills), 5)
+		
+	def test_binary1(self):
+		arr = Struct((
+			('key', '10s'),
+			('value', '10s')
+		))
+		
+		s = Struct((
+			('count', 'L'),
+			('array', arr, 'count')
+		))
+		
+		s.count = 1
+		s.array = [
+			#{
+			#	'key': 'test1',
+			#	'value': 'test2'
+			#}
+			['test1', 'test2']
+		]
+		
+		self.assertEqual(s.pack(), struct.pack('<L10s10s', 1, 'test1','test2'))
+		
+	def test_binary2(self):
+		arr = Struct((
+			('key', '10s'),
+			('value', '10s')
+		))
+		
+		s = Struct((
+			('count', 'L'),
+			('array', arr, 'count')
+		))
+		
+		s.count = 1
+		s.array = [
+			{
+				'key': 'test1',
+				'value': 'test2'
+			}
+		]
+		
+		self.assertEqual(s.pack(), struct.pack('<L10s10s', 1, 'test1','test2'))
 		
 if __name__ == '__main__':
 	unittest.main()
