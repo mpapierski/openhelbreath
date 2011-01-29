@@ -94,6 +94,7 @@ class ClientSocket(HelbreathSocket):
 		else:
 			print 'Client packet. MsgID: 0x%08X MsgType: 0x%04X' % (MsgID, MsgType)
 		
+		return True
 	'''
 		Client functions
 	'''

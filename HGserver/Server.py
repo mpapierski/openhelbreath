@@ -151,23 +151,23 @@ class Server(object):
 					# Just do nothing
 					pass 
 			
-			self.clients_guard.acquire()
-			
 			if socket in self.clients:
 				n = socket.recv()
 				if not n:
 					socket.on_disconnect(socket)
 					socket.close()
+					self.clients_guard.acquire()
 					self.clients.remove(socket)
+					self.clients_guard.release()
 					continue
-									
+				
 				while socket.pop_packet():
 					print 'Pop packet', socket.fileno()
 					if not socket.fileno():
 						socket.on_disconnect(socket)
+						self.clients_guard.acquire()
 						self.clients.remove(socket)
-			
-			self.clients_guard.release()
+						self.clients_guard.release()			
 			
 			if socket == self.serversocket:
 				c = self.serversocket.accept(socketcls = ClientSocket)
@@ -177,11 +177,11 @@ class Server(object):
 					c.id = max(map(lambda client: client.id, self.clients)) + 1
 				except ValueError as e:
 					c.id = 0
-				
 				self.clients.append(c)
+				self.clients_guard.release()
 				self.setup_callbacks_client(c)
 				c.on_connect(c)
-				self.clients_guard.release()
+				
 				
 		for socket in wlist:
 			if socket.connecting:
