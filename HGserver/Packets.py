@@ -3,6 +3,28 @@ from Helpers import Struct
 
 # Helbreath Packet definitions
 
+REGISTER_GAMESERVER_MAP = Struct(
+	(
+		('map_name', '11s'), # Shouldn't it be like 10s? Stupid koreans...
+	)
+)
+
+REGISTER_GAMESERVER = Struct(
+	(
+		('MsgID', 'I'),
+		('MsgType', 'H'),
+		('server_name', '10s'),
+		('address', '16s'),
+		('port', 'H'),
+		('received_configs', '?'), # Do we have configs?
+		('map_count', 'B'),
+		('server_id', 'H'),
+		('maps', REGISTER_GAMESERVER_MAP, 'map_count')
+	),
+	MsgID = NetMessages.MSGID_REQUEST_REGISTERGAMESERVER,
+	MsgType = NetMessages.DEF_LOGRESMSGTYPE_CONFIRM
+)
+
 PLAYERDATA_ITEM = Struct(
 	(
 		('name', '20s'),

@@ -53,21 +53,21 @@ class GateSocket(HelbreathSocket):
 		'''
 			Register game server main socket in gate server
 		'''	
-		header = struct.pack('<IH10s16sHBBH', 
-			NetMessages.MSGID_REQUEST_REGISTERGAMESERVER, # MsgID
-			NetMessages.DEF_LOGRESMSGTYPE_CONFIRM, # MsgType
-			server_name, # Server name (10b)
-			address, # External address (16b)
-			port, # Port (u2)
-			False, # Configs (bool)
-			len(maps), # Total maps u1
-			os.getpid(), # Server ID u2
+		self.send_packet(
+			Packets.REGISTER_GAMESERVER,
+			server_name = server_name,
+			address = address,
+			port = port,
+			received_configs = False,
+			map_count = len(maps),
+			maps = map(
+				lambda map_name: dict(
+					map_name = map_name
+				),
+				maps
+			),
+			server_id = os.getpid()
 		)
-				
-		for map in maps:
-			header += struct.pack('<11s', map)
-			
-		self.send_msg(header)
 		
 	def do_register_gameserversocket(self, gsid):
 		'''
