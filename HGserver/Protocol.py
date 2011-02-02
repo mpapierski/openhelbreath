@@ -81,24 +81,13 @@ class GateSocket(HelbreathSocket):
 		self.send_msg(header)
 		
 	def do_request_playerdata(self, char_name, account_name, account_password, address):
-		print 'do_request_playerdata'
-		fmt = '<IH'
-		fmt += '10s' # character name
-		fmt += '10s' # account name
-		fmt += '10s' # account password
-		fmt += '15s' # address
-		fmt += 'x' # 1b padding, always zero. "Account Status"
-		print address, type(address)
-		data = struct.pack(fmt,
-			NetMessages.MSGID_REQUEST_PLAYERDATA,
-			NetMessages.DEF_MSGTYPE_CONFIRM,
-			char_name,
-			account_name,
-			account_password,
-			address
+		self.send_packet(
+			Packets.REQUEST_PLAYERDATA,
+			char_name = char_name,
+			account_name = account_name,
+			account_password = account_password,
+			address = address
 		)
-		
-		self.send_msg(data)
 	
 	def do_entergame_confirm(self, account_name, account_password, server_name, address, level):
 		self.send_packet(

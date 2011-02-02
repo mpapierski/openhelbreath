@@ -31,6 +31,20 @@ RESPONSE_REGISTER_GAMESERVER = Struct(
 	)
 )
 
+REQUEST_PLAYERDATA = Struct(
+	(
+		('MsgID', 'I'),
+		('MsgType', 'H'),
+		('char_name', '10s'),
+		('account_name', '10s'),
+		('account_password', '10s'),
+		('address', '15s'),
+		('account_status', 'x') # From the old 2.20 days, I think. Now obsolete.
+	),
+	MsgID = NetMessages.MSGID_REQUEST_PLAYERDATA,
+	MsgType = NetMessages.DEF_MSGTYPE_CONFIRM, 
+)
+
 PLAYERDATA_ITEM = Struct(
 	(
 		('name', '20s'),
