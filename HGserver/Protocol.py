@@ -72,13 +72,10 @@ class GateSocket(HelbreathSocket):
 		'''
 			Register game server sub socket in gate server
 		'''
-		
-		header = struct.pack('<IH',
-			NetMessages.MSGID_REQUEST_REGISTERGAMESERVERSOCKET,
-			gsid
+		self.send_packet(
+			Packets.REQUEST_REGISTER_GAMESERVERSOCKET,
+			server_id = gsid
 		)
-		
-		self.send_msg(header)
 		
 	def do_request_playerdata(self, char_name, account_name, account_password, address):
 		self.send_packet(

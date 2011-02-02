@@ -31,6 +31,14 @@ RESPONSE_REGISTER_GAMESERVER = Struct(
 	)
 )
 
+REQUEST_REGISTER_GAMESERVERSOCKET = Struct(
+	(
+		('MsgID', 'I'),
+		('server_id', 'H'),
+	),
+	MsgID = NetMessages.MSGID_REQUEST_REGISTERGAMESERVERSOCKET 
+)
+
 REQUEST_PLAYERDATA = Struct(
 	(
 		('MsgID', 'I'),
