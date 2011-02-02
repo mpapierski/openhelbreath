@@ -28,14 +28,13 @@ class GateSocket(HelbreathSocket):
 		packet = packet[6:]
 		
 		if MsgID == NetMessages.MSGID_RESPONSE_REGISTERGAMESERVER:
-			GSID, = struct.unpack('<h', packet[:2])
+			packet = Packets.RESPONSE_REGISTER_GAMESERVER.unpack(packet)
 			self.on_response_registergameserver(
 				MsgType == NetMessages.DEF_MSGTYPE_CONFIRM,
-				GSID
+				gsid = packet.server_id # "GSID"
 			)
 		elif MsgID == NetMessages.MSGID_NOTICEMENTFILECONTENTS:
 			self.on_receive_config_noticement(noticement = packet)
-			
 		elif MsgID == NetMessages.MSGID_RESPONSE_REGISTERGAMESERVERSOCKET:
 			self.on_response_registergameserversocket(self)
 		elif MsgID == NetMessages.MSGID_RESPONSE_PLAYERDATA:
@@ -54,7 +53,7 @@ class GateSocket(HelbreathSocket):
 			Register game server main socket in gate server
 		'''	
 		self.send_packet(
-			Packets.REGISTER_GAMESERVER,
+			Packets.REQUEST_REGISTER_GAMESERVER,
 			server_name = server_name,
 			address = address,
 			port = port,
