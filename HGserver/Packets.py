@@ -220,3 +220,17 @@ PLAYERITEMLISTCONTENT = Struct(
 	MsgID = NetMessages.MSGID_PLAYERITEMLISTCONTENTS,
 	MsgType = NetMessages.DEF_MSGTYPE_CONFIRM
 )
+
+ENTERGAME_CONFIRM = Struct(
+	(
+		('MsgID', 'I'),
+		('MsgType', 'H'),
+		('account_name', '10s'),
+		('account_password', '10s'),
+		('server_name', '10s'),
+		('client_ip', '16s'),
+		('level', 'I')
+	),
+	MsgID = NetMessages.MSGID_ENTERGAMECONFIRM,
+	MsgType = NetMessages.DEF_MSGTYPE_CONFIRM
+)

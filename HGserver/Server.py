@@ -32,15 +32,10 @@ from threading import Thread, Semaphore
 
 import Settings
 from Sockets import ServerSocket
-from Protocol import GateProtocol
+from Protocol import GateSocket
 from Client import ClientSocket
 from Timer import TimerManager
 
-class GateSocket(GateProtocol):
-	def __init__(self, address, port):
-		super(GateSocket, self).__init__(address = address, port = port)
-		self.setblocking(False)
-	
 class Server(object):
 	'''
 		New game server

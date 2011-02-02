@@ -4,13 +4,19 @@ import NetMessages
 import Packets
 from Helpers import strip_zeros
 
-class GateProtocol(HelbreathSocket):
+class GateSocket(HelbreathSocket):
 	'''
 		Gate server protocol class
 	'''
-	
+	def __init__(self, address, port):
+		super(GateSocket, self).__init__(
+			address = address,
+			port = port
+		)
+		self.setblocking(False)
+		
 	def pop_packet(self):
-		packet = super(GateProtocol, self).pop_packet()
+		packet = super(GateSocket, self).pop_packet()
 		
 		if not packet:
 			return False
@@ -96,25 +102,14 @@ class GateProtocol(HelbreathSocket):
 		self.send_msg(data)
 	
 	def do_entergame_confirm(self, account_name, account_password, server_name, address, level):
-		print 'do_entergame_confirm'
-		fmt = '<IH'
-		fmt += '10s' # Account name
-		fmt += '10s' # Account password
-		fmt += '10s' # Server name
-		fmt += '16s' # Client IP
-		fmt += 'I' # Level
-		
-		data = struct.pack(fmt,
-				NetMessages.MSGID_ENTERGAMECONFIRM,
-				NetMessages.DEF_MSGTYPE_CONFIRM,
-				account_name,
-				account_password,
-				server_name,
-				address,
-				level
+		self.send_packet(
+			Packets.ENTERGAME_CONFIRM,
+			account_name = account_name,
+			account_password = account_password,
+			server_name = server_name,
+			client_ip = address,
+			level = level
 		)
-		
-		self.send_msg(data)
 		
 	'''
 		Parsers
