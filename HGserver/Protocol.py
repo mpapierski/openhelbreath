@@ -38,7 +38,11 @@ class GateSocket(HelbreathSocket):
 		elif MsgID == NetMessages.MSGID_RESPONSE_REGISTERGAMESERVERSOCKET:
 			self.on_response_registergameserversocket(self)
 		elif MsgID == NetMessages.MSGID_RESPONSE_PLAYERDATA:
-			self.__response_playerdata(packet)
+			player_data = Packets.RESPONSE_PLAYERDATA.unpack(packet)
+			self.on_response_playerdata(
+				char_name = player_data.char_name,
+				player_data = player_data
+			)
 		else:
 			print '%s gets unknown message: MsgID: 0x%08X MsgType: 0x%04X' % (self.__class__.__name__, MsgID, MsgType)
 			
@@ -94,20 +98,6 @@ class GateSocket(HelbreathSocket):
 			server_name = server_name,
 			client_ip = address,
 			level = level
-		)
-		
-	'''
-		Parsers
-	'''
-	
-	def __response_playerdata(self, packet):
-		# TODO: parse rest of values items and bankitems ...
-		player_data = Packets.RESPONSE_PLAYERDATA.unpack(packet)
-		print player_data.get_dict()
-
-		self.on_response_playerdata(
-			char_name = player_data.char_name,
-			player_data = player_data
 		)
 		
 	'''
