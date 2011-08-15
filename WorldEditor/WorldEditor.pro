@@ -11,8 +11,10 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    hbpak.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    hbpak.h
 
 FORMS    += mainwindow.ui
