@@ -90,3 +90,22 @@ bool HBPak::open(const QString& fileName)
 
 	return true;
 }
+
+bool HBPak::getSprite(const quint32 spriteID, const quint32 frameID, QImage& sprite)
+{
+	if (spriteID > m_Sprites.length() - 1)
+		return false;
+
+	if (frameID > m_Sprites[spriteID].Frames.length() - 1)
+		return false;
+
+	Sprite& spr = m_Sprites[spriteID];
+	QImage& src = spr.BMP;
+	SpriteFrame& frm = m_Sprites[spriteID].Frames[frameID];
+
+	QImage temp(frm.Width, frm.Height, QImage::Format_RGB16);
+	QPainter painter(&temp);
+	painter.drawImage(0, 0, src, frm.X + frm.FX, frm.Y + frm.FY);
+	sprite = temp;
+	return true;
+}

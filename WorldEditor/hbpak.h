@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QImage>
 #include <QList>
+#include <QPainter>
 #include <stdio.h>
 
 #define DEF_PAKSIG "<Pak file header>"
@@ -67,6 +68,16 @@ class HBPak : public QObject
 		bool open(const QString& fileName);
 
 		QList<Sprite>& sprites() { return m_Sprites; }
+
+		/**
+		  * Cut sprite `spriteID` on `frameID` and store it in sprite
+		  * Eventually cache it sometimes.
+		  * @param spriteID Sprite ID.
+		  * @param frameID Frame ID.
+		  * @param sprite Where to store sprite.
+		  * @return In case of failure return logical value.
+		  */
+		bool getSprite(const quint32 spriteID, const quint32 frameID, QImage& sprite);
 
 	signals:
 
