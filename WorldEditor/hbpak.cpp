@@ -11,6 +11,8 @@ bool HBPak::open(const QString& fileName)
 	m_FileName = fileName;
 
 	FILE * fin = fopen(fileName.toAscii(), "rb");
+	if (!fin)
+		return false;
 	char Sig[20];
 	fread(&Sig, 1, 20, fin);
 	qDebug() << Sig;
